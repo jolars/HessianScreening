@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # Singularity containers
 *.sif
+
+# VS code stuff
+.vscode
