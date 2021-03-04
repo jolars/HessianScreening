@@ -15,7 +15,7 @@ lassoPath(
   path_length = 100L,
   maxit = 1000000L,
   tol_decr = 1e-04,
-  tol_infeas = 0.001,
+  tol_infeas = 1e-04,
   tol_gap = 1e-04,
   gamma = 0.01,
   verify_hessian = FALSE,
