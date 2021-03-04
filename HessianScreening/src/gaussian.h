@@ -92,7 +92,7 @@ public:
 
   mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
   {
-    mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+    mat H = conv_to<mat>::from(X.cols(ind_a) * X.cols(ind_b).t()).t();
 
     if (standardize)
       H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
@@ -110,9 +110,9 @@ public:
   {
     uvec inactive_restricted = intersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
-
+    vec tmp = (X.cols(active_set) * Hinv_s);
     c_grad(inactive_restricted) =
-      X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+      tmp.t() * X.cols(inactive_restricted);
     c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
   }
@@ -132,12 +132,13 @@ public:
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
       c_grad(inactive_restricted) =
-        X.cols(inactive_restricted).t() * tmp -
+        X.cols(inactive_restricted) * tmp.t();
+        c_grad(inactive_restricted) -=
         X_mean_scaled(inactive_restricted) * sum(tmp);
 
     } else {
       c_grad(inactive_restricted) =
-        X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+        X.cols(inactive_restricted) * (X.cols(active_set) * Hinv_s).t();
     }
 
     c_grad(inactive_notrestricted).zeros();

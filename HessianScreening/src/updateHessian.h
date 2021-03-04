@@ -48,8 +48,8 @@ updateHessian(mat& H,
     mat Hinv_kk = Hinv(keep, keep);
     mat Hinv_dd = Hinv(drop, drop);
 
-    Hinv = Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t()));
-    H = H(keep, keep);
+    Hinv = symmatu(Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t())));
+    H = symmatu(H(keep, keep));
 
     active_prev_set = intersect(active_prev_set, active_set);
   }
@@ -77,14 +77,15 @@ updateHessian(mat& H,
     mat Sinv = Q * diagmat(1.0 / l) * Q.t();
     mat Hinv_B_Sinv = Hinv * B * Sinv;
 
-    H = join_vert(join_horiz(H, B), join_horiz(B.t(), D));
+    H = symmatu(join_vert(join_horiz(H, B), join_horiz(B.t(), D)));
 
     uword n_old = active_prev_set.n_elem;
 
     Hinv =
-      join_vert(join_horiz((Hinv_B_Sinv * B.t() + eye(n_old, n_old)) * Hinv,
+      join_vert(join_horiz(Hinv_B_Sinv * B.t()  * Hinv + Hinv,
                            -Hinv_B_Sinv),
                 join_horiz(-Hinv_B_Sinv.t(), Sinv));
+    Hinv = symmatu(Hinv);
   }
 
   if (reset_hessian) {

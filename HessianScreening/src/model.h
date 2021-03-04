@@ -215,7 +215,7 @@ public:
         while (primal_value >= primal_value_old &&
                dual_value <= dual_value_old && line_it < 5) {
           line_it++;
-          t *= 0.9;
+          t *= 1;//0.9;
 
           if (verbosity >= 2) {
             Rprintf("      make no progress; taking a momentum step\n");
