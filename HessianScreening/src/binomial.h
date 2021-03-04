@@ -1,0 +1,226 @@
+#pragma once
+
+#include <RcppArmadillo.h>
+
+#include "prox.h"
+#include "utils.h"
+
+using namespace arma;
+
+class Binomial : public Model
+{
+public:
+  vec expXbeta;
+  vec pr;
+  vec w;
+
+  const bool approx_hessian;
+
+  const double p_min = 1e-9;
+  const double p_max = 1 - p_min;
+
+  Binomial(vec& y,
+           vec& beta,
+           vec& residual,
+           vec& Xbeta,
+           vec& c,
+           const vec& X_mean_scaled,
+           const vec& X_norms_squared,
+           const uword n,
+           const uword p,
+           const bool standardize,
+           const bool approx_hessian)
+    : Model{ y, beta, residual,   Xbeta, c, X_mean_scaled, X_norms_squared,
+             n, p,    standardize }
+    , expXbeta(y.n_elem, fill::zeros)
+    , pr(y.n_elem, fill::zeros)
+    , w(y.n_elem, fill::zeros)
+    , approx_hessian{ approx_hessian }
+  {}
+
+  double primal(const double lambda, const uvec& screened_set)
+  {
+    return -sum(y % Xbeta - log1p(expXbeta)) +
+           lambda * norm(beta(screened_set), 1);
+  }
+
+  double dual() { return -sum(pr % log(pr) + (1 - pr) % log(1 - pr)); }
+
+  double scaledDual(const double lambda, const double dual_scale)
+  {
+    if (dual_scale == 0) {
+      return 0;
+    } else {
+      double alpha = lambda / dual_scale;
+
+      vec prx = clamp(y - alpha * residual, p_min, p_max);
+
+      return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
+    }
+  }
+
+  double deviance() { return -2 * sum(y % Xbeta - log1p(expXbeta)); }
+
+  virtual double hessianTerm(const mat& X, const uword j)
+  {
+    return std::max(dot(square(X.col(j)), w), std::sqrt(datum::eps));
+  }
+
+  virtual double hessianTerm(const sp_mat& X, const uword j)
+  {
+    double out = dot(square(X.col(j)), w);
+
+    if (standardize) {
+      out += std::pow(X_mean_scaled(j), 2) * sum(w) -
+             2 * dot(X.col(j), w) * X_mean_scaled(j);
+    }
+
+    return std::max(out, std::sqrt(datum::eps));
+  }
+
+  void updateResidual()
+  {
+    expXbeta = exp(Xbeta);
+    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
+    w = pr % (1 - pr);
+    residual = y - pr;
+  }
+
+  void adjustResidual(const mat& X, const uword j, const double beta_diff)
+  {
+    Xbeta += X.col(j) * beta_diff;
+    expXbeta = exp(Xbeta);
+    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
+    w = pr % (1 - pr);
+    residual = y - pr;
+  }
+
+  void adjustResidual(const sp_mat& X, const uword j, const double beta_diff)
+  {
+    Xbeta += X.col(j) * beta_diff;
+
+    if (standardize)
+      Xbeta -= X_mean_scaled(j) * beta_diff;
+
+    expXbeta = exp(Xbeta);
+    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
+    w = pr % (1 - pr);
+    residual = y - pr;
+  }
+
+  mat hessian(const mat& X, const uvec& ind)
+  {
+    if (approx_hessian) {
+      return 0.25 * X.cols(ind).t() * X.cols(ind);
+    } else {
+      return X.cols(ind).t() * diagmat(w) * X.cols(ind);
+    }
+  }
+
+  mat hessian(const sp_mat& X, const uvec& ind)
+  {
+    if (approx_hessian) {
+      mat H = conv_to<mat>::from(X.cols(ind).t() * X.cols(ind));
+
+      if (standardize)
+        H -= X.n_rows * X_mean_scaled(ind) * X_mean_scaled(ind).t();
+
+      H *= 0.25;
+
+      return H;
+    } else {
+      mat H = conv_to<mat>::from(X.cols(ind).t() * diagmat(w) * X.cols(ind));
+
+      if (standardize) {
+        mat XmDX = X_mean_scaled(ind) * sum(diagmat(w) * X.cols(ind), 0);
+        H += sum(w) * X_mean_scaled(ind) * X_mean_scaled(ind).t() - XmDX -
+             XmDX.t();
+      }
+
+      return H;
+    }
+  }
+
+  mat hessianUpperRight(const mat& X, const uvec& ind_a, const uvec& ind_b)
+  {
+    if (approx_hessian) {
+      return 0.25 * X.cols(ind_a).t() * X.cols(ind_b);
+    } else {
+      return X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b);
+    }
+  }
+
+  mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
+  {
+    if (approx_hessian) {
+      mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+
+      if (standardize)
+        H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
+
+      H *= 0.25;
+
+      return H;
+
+    } else {
+      mat H =
+        conv_to<mat>::from(X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b));
+
+      if (standardize) {
+        mat XamDXb = X_mean_scaled(ind_a) * sum(diagmat(w) * X.cols(ind_b));
+        mat XbmDXa = X_mean_scaled(ind_b) * sum(diagmat(w) * X.cols(ind_a));
+        H += sum(w) * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t() -
+             XbmDXa.t() - XamDXb;
+      }
+
+      return H;
+    }
+  }
+
+  void updateGradientOfCorrelation(vec& c_grad,
+                                   const mat& X,
+                                   const vec& Hinv_s,
+                                   const vec& s,
+                                   const uvec& active_set,
+                                   const uvec& inactive_set,
+                                   const uvec& restricted_set)
+  {
+    uvec inactive_restricted = intersect(inactive_set, restricted_set);
+    uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
+
+    c_grad(inactive_restricted) =
+      X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+    c_grad(inactive_notrestricted).zeros();
+    c_grad(active_set) = s(active_set);
+  }
+
+  void updateGradientOfCorrelation(vec& c_grad,
+                                   const sp_mat& X,
+                                   const vec& Hinv_s,
+                                   const vec& s,
+                                   const uvec& active_set,
+                                   const uvec& inactive_set,
+                                   const uvec& restricted_set)
+  {
+    uvec inactive_restricted = intersect(inactive_set, restricted_set);
+    uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
+
+    if (standardize) {
+      vec tmp =
+        X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
+      c_grad(inactive_restricted) =
+        X.cols(inactive_restricted).t() * tmp -
+        X_mean_scaled(inactive_restricted) * sum(tmp);
+
+    } else {
+      c_grad(inactive_restricted) =
+        X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+    }
+
+    c_grad(inactive_notrestricted).zeros();
+    c_grad(active_set) = s(active_set);
+  }
+
+  void standardizeY() {}
+};
+;

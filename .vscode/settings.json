@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "armadillo": "cpp",
+        "*.tcc": "cpp",
+        "ostream": "cpp",
+        "*.ipp": "cpp",
+        "random": "cpp",
+        "cmath": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
+}
