@@ -214,8 +214,6 @@ lassoPathImpl(T X,
 
       double t0 = timer.toc();
 
-      n_screened.emplace_back(sum(screened));
-
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
                    X,
@@ -234,6 +232,13 @@ lassoPathImpl(T X,
 
       n_passes_i_sum += n_passes_i;
       uvec unscreened = screened == false;
+
+      if (first_run) {
+        // For dynamic screening rules, `avg_screened` is the mean number of
+        // screened predictors. For other rules, this is constant between
+        // iterations.
+        n_screened.emplace_back(avg_screened);
+      }
 
       t0 = timer.toc();
 
@@ -277,6 +282,8 @@ lassoPathImpl(T X,
       } else {
         n_refits_i++;
       }
+
+      first_run = false;
 
       Rcpp::checkUserInterrupt();
     }
