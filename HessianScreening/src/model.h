@@ -213,13 +213,9 @@ public:
         uword line_it = 0;
 
         while (primal_value >= primal_value_old &&
-               dual_value <= dual_value_old && line_it < 5) {
+               dual_value <= dual_value_old && line_it < 15) {
           line_it++;
-          t *= 0.9;
-
-          if (verbosity >= 2) {
-            Rprintf("      made no progress; taking a momentum step\n");
-          }
+          t *= 0.5;
 
           beta(screened_set) = (1 - t) * beta_screened_old + t * beta_screened;
 
@@ -231,7 +227,10 @@ public:
         }
 
         if (verbosity >= 2) {
-          Rprintf("      primal change: %f\n", primal_value_change);
+          Rprintf("      primal: %f, dual: %f, primal_change: %f\n",
+                  primal_value,
+                  dual_value,
+                  primal_value_change);
         }
 
         if (abs(primal_value_change) <= tol_gap * primal_value) {
@@ -244,7 +243,7 @@ public:
             lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
 
           if (verbosity >= 2) {
-            Rprintf("      max infeas: %f, duality gap: %f\n",
+            Rprintf("      infeasibility: %f, duality gap: %f\n",
                     max_infeas,
                     duality_gap);
           }
