@@ -36,5 +36,5 @@ cat('cd_time = ',sum(fit.w$cd_time),'\n')
 cat('corr_time = ',sum(fit.w$corr_time),'\n')
 
 
-plot(fit$cd_time,type='l')
-lines(fit.w$cd_time,col='red')
+plot(fit$passes,type='l')
+lines(fit.w$passes,col='red')
