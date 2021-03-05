@@ -82,8 +82,7 @@ updateHessian(mat& H,
     uword n_old = active_prev_set.n_elem;
 
     Hinv =
-      join_vert(join_horiz(Hinv_B_Sinv * B.t()  * Hinv + Hinv,
-                           -Hinv_B_Sinv),
+      join_vert(join_horiz(Hinv_B_Sinv * B.t() * Hinv + Hinv, -Hinv_B_Sinv),
                 join_horiz(-Hinv_B_Sinv.t(), Sinv));
     Hinv = symmatu(Hinv);
   }
