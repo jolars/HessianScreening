@@ -61,12 +61,12 @@ public:
 
   double deviance() { return -2 * sum(y % Xbeta - log1p(expXbeta)); }
 
-  virtual double hessianTerm(const mat& X, const uword j)
+  double hessianTerm(const mat& X, const uword j)
   {
     return std::max(dot(square(X.col(j)), w), std::sqrt(datum::eps));
   }
 
-  virtual double hessianTerm(const sp_mat& X, const uword j)
+  double hessianTerm(const sp_mat& X, const uword j)
   {
     double out = dot(square(X.col(j)), w);
 

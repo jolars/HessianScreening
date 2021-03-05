@@ -45,12 +45,9 @@ public:
 
   double deviance() { return std::pow(norm(residual), 2); }
 
-  virtual double hessianTerm(const mat& X, const uword j)
-  {
-    return X_norms_squared(j);
-  }
+  double hessianTerm(const mat& X, const uword j) { return X_norms_squared(j); }
 
-  virtual double hessianTerm(const sp_mat& X, const uword j)
+  double hessianTerm(const sp_mat& X, const uword j)
   {
     return X_norms_squared(j);
   }
@@ -111,8 +108,7 @@ public:
     uvec inactive_restricted = intersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
     vec tmp = (X.cols(active_set) * Hinv_s);
-    c_grad(inactive_restricted) =
-      tmp.t() * X.cols(inactive_restricted);
+    c_grad(inactive_restricted) = tmp.t() * X.cols(inactive_restricted);
     c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
   }
@@ -131,9 +127,8 @@ public:
     if (standardize) {
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
-      c_grad(inactive_restricted) =
-        X.cols(inactive_restricted) * tmp.t();
-        c_grad(inactive_restricted) -=
+      c_grad(inactive_restricted) = X.cols(inactive_restricted) * tmp.t();
+      c_grad(inactive_restricted) -=
         X_mean_scaled(inactive_restricted) * sum(tmp);
 
     } else {
