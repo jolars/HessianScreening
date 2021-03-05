@@ -218,7 +218,7 @@ public:
           t *= 0.9;
 
           if (verbosity >= 2) {
-            Rprintf("      make no progress; taking a momentum step\n");
+            Rprintf("      made no progress; taking a momentum step\n");
           }
 
           beta(screened_set) = (1 - t) * beta_screened_old + t * beta_screened;
