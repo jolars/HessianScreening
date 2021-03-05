@@ -105,9 +105,9 @@ public:
                                    const uvec& inactive_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_restricted = intersect(inactive_set, restricted_set);
+    uvec inactive_restricted = setIntersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
-    vec tmp = (X.cols(active_set) * Hinv_s);
+    vec tmp = X.cols(active_set) * Hinv_s;
     c_grad(inactive_restricted) = tmp.t() * X.cols(inactive_restricted);
     c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
@@ -133,7 +133,7 @@ public:
 
     } else {
       c_grad(inactive_restricted) =
-        X.cols(inactive_restricted) * (X.cols(active_set) * Hinv_s).t();
+        (X.cols(inactive_restricted) * (X.cols(active_set) * Hinv_s).t()).t();
     }
 
     c_grad(inactive_notrestricted).zeros();

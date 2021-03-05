@@ -294,7 +294,7 @@ lassoPathImpl(T X,
       s(find(active)) = sign(c(find(active)));
     }
 
-    active_set = join_vert(intersect(active_set_prev, find(active).eval()),
+    active_set = join_vert(setIntersect(active_set_prev, find(active).eval()),
                            setDiff(find(active).eval(), active_set_prev));
     inactive_set = find(active == false);
 

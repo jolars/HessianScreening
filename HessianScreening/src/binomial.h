@@ -185,7 +185,7 @@ public:
                                    const uvec& inactive_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_restricted = intersect(inactive_set, restricted_set);
+    uvec inactive_restricted = setIntersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
 
     c_grad(inactive_restricted) =

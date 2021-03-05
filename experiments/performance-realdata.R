@@ -7,7 +7,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   # "arcene",
   # "abalone",
-  "cadata",
+  # "cadata",
   "golub",
   # "gisette-train",
   "leukemia-train"
@@ -23,7 +23,7 @@ g <- expand_grid(
   density = NA,
   time = NA,
   total_violations = NA,
-  avg_screened = NA,
+  avg_screened = list(NA),
   violations = list(NA),
   screened = list(NA),
   active = list(NA)
@@ -46,11 +46,11 @@ for (i in seq_len(nrow(g))) {
       y,
       family = family,
       screening_type = screening_type,
-      verbosity = 1
+      verbosity = 0
     )
   })
 
-  gnet <- glmnet::glmnet(X,y, intercept = FALSE)
+  gnet <- glmnet::glmnet(X, y, intercept = FALSE)
 
   g$n[i] <- nrow(X)
   g$p[i] <- ncol(X)

@@ -41,8 +41,8 @@ updateHessian(mat& H,
       }
     }
 
-    uvec keep(keep_std);
-    uvec drop(drop_std);
+    uvec keep = conv_to<uvec>::from(keep_std);
+    uvec drop = conv_to<uvec>::from(drop_std);
 
     mat Hinv_kd = Hinv(keep, drop);
     mat Hinv_kk = Hinv(keep, keep);
@@ -51,7 +51,7 @@ updateHessian(mat& H,
     Hinv = symmatu(Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t())));
     H = symmatu(H(keep, keep));
 
-    active_prev_set = intersect(active_prev_set, active_set);
+    active_prev_set = setIntersect(active_prev_set, active_set);
   }
 
   if (!activate.is_empty()) {
@@ -63,7 +63,9 @@ updateHessian(mat& H,
     mat D = model->hessian(X, activate);
     mat B = model->hessianUpperRight(X, active_prev_set, activate);
 
-    mat S = D - B.t() * Hinv * B;
+    mat Hinv_B = Hinv * B;
+
+    mat S = D - B.t() * Hinv_B;
 
     vec l;
     mat Q;
@@ -75,7 +77,7 @@ updateHessian(mat& H,
     }
 
     mat Sinv = Q * diagmat(1.0 / l) * Q.t();
-    mat Hinv_B_Sinv = Hinv * B * Sinv;
+    mat Hinv_B_Sinv = Hinv_B * Sinv;
 
     H = symmatu(join_vert(join_horiz(H, B), join_horiz(B.t(), D)));
 
