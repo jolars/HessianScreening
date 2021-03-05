@@ -452,7 +452,8 @@ lassoPathImpl(T X,
                             Named("full_time") = wrap(full_time),
                             Named("cd_time") = wrap(cd_times),
                             Named("hess_time") = wrap(hess_times),
-                            Named("corr_time") = wrap(corr_times));
+                            Named("corr_time") = wrap(corr_times),
+                            Named("gradcorr_time") = wrap(gradcorr_times));
 }
 
 //' Fit the Lasso Path
