@@ -14,6 +14,7 @@ fit <- lassoPath(
     y,
     family = family,
     screening_type = screening_type,
+    hessian_warm_starts=F,
     verbosity = 0
 )
 fit.w <- lassoPath(
