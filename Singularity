@@ -7,12 +7,15 @@ from: r-base:4.0.4
     experiments /Project/experiments
     renv /Project/renv
     renv.lock /Project/renv.lock
+    HessianScreening /Project/HessianScreening
     .Rprofile /Project/.Rprofile
 
 %post
     cd Project
 
     Rscript -e 'renv::restore()'
+
+    R CMD INSTALL HessianScreening
 
     chmod -R a+rX /Project
 
