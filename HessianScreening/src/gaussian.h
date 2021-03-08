@@ -89,7 +89,7 @@ public:
 
   mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
   {
-    mat H = conv_to<mat>::from(X.cols(ind_a) * X.cols(ind_b).t()).t();
+    mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
 
     if (standardize)
       H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
@@ -127,13 +127,20 @@ public:
     if (standardize) {
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
-      c_grad(inactive_restricted) = X.cols(inactive_restricted) * tmp.t();
-      c_grad(inactive_restricted) -=
-        X_mean_scaled(inactive_restricted) * sum(tmp);
 
+      double tmp_sum = sum(tmp);
+
+#pragma omp parallel for
+      for (auto&& j : inactive_restricted) {
+        c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
+      }
     } else {
-      c_grad(inactive_restricted) =
-        (X.cols(inactive_restricted) * (X.cols(active_set) * Hinv_s).t()).t();
+      vec tmp = X.cols(active_set) * Hinv_s;
+
+#pragma omp parallel for
+      for (auto&& j : inactive_restricted) {
+        c_grad(j) = dot(X.col(j), tmp);
+      }
     }
 
     c_grad(inactive_notrestricted).zeros();
@@ -141,4 +148,9 @@ public:
   }
 
   void standardizeY() { y -= mean(y); }
+
+  double safeScreeningRadius(const double duality_gap, const double lambda)
+  {
+    return std::sqrt(duality_gap) / lambda;
+  }
 };

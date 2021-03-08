@@ -17,9 +17,6 @@
 using namespace arma;
 using namespace Rcpp;
 
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::plugins(cpp17)]]
-
 template<typename T>
 Rcpp::List
 lassoPathImpl(T X,
@@ -41,7 +38,7 @@ lassoPathImpl(T X,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  bool hessian_type_screening =
+  const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
   vec beta(p, fill::zeros);
@@ -214,6 +211,13 @@ lassoPathImpl(T X,
 
       double t0 = timer.toc();
 
+      auto screening_type_choice =
+        first_run && screening_type == "gap_safe" ? "working" : screening_type;
+
+      if (first_run && screening_type != "gap_safe") {
+        n_screened.emplace_back(sum(screened));
+      }
+
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
                    X,
@@ -221,7 +225,7 @@ lassoPathImpl(T X,
                    lambda,
                    lambda_max,
                    null_dev,
-                   screening_type,
+                   screening_type_choice,
                    maxit,
                    tol_decr,
                    tol_gap,
@@ -233,7 +237,7 @@ lassoPathImpl(T X,
       n_passes_i_sum += n_passes_i;
       uvec unscreened = screened == false;
 
-      if (first_run) {
+      if (screening_type_choice == "gap_safe") {
         // For dynamic screening rules, `avg_screened` is the mean number of
         // screened predictors. For other rules, this is constant between
         // iterations.
@@ -427,7 +431,8 @@ lassoPathImpl(T X,
                                 lambda_next,
                                 gamma);
 
-    screened(uvec(duplicates)).fill(false); // make sure duplicates stay out
+    // make sure duplicates stay out
+    screened(conv_to<uvec>::from(duplicates)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
       beta(active_set) = beta(active_set) + (lambda - lambda_next) * Hinv_s;
@@ -444,23 +449,23 @@ lassoPathImpl(T X,
 
   full_time = timer.toc() - full_time;
 
-  return Rcpp::List::create(Named("beta") = wrap(betas),
-                            Named("lambda") = wrap(lambdas),
-                            Named("primals") = wrap(primals),
-                            Named("duals") = wrap(duals),
-                            Named("dev_ratio") = wrap(dev_ratios),
-                            Named("dev") = wrap(devs),
-                            Named("violations") = wrap(n_violations),
-                            Named("refits") = wrap(n_refits),
-                            Named("active") = wrap(n_active),
-                            Named("screened") = wrap(n_screened),
-                            Named("new_active") = wrap(n_new_active),
-                            Named("passes") = wrap(n_passes),
-                            Named("full_time") = wrap(full_time),
-                            Named("cd_time") = wrap(cd_times),
-                            Named("hess_time") = wrap(hess_times),
-                            Named("corr_time") = wrap(corr_times),
-                            Named("gradcorr_time") = wrap(gradcorr_times));
+  return List::create(Named("beta") = wrap(betas),
+                      Named("lambda") = wrap(lambdas),
+                      Named("primals") = wrap(primals),
+                      Named("duals") = wrap(duals),
+                      Named("dev_ratio") = wrap(dev_ratios),
+                      Named("dev") = wrap(devs),
+                      Named("violations") = wrap(n_violations),
+                      Named("refits") = wrap(n_refits),
+                      Named("active") = wrap(n_active),
+                      Named("screened") = wrap(n_screened),
+                      Named("new_active") = wrap(n_new_active),
+                      Named("passes") = wrap(n_passes),
+                      Named("full_time") = wrap(full_time),
+                      Named("cd_time") = wrap(cd_times),
+                      Named("hess_time") = wrap(hess_times),
+                      Named("corr_time") = wrap(corr_times),
+                      Named("gradcorr_time") = wrap(gradcorr_times));
 }
 
 //' Fit the Lasso Path

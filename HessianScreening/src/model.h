@@ -143,9 +143,39 @@ public:
 
   virtual void standardizeY() = 0;
 
+  virtual double safeScreeningRadius(const double duality_gap,
+                                     const double lambda) = 0;
+
+  template<typename T>
+  uvec safeScreening(uvec& screened,
+                     const T& X,
+                     const vec& XTcenter,
+                     const double r_screen)
+  {
+    for (auto&& j : screened) {
+      double r_normX_j = r_screen * std::sqrt(X_norms_squared(j));
+
+      if (r_normX_j >= 1) {
+        continue;
+      }
+
+      if (std::abs(XTcenter(j)) + r_normX_j < 1) {
+        // predictor must be zero; update residual and remove from screened set
+        if (beta(j) != 0) {
+          adjustResidual(X, j, -beta(j));
+          beta(j) = 0;
+        }
+
+        screened(j) = false;
+      }
+    }
+
+    return find(screened);
+  }
+
   template<typename T>
   std::tuple<double, double, double, uword, double> fit(
-    const uvec& screened,
+    uvec& screened,
     const T& X,
     const vec& X_norms_squared,
     const double lambda,
@@ -161,7 +191,11 @@ public:
     const uword n = X.n_rows;
     const uword p = X.n_cols;
 
-    const uvec screened_set = find(screened);
+    if (screening_type == "gap_safe") {
+      screened.fill(true);
+    }
+
+    uvec screened_set = find(screened);
 
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
@@ -179,13 +213,33 @@ public:
       updateResidual();
 
       while (it < maxit) {
-        it++;
-
         if (verbosity >= 2) {
-          Rprintf("    iter: %i\n", it);
+          Rprintf("    iter: %i\n", it + 1);
         }
 
-        n_screened += screened_set.n_elem;
+        if (screening_type == "gap_safe" && it % screen_interval == 0) {
+          if (it > 0) {
+            updateLinearPredictor(X, screened_set);
+            updateResidual();
+          }
+          updateCorrelation(X, screened_set);
+
+          double dual_scale = std::max(lambda, max(abs(c)));
+
+          primal_value = primal(lambda, screened_set);
+          dual_value = scaledDual(lambda, dual_scale);
+          duality_gap = primal_value - dual_value + datum::eps;
+
+          double r_screen{ 0 };
+
+          if (screening_type == "gap_safe") {
+            XTcenter = c / dual_scale;
+            r_screen = safeScreeningRadius(duality_gap, lambda);
+          }
+
+          screened_set = safeScreening(screened, X, XTcenter, r_screen);
+          n_screened += screened_set.n_elem;
+        }
 
         vec beta_screened_old = beta(screened_set);
         double primal_value_old = primal(lambda, screened_set);
@@ -195,7 +249,7 @@ public:
           double beta_j_old = beta(j);
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
-          beta(j) = prox(c(j) + hess_j * beta_j_old, lambda) / hess_j;
+          beta(j) = prox(c(j) / hess_j + beta_j_old, lambda / hess_j);
 
           if (beta_j_old != beta(j)) {
             adjustResidual(X, j, beta(j) - beta_j_old);
@@ -255,6 +309,8 @@ public:
         }
 
         Rcpp::checkUserInterrupt();
+
+        it++;
       }
     } else {
       beta.zeros();
