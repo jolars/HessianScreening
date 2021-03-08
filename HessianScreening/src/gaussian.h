@@ -123,7 +123,7 @@ public:
   {
     uvec inactive_restricted =  restricted_set;
     //uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
-
+    c_grad.zeros();
     if (standardize) {
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
