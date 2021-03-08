@@ -11,9 +11,8 @@ struct GetNextLambda
   const vec& lambda_grid;
   const double lambda_min;
   const double lambda_min_step;
-  uword n_target_nonzero;
   const std::string screening_type;
-
+  uword n_target_nonzero;
   const uword verbosity;
 
   double lambda_next_mod{ 1 };
