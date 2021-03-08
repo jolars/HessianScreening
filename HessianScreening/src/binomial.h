@@ -188,8 +188,13 @@ public:
     uvec inactive_restricted = setIntersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
 
-    c_grad(inactive_restricted) =
-      X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+    const vec tmp = w % (X.cols(active_set) * Hinv_s);
+
+#pragma omp parallel for
+    for (auto&& j : inactive_restricted) {
+      c_grad(j) = dot(X.unsafe_col(j), tmp);
+    }
+
     c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
   }
@@ -205,16 +210,29 @@ public:
     uvec inactive_restricted = intersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
 
+    vec dsq = sqrt(w);
+    mat D = diagmat(w);
+    mat Dsq = diagmat(dsq);
+
     if (standardize) {
-      vec tmp =
-        X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
+      mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
+      mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
+
+      mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
+      mat dsq_mua_Hinv_s = dsq * (X_mean_scaled(active_set).t() * Hinv_s);
+      mat Dsq_Xa_Hinv_s = Dsq_Xa * Hinv_s;
+
       c_grad(inactive_restricted) =
-        X.cols(inactive_restricted).t() * tmp -
-        X_mean_scaled(inactive_restricted) * sum(tmp);
+        Dsq_X.t() * (Dsq_Xa_Hinv_s - dsq_mua_Hinv_s) +
+        dsq_mu.t() * (dsq_mua_Hinv_s - Dsq_Xa_Hinv_s);
 
     } else {
-      c_grad(inactive_restricted) =
-        X.cols(inactive_restricted).t() * (X.cols(active_set) * Hinv_s);
+      const vec tmp = w % (X.cols(active_set) * Hinv_s);
+
+#pragma omp parallel for
+      for (auto&& j : inactive_restricted) {
+        c_grad(j) = dot(X.col(j), tmp);
+      }
     }
 
     c_grad(inactive_notrestricted).zeros();
@@ -222,5 +240,10 @@ public:
   }
 
   void standardizeY() {}
+
+  double safeScreeningRadius(const double duality_gap, const double lambda)
+  {
+    return std::sqrt(2 * duality_gap) / (2 * lambda);
+  }
 };
 ;
