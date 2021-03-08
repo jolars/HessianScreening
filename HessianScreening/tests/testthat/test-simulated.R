@@ -50,7 +50,6 @@ test_that("gaussian and logistic models for simulated data", {
       y,
       family,
       screening_type = screening_type,
-      verbosity = 2,
       standardize = standardize
     )
 
