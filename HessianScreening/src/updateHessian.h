@@ -41,15 +41,17 @@ updateHessian(mat& H,
       }
     }
 
-    uvec keep = conv_to<uvec>::from(keep_std);
-    uvec drop = conv_to<uvec>::from(drop_std);
+    const uvec keep = conv_to<uvec>::from(keep_std);
+    const uvec drop = conv_to<uvec>::from(drop_std);
 
-    mat Hinv_kd = Hinv(keep, drop);
-    mat Hinv_kk = Hinv(keep, keep);
-    mat Hinv_dd = Hinv(drop, drop);
+    const mat Hinv_kd = Hinv(keep, drop);
+    const mat Hinv_kk = Hinv(keep, keep);
+    const mat Hinv_dd = Hinv(drop, drop);
 
-    Hinv = symmatu(Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t())));
-    H = symmatu(H(keep, keep));
+    Hinv = Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t()));
+
+    H.shed_cols(drop);
+    H.shed_rows(drop);
 
     active_prev_set = setIntersect(active_prev_set, active_set);
   }
