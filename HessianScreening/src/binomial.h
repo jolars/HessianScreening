@@ -46,7 +46,7 @@ public:
 
   double dual() { return -sum(pr % log(pr) + (1 - pr) % log(1 - pr)); }
 
-  double scaledDual(const double lambda, const double dual_scale)
+  double scaledDual(const double lambda)
   {
     if (dual_scale == 0) {
       return 0;

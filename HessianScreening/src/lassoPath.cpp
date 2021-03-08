@@ -22,6 +22,7 @@ Rcpp::List
 lassoPathImpl(T X,
               arma::vec y,
               const std::string family,
+              const bool X_is_sparse,
               const bool standardize,
               const std::string screening_type,
               const bool hessian_warm_starts,
@@ -92,14 +93,14 @@ lassoPathImpl(T X,
   const double lambda_max = max(abs(c));
   const double lambda_min = lambda_max * lambda_min_ratio;
 
-  vec lambda_grid =
+  const vec lambda_grid =
     exp(linspace(log(lambda_max), log(lambda_min), path_length));
 
   std::vector<double> lambdas;
 
   double lambda = lambda_max;
 
-  double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
+  const double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
   double tmp = n < p ? n / path_length : p / path_length;
 
   uword n_target_nonzero = std::min(p, static_cast<uword>(std::ceil(tmp)));
@@ -113,11 +114,6 @@ lassoPathImpl(T X,
                                screening_type,
                                n_target_nonzero,
                                verbosity };
-
-  double dual_scale = lambda;
-  double primal_value = 0;
-  double dual_value = 0;
-  double duality_gap = datum::inf;
 
   std::vector<double> primals;
   std::vector<double> duals;
@@ -157,8 +153,6 @@ lassoPathImpl(T X,
   uvec inactive_set = find(active == false);
   uvec active_set_prev = active_set;
 
-  vec w(n);
-
   mat H = model->hessian(X, active_set);
   mat Hinv = inv(symmatl(H));
 
@@ -169,12 +163,9 @@ lassoPathImpl(T X,
 
   const double null_dev = model->deviance();
   double dev = null_dev;
-  double dev_ratio = 1.0 - dev / null_dev;
 
   bool check_kkt = screening_type != "gap_safe";
 
-  double cd_time = 0;
-  double corr_time = 0;
   std::vector<double> cd_times;
   std::vector<double> corr_times;
   std::vector<double> gradcorr_times;
@@ -199,10 +190,9 @@ lassoPathImpl(T X,
     uword n_passes_i_sum = 0;
     uword n_violations_i = 0;
     uword n_refits_i = 0;
-    double avg_screened = 0;
     bool first_run = true;
 
-    cd_time = 0;
+    double cd_time = 0;
 
     while (true) {
       if (verbosity >= 1) {
@@ -337,7 +327,7 @@ lassoPathImpl(T X,
     n_active.emplace_back(active_set.n_elem);
     n_new_active.emplace_back(new_active);
 
-    betas = join_horiz(betas, beta);
+    betas.insert_cols(betas.n_cols, beta);
 
     if (verbosity >= 1) {
       Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
@@ -415,9 +405,10 @@ lassoPathImpl(T X,
     double lambda_next = getNextLambda(lambda, inactive_set, new_active, i);
 
     strong = abs(c) >= 2 * lambda_next - lambda;
-    n_strong.emplace_back(accu(strong));
+    n_strong.emplace_back(sum(strong));
 
-    screened = screenPredictors(screening_type,
+    screened = screenPredictors(model,
+                                screening_type,
                                 strong,
                                 ever_active,
                                 residual,
@@ -425,11 +416,13 @@ lassoPathImpl(T X,
                                 c_grad,
                                 X,
                                 X_norms_squared,
+                                X_mean_scaled,
                                 y,
-                                dual_scale,
                                 lambda,
                                 lambda_next,
-                                gamma);
+                                gamma,
+                                X_is_sparse,
+                                standardize);
 
     // make sure duplicates stay out
     screened(conv_to<uvec>::from(duplicates)).fill(false);
@@ -459,6 +452,7 @@ lassoPathImpl(T X,
                       Named("refits") = wrap(n_refits),
                       Named("active") = wrap(n_active),
                       Named("screened") = wrap(n_screened),
+                      Named("strong") = wrap(n_strong),
                       Named("new_active") = wrap(n_new_active),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
@@ -513,6 +507,7 @@ lassoPath(SEXP X,
       return lassoPathImpl(as<arma::sp_mat>(X),
                            y,
                            family,
+                           true,
                            standardize,
                            screening_type,
                            hessian_warm_starts,
@@ -530,6 +525,7 @@ lassoPath(SEXP X,
     return lassoPathImpl(as<arma::mat>(X),
                          y,
                          family,
+                         false,
                          standardize,
                          screening_type,
                          hessian_warm_starts,

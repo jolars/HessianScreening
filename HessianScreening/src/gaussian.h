@@ -32,7 +32,7 @@ public:
 
   double dual() { return dot(residual, y) - 0.5 * std::pow(norm(residual), 2); }
 
-  double scaledDual(const double lambda, const double dual_scale)
+  double scaledDual(const double lambda)
   {
     if (dual_scale == 0) {
       return 0;

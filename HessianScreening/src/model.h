@@ -22,6 +22,8 @@ public:
   const uword p;
   const bool standardize;
 
+  double dual_scale{ 0 };
+
   Model(vec& y,
         vec& beta,
         vec& residual,
@@ -48,7 +50,7 @@ public:
 
   virtual double dual() = 0;
 
-  virtual double scaledDual(const double lambda, const double dual_scale) = 0;
+  virtual double scaledDual(const double lambda) = 0;
 
   virtual double deviance() = 0;
 
@@ -188,7 +190,6 @@ public:
     const double tol_infeas,
     const uword verbosity)
   {
-    const uword n = X.n_rows;
     const uword p = X.n_cols;
 
     if (screening_type == "gap_safe") {
@@ -224,10 +225,10 @@ public:
           }
           updateCorrelation(X, screened_set);
 
-          double dual_scale = std::max(lambda, max(abs(c)));
+          dual_scale = std::max(lambda, max(abs(c)));
 
           primal_value = primal(lambda, screened_set);
-          dual_value = scaledDual(lambda, dual_scale);
+          dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value + datum::eps;
 
           double r_screen{ 0 };
