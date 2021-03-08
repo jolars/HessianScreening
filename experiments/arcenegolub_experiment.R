@@ -1,0 +1,55 @@
+#rm(list = ls())
+#graphics.off()
+library(HessianScreening)
+
+d <- readRDS(file.path("data", paste0("golub", ".rds")))
+d <- readRDS(file.path("data", paste0("arcene", ".rds")))
+X <- d$X
+y <- d$y
+family <- "gaussian"
+screening_type <- "hessian"
+fit <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "hessian",
+    hessian_warm_starts = TRUE,
+    approx_hessian = TRUE,
+    gamma = 0.01,
+    # verify_hessian = TRUE,
+    verbosity = 0
+)
+fit.w <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "working",
+    # verbosity = 0
+)
+cat("***************\n")
+cat("hessian:\n")
+cat("full = ", fit$full_time, "\n")
+cat("cd_time = ", sum(fit$cd_time), "\n")
+cat("corr_time = ", sum(fit$corr_time), "\n")
+cat("hess_time = ", sum(fit$hess_time), "\n")
+cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
+cat("***************\n")
+cat("working:\n")
+cat("full = ", fit.w$full_time, "\n")
+cat("cd_time = ", sum(fit.w$cd_time), "\n")
+cat("corr_time = ", sum(fit.w$corr_time), "\n")
+
+plot(fit$active, type = "l", lty = 2, ylim = c(0, max(c(fit$active, fit$screened))))
+lines(fit$screened)
+
+plot(fit$cd_time, type = "l")
+lines(fit.w$cd_time, col = "red")
+
+#
+plot(fit$passes, type = "l", ylim = c(0, max(c(fit$passes, fit.w$passes))))
+lines(fit.w$passes, col = "red")
+
+plot(fit$dev, type = "l", lwd = 2)
+lines(fit.w$dev, lwd = 1, col = "red")
+
+plot(fit$violations)

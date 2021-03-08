@@ -20,7 +20,6 @@ updateHessian(mat& H,
               const bool reset_hessian)
 {
   const uword n = X.n_rows;
-  const uword p = X.n_cols;
 
   uvec deactivate = setDiff(active_prev_set, active_set);
   uvec activate = setDiff(active_set, active_prev_set);
@@ -41,17 +40,19 @@ updateHessian(mat& H,
       }
     }
 
-    uvec keep(keep_std);
-    uvec drop(drop_std);
+    const uvec keep = conv_to<uvec>::from(keep_std);
+    const uvec drop = conv_to<uvec>::from(drop_std);
 
-    mat Hinv_kd = Hinv(keep, drop);
-    mat Hinv_kk = Hinv(keep, keep);
-    mat Hinv_dd = Hinv(drop, drop);
+    const mat Hinv_kd = Hinv(keep, drop);
+    const mat Hinv_kk = Hinv(keep, keep);
+    const mat Hinv_dd = Hinv(drop, drop);
 
-    Hinv = symmatu(Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t())));
-    H = symmatu(H(keep, keep));
+    Hinv = Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t()));
 
-    active_prev_set = intersect(active_prev_set, active_set);
+    H.shed_cols(drop);
+    H.shed_rows(drop);
+
+    active_prev_set = setIntersect(active_prev_set, active_set);
   }
 
   if (!activate.is_empty()) {
@@ -61,13 +62,12 @@ updateHessian(mat& H,
     }
 
     mat D = model->hessian(X, activate);
-    mat B = model->hessianUpperRight(X, active_prev_set, activate);
-
-    mat S = D - B.t() * Hinv * B;
+    const mat B = model->hessianUpperRight(X, active_prev_set, activate);
+    const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;
     mat Q;
-    eig_sym(l, Q, symmatu(S));
+    eig_sym(l, Q, S);
 
     if (l.min() < 1e-4 * n) {
       D.diag() += 1e-4 * n;
@@ -77,13 +77,16 @@ updateHessian(mat& H,
     mat Sinv = Q * diagmat(1.0 / l) * Q.t();
     mat Hinv_B_Sinv = Hinv * B * Sinv;
 
-    H = symmatu(join_vert(join_horiz(H, B), join_horiz(B.t(), D)));
+    const uword H_n = H.n_rows;
+    const uword H_p = H.n_cols;
 
-    uword n_old = active_prev_set.n_elem;
+    H.resize(H.n_rows + D.n_rows, H.n_cols + D.n_cols);
+    H.submat(0, H_n, size(B)) = B;
+    H.submat(H_n, H_p, size(D)) = D;
+    H = symmatu(H);
 
     Hinv =
-      join_vert(join_horiz(Hinv_B_Sinv * B.t()  * Hinv + Hinv,
-                           -Hinv_B_Sinv),
+      join_vert(join_horiz(Hinv_B_Sinv * B.t() * Hinv + Hinv, -Hinv_B_Sinv),
                 join_horiz(-Hinv_B_Sinv.t(), Sinv));
     Hinv = symmatu(Hinv);
   }

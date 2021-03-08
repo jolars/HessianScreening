@@ -50,8 +50,8 @@ x <- x[, oo > 0]
 dy <- scan(tmp_labels, sep = " ")
 y <- (dy + 1) / 2
 
-x <- scale(x, TRUE, FALSE)
+X <- Matrix::Matrix(x)
 
-dorothea <- list(X = x, y = y)
+dorothea <- list(X = X, y = y)
 
 saveRDS(dorothea, "data/dorothea.rds")

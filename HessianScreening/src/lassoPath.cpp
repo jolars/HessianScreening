@@ -17,14 +17,12 @@
 using namespace arma;
 using namespace Rcpp;
 
-// [[Rcpp::depends(RcppArmadillo)]]
-// [[Rcpp::plugins(cpp17)]]
-
 template<typename T>
 Rcpp::List
 lassoPathImpl(T X,
               arma::vec y,
               const std::string family,
+              const bool X_is_sparse,
               const bool standardize,
               const std::string screening_type,
               const bool hessian_warm_starts,
@@ -41,7 +39,7 @@ lassoPathImpl(T X,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  bool hessian_type_screening =
+  const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
   vec beta(p, fill::zeros);
@@ -95,14 +93,14 @@ lassoPathImpl(T X,
   const double lambda_max = max(abs(c));
   const double lambda_min = lambda_max * lambda_min_ratio;
 
-  vec lambda_grid =
+  const vec lambda_grid =
     exp(linspace(log(lambda_max), log(lambda_min), path_length));
 
   std::vector<double> lambdas;
 
   double lambda = lambda_max;
 
-  double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
+  const double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
   double tmp = n < p ? n / path_length : p / path_length;
 
   uword n_target_nonzero = std::min(p, static_cast<uword>(std::ceil(tmp)));
@@ -116,11 +114,6 @@ lassoPathImpl(T X,
                                screening_type,
                                n_target_nonzero,
                                verbosity };
-
-  double dual_scale = lambda;
-  double primal_value = 0;
-  double dual_value = 0;
-  double duality_gap = datum::inf;
 
   std::vector<double> primals;
   std::vector<double> duals;
@@ -160,8 +153,6 @@ lassoPathImpl(T X,
   uvec inactive_set = find(active == false);
   uvec active_set_prev = active_set;
 
-  vec w(n);
-
   mat H = model->hessian(X, active_set);
   mat Hinv = inv(symmatl(H));
 
@@ -172,12 +163,9 @@ lassoPathImpl(T X,
 
   const double null_dev = model->deviance();
   double dev = null_dev;
-  double dev_ratio = 1.0 - dev / null_dev;
 
   bool check_kkt = screening_type != "gap_safe";
 
-  double cd_time = 0;
-  double corr_time = 0;
   std::vector<double> cd_times;
   std::vector<double> corr_times;
   std::vector<double> gradcorr_times;
@@ -202,10 +190,9 @@ lassoPathImpl(T X,
     uword n_passes_i_sum = 0;
     uword n_violations_i = 0;
     uword n_refits_i = 0;
-    double avg_screened = 0;
     bool first_run = true;
 
-    cd_time = 0;
+    double cd_time = 0;
 
     while (true) {
       if (verbosity >= 1) {
@@ -214,7 +201,12 @@ lassoPathImpl(T X,
 
       double t0 = timer.toc();
 
-      n_screened.emplace_back(sum(screened));
+      auto screening_type_choice =
+        first_run && screening_type == "gap_safe" ? "working" : screening_type;
+
+      if (first_run && screening_type != "gap_safe") {
+        n_screened.emplace_back(sum(screened));
+      }
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
@@ -223,7 +215,7 @@ lassoPathImpl(T X,
                    lambda,
                    lambda_max,
                    null_dev,
-                   screening_type,
+                   screening_type_choice,
                    maxit,
                    tol_decr,
                    tol_gap,
@@ -234,6 +226,13 @@ lassoPathImpl(T X,
 
       n_passes_i_sum += n_passes_i;
       uvec unscreened = screened == false;
+
+      if (screening_type_choice == "gap_safe") {
+        // For dynamic screening rules, `avg_screened` is the mean number of
+        // screened predictors. For other rules, this is constant between
+        // iterations.
+        n_screened.emplace_back(avg_screened);
+      }
 
       t0 = timer.toc();
 
@@ -278,6 +277,8 @@ lassoPathImpl(T X,
         n_refits_i++;
       }
 
+      first_run = false;
+
       Rcpp::checkUserInterrupt();
     }
 
@@ -287,7 +288,7 @@ lassoPathImpl(T X,
       s(find(active)) = sign(c(find(active)));
     }
 
-    active_set = join_vert(intersect(active_set_prev, find(active).eval()),
+    active_set = join_vert(setIntersect(active_set_prev, find(active).eval()),
                            setDiff(find(active).eval(), active_set_prev));
     inactive_set = find(active == false);
 
@@ -326,7 +327,7 @@ lassoPathImpl(T X,
     n_active.emplace_back(active_set.n_elem);
     n_new_active.emplace_back(new_active);
 
-    betas = join_horiz(betas, beta);
+    betas.insert_cols(betas.n_cols, beta);
 
     if (verbosity >= 1) {
       Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
@@ -404,9 +405,10 @@ lassoPathImpl(T X,
     double lambda_next = getNextLambda(lambda, inactive_set, new_active, i);
 
     strong = abs(c) >= 2 * lambda_next - lambda;
-    n_strong.emplace_back(accu(strong));
+    n_strong.emplace_back(sum(strong));
 
-    screened = screenPredictors(screening_type,
+    screened = screenPredictors(model,
+                                screening_type,
                                 strong,
                                 ever_active,
                                 residual,
@@ -414,13 +416,16 @@ lassoPathImpl(T X,
                                 c_grad,
                                 X,
                                 X_norms_squared,
+                                X_mean_scaled,
                                 y,
-                                dual_scale,
                                 lambda,
                                 lambda_next,
-                                gamma);
+                                gamma,
+                                X_is_sparse,
+                                standardize);
 
-    screened(uvec(duplicates)).fill(false); // make sure duplicates stay out
+    // make sure duplicates stay out
+    screened(conv_to<uvec>::from(duplicates)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
       beta(active_set) = beta(active_set) + (lambda - lambda_next) * Hinv_s;
@@ -437,22 +442,24 @@ lassoPathImpl(T X,
 
   full_time = timer.toc() - full_time;
 
-  return Rcpp::List::create(Named("beta") = wrap(betas),
-                            Named("lambda") = wrap(lambdas),
-                            Named("primals") = wrap(primals),
-                            Named("duals") = wrap(duals),
-                            Named("dev_ratio") = wrap(dev_ratios),
-                            Named("dev") = wrap(devs),
-                            Named("violations") = wrap(n_violations),
-                            Named("refits") = wrap(n_refits),
-                            Named("active") = wrap(n_active),
-                            Named("screened") = wrap(n_screened),
-                            Named("new_active") = wrap(n_new_active),
-                            Named("passes") = wrap(n_passes),
-                            Named("full_time") = wrap(full_time),
-                            Named("cd_time") = wrap(cd_times),
-                            Named("hess_time") = wrap(hess_times),
-                            Named("corr_time") = wrap(corr_times));
+  return List::create(Named("beta") = wrap(betas),
+                      Named("lambda") = wrap(lambdas),
+                      Named("primals") = wrap(primals),
+                      Named("duals") = wrap(duals),
+                      Named("dev_ratio") = wrap(dev_ratios),
+                      Named("dev") = wrap(devs),
+                      Named("violations") = wrap(n_violations),
+                      Named("refits") = wrap(n_refits),
+                      Named("active") = wrap(n_active),
+                      Named("screened") = wrap(n_screened),
+                      Named("strong") = wrap(n_strong),
+                      Named("new_active") = wrap(n_new_active),
+                      Named("passes") = wrap(n_passes),
+                      Named("full_time") = wrap(full_time),
+                      Named("cd_time") = wrap(cd_times),
+                      Named("hess_time") = wrap(hess_times),
+                      Named("corr_time") = wrap(corr_times),
+                      Named("gradcorr_time") = wrap(gradcorr_times));
 }
 
 //' Fit the Lasso Path
@@ -500,6 +507,7 @@ lassoPath(SEXP X,
       return lassoPathImpl(as<arma::sp_mat>(X),
                            y,
                            family,
+                           true,
                            standardize,
                            screening_type,
                            hessian_warm_starts,
@@ -517,6 +525,7 @@ lassoPath(SEXP X,
     return lassoPathImpl(as<arma::mat>(X),
                          y,
                          family,
+                         false,
                          standardize,
                          screening_type,
                          hessian_warm_starts,

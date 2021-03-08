@@ -1,41 +1,39 @@
-rm(list=ls())
+rm(list = ls())
 graphics.off()
 library(HessianScreening)
-library(tidyr)
-library(tibble)
 
 d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 X <- d$X
 y <- d$y
-family =  "gaussian"
-screening_type = "hessian"
+family <- "gaussian"
+screening_type <- "hessian"
 fit <- lassoPath(
-    X,
+    as.matrix(X),
     y,
     family = family,
     screening_type = screening_type,
-    hessian_warm_starts=F,
+    hessian_warm_starts = TRUE,
     verbosity = 0
 )
 fit.w <- lassoPath(
-    X,
+    as.matrix(X),
     y,
     family = family,
     screening_type = "working",
-    verbosity = 0
+    # verbosity = 0
 )
-cat('***************\n')
-cat('hessian:\n')
-cat('full = ',fit$full_time,'\n')
-cat('cd_time = ',sum(fit$cd_time),'\n')
-cat('corr_time = ',sum(fit$corr_time),'\n')
-cat('hess_time = ',sum(fit$hess_time),'\n')
-cat('***************\n')
-cat('working:\n')
-cat('full = ',fit.w$full_time,'\n')
-cat('cd_time = ',sum(fit.w$cd_time),'\n')
-cat('corr_time = ',sum(fit.w$corr_time),'\n')
+# cat("***************\n")
+cat("hessian:\n")
+cat("full = ", fit$full_time, "\n")
+cat("cd_time = ", sum(fit$cd_time), "\n")
+cat("corr_time = ", sum(fit$corr_time), "\n")
+cat("hess_time = ", sum(fit$hess_time), "\n")
+cat("***************\n")
+cat("working:\n")
+cat("full = ", fit.w$full_time, "\n")
+cat("cd_time = ", sum(fit.w$cd_time), "\n")
+cat("corr_time = ", sum(fit.w$corr_time), "\n")
 
 
-plot(fit$passes,type='l')
-lines(fit.w$passes,col='red')
+plot(fit$passes, type = "l", ylim = c(0, 50))
+lines(fit.w$passes, col = "red")

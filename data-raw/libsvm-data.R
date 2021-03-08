@@ -74,7 +74,6 @@ datafiles <- c(
   "sonar" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/sonar_scale",
   "splice-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/splice",
   "splice-test" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/splice.t",
-  "triazines-scaled-expanded4" = "https://dataverse.harvard.edu/api/access/datafile/:persistentId?persistentId=doi:10.7910/DVN/QJEUKR/L081UH",
   "YearPredictionMSD-test" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.t.bz2",
   "YearPredictionMSD-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.bz2"
   # "epsilon-test" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/epsilon_normalized.t.bz2",

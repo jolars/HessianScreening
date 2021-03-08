@@ -32,7 +32,7 @@ public:
 
   double dual() { return dot(residual, y) - 0.5 * std::pow(norm(residual), 2); }
 
-  double scaledDual(const double lambda, const double dual_scale)
+  double scaledDual(const double lambda)
   {
     if (dual_scale == 0) {
       return 0;
@@ -45,12 +45,9 @@ public:
 
   double deviance() { return std::pow(norm(residual), 2); }
 
-  virtual double hessianTerm(const mat& X, const uword j)
-  {
-    return X_norms_squared(j);
-  }
+  double hessianTerm(const mat& X, const uword j) { return X_norms_squared(j); }
 
-  virtual double hessianTerm(const sp_mat& X, const uword j)
+  double hessianTerm(const sp_mat& X, const uword j)
   {
     return X_norms_squared(j);
   }
@@ -92,7 +89,7 @@ public:
 
   mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
   {
-    mat H = conv_to<mat>::from(X.cols(ind_a) * X.cols(ind_b).t()).t();
+    mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
 
     if (standardize)
       H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
@@ -108,11 +105,10 @@ public:
                                    const uvec& inactive_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_restricted = intersect(inactive_set, restricted_set);
+    uvec inactive_restricted = setIntersect(inactive_set, restricted_set);
     uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
-    vec tmp = (X.cols(active_set) * Hinv_s);
-    c_grad(inactive_restricted) =
-      tmp.t() * X.cols(inactive_restricted);
+    vec tmp = X.cols(active_set) * Hinv_s;
+    c_grad(inactive_restricted) = tmp.t() * X.cols(inactive_restricted);
     c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
   }
@@ -131,14 +127,20 @@ public:
     if (standardize) {
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
-      c_grad(inactive_restricted) =
-        X.cols(inactive_restricted) * tmp.t();
-        c_grad(inactive_restricted) -=
-        X_mean_scaled(inactive_restricted) * sum(tmp);
 
+      double tmp_sum = sum(tmp);
+
+#pragma omp parallel for
+      for (auto&& j : inactive_restricted) {
+        c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
+      }
     } else {
-      c_grad(inactive_restricted) =
-        X.cols(inactive_restricted) * (X.cols(active_set) * Hinv_s).t();
+      vec tmp = X.cols(active_set) * Hinv_s;
+
+#pragma omp parallel for
+      for (auto&& j : inactive_restricted) {
+        c_grad(j) = dot(X.col(j), tmp);
+      }
     }
 
     c_grad(inactive_notrestricted).zeros();
@@ -146,4 +148,9 @@ public:
   }
 
   void standardizeY() { y -= mean(y); }
+
+  double safeScreeningRadius(const double duality_gap, const double lambda)
+  {
+    return std::sqrt(duality_gap) / lambda;
+  }
 };
