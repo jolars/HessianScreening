@@ -7,14 +7,13 @@ d <- readRDS(file.path("data", paste0("arcene", ".rds")))
 X <- d$X
 y <- d$y
 family <- "gaussian"
-screening_type <- "hessian"
 fit <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "hessian",
     hessian_warm_starts = TRUE,
-    approx_hessian = TRUE,
+    approx_hessian = FALSE,
     gamma = 0.01,
     # verify_hessian = TRUE,
     verbosity = 0
@@ -24,7 +23,7 @@ fit.w <- lassoPath(
     y,
     family = family,
     screening_type = "working",
-    # verbosity = 0
+     verbosity = 0
 )
 cat("***************\n")
 cat("hessian:\n")
@@ -39,6 +38,7 @@ cat("full = ", fit.w$full_time, "\n")
 cat("cd_time = ", sum(fit.w$cd_time), "\n")
 cat("corr_time = ", sum(fit.w$corr_time), "\n")
 
+par(mfrow=c(2,2))
 plot(fit$active, type = "l", lty = 2, ylim = c(0, max(c(fit$active, fit$screened))))
 lines(fit$screened)
 
@@ -49,7 +49,6 @@ lines(fit.w$cd_time, col = "red")
 plot(fit$passes, type = "l", ylim = c(0, max(c(fit$passes, fit.w$passes))))
 lines(fit.w$passes, col = "red")
 
-plot(fit$dev, type = "l", lwd = 2)
-lines(fit.w$dev, lwd = 1, col = "red")
+plot(fit$dev[1:length(fit.w$dev)]-fit.w$dev, type = "l", lwd = 2)
 
-plot(fit$violations)
+#plot(fit$violations)

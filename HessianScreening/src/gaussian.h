@@ -121,15 +121,14 @@ public:
                                    const uvec& inactive_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_restricted = intersect(inactive_set, restricted_set);
-    uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
+    uvec inactive_restricted =  restricted_set;
+    //uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
 
     if (standardize) {
       vec tmp =
         X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
 
       double tmp_sum = sum(tmp);
-
 #pragma omp parallel for
       for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
@@ -143,7 +142,7 @@ public:
       }
     }
 
-    c_grad(inactive_notrestricted).zeros();
+    //c_grad(inactive_notrestricted).zeros();
     c_grad(active_set) = s(active_set);
   }
 

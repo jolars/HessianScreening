@@ -84,11 +84,14 @@ updateHessian(mat& H,
     H.submat(0, H_n, size(B)) = B;
     H.submat(H_n, H_p, size(D)) = D;
     H = symmatu(H);
-
-    Hinv =
-      join_vert(join_horiz(Hinv_B_Sinv * B.t() * Hinv + Hinv, -Hinv_B_Sinv),
-                join_horiz(-Hinv_B_Sinv.t(), Sinv));
+    mat H_00(size(Hinv));
+    H_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
+    Hinv.set_size(H.n_rows, H.n_cols);
+    Hinv.submat(0, 0, size(H_00)) = H_00;
+    Hinv.submat(0, H_n, size(B)) = -Hinv_B_Sinv;
+    Hinv.submat(H_n, H_p, size(D))  = Sinv;
     Hinv = symmatu(Hinv);
+
   }
 
   if (reset_hessian) {
