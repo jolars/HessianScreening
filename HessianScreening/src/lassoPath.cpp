@@ -172,6 +172,7 @@ lassoPathImpl(T X,
   std::vector<double> corr_times;
   std::vector<double> gradcorr_times;
   std::vector<double> hess_times;
+  std::vector<double> duplicates_times;
 
   wall_clock timer;
   timer.tic();
@@ -195,6 +196,7 @@ lassoPathImpl(T X,
     bool first_run = true;
 
     double cd_time = 0;
+    double kkt_time = 0;
 
     while (true) {
       if (verbosity >= 1) {
@@ -257,7 +259,7 @@ lassoPathImpl(T X,
         }
       }
 
-      corr_times.emplace_back(timer.toc() - t0);
+      kkt_time += timer.toc() - t0;
 
       n_violations_i += sum(violations);
 
@@ -269,6 +271,7 @@ lassoPathImpl(T X,
         n_violations.emplace_back(n_violations_i);
         lambdas.emplace_back(lambda);
         cd_times.emplace_back(cd_time);
+        corr_times.emplace_back(kkt_time);
 
         break;
       } else {
@@ -296,6 +299,8 @@ lassoPathImpl(T X,
 
     // find duplicates among the just-activated predictors, drop them, and
     // adjust the coefficients accordingly
+    double t0 = timer.toc();
+
     auto [new_originals, new_duplicates] =
       findDuplicates(active_set, active_set_prev, X, model);
 
@@ -319,6 +324,8 @@ lassoPathImpl(T X,
       active_set = find(active);
       ever_active(new_duplicates).fill(false);
     }
+
+    duplicates_times.emplace_back(timer.toc() - t0);
 
     uword new_active = setDiff(active_set, active_set_prev).n_elem;
     ever_active(active_set).fill(true);
@@ -466,7 +473,8 @@ lassoPathImpl(T X,
                       Named("cd_time") = wrap(cd_times),
                       Named("hess_time") = wrap(hess_times),
                       Named("corr_time") = wrap(corr_times),
-                      Named("gradcorr_time") = wrap(gradcorr_times));
+                      Named("gradcorr_time") = wrap(gradcorr_times),
+                      Named("duplicates_time") = wrap(duplicates_times));
 }
 
 //' Fit the Lasso Path

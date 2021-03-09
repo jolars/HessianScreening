@@ -152,19 +152,35 @@ public:
 
   mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
   {
+    mat H(ind_a.n_elem, ind_b.n_elem);
+
     if (approx_hessian) {
-      mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+      if (ind_b.n_elem == 1) {
+        uword i = 0;
+        for (auto&& j : ind_a) {
+          H(i, 0) = dot(X.col(j), X.col(as_scalar(ind_b)));
+          i++;
+        }
+      } else {
+        H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+      }
 
       if (standardize)
         H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
 
-      H *= 0.25;
-
-      return H;
+      return 0.25 * H;
 
     } else {
-      mat H =
-        conv_to<mat>::from(X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b));
+      if (ind_b.n_elem == 1) {
+        uword i = 0;
+        sp_mat w_Xb = w % X.col(as_scalar(ind_b));
+        for (auto&& j : ind_a) {
+          H(i, 0) = dot(X.col(j), w_Xb);
+          i++;
+        }
+      } else {
+        H = conv_to<mat>::from(X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b));
+      }
 
       if (standardize) {
         mat XamDXb = X_mean_scaled(ind_a) * sum(diagmat(w) * X.cols(ind_b));
@@ -172,9 +188,9 @@ public:
         H += sum(w) * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t() -
              XbmDXa.t() - XamDXb;
       }
-
-      return H;
     }
+
+    return H;
   }
 
   void updateGradientOfCorrelation(vec& c_grad,
@@ -184,14 +200,14 @@ public:
                                    const uvec& active_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_strong = setDiff(restricted_set, active_set);
+    uvec inactive_restricted = setDiff(restricted_set, active_set);
 
     const vec tmp = w % (X.cols(active_set) * Hinv_s);
 
     c_grad.zeros();
 
 #pragma omp parallel for
-    for (auto&& j : inactive_strong) {
+    for (auto&& j : inactive_restricted) {
       c_grad(j) = dot(X.unsafe_col(j), tmp);
     }
 
@@ -205,14 +221,14 @@ public:
                                    const uvec& active_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_strong = setDiff(restricted_set, active_set);
+    uvec inactive_restricted = setDiff(restricted_set, active_set);
 
     const vec dsq = sqrt(w);
 
     c_grad.zeros();
 
     if (standardize) {
-      const mat Dsq_X = diagmat(dsq) * X.cols(inactive_strong);
+      const mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
       const mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
 
       const mat dsq_mu = dsq * X_mean_scaled(inactive_strong).t();

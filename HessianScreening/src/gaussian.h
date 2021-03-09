@@ -89,7 +89,17 @@ public:
 
   mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
   {
-    mat H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+    mat H(ind_a.n_elem, ind_b.n_elem);
+
+    if (ind_b.n_elem == 1) {
+      uword i = 0;
+      for (auto&& j : ind_a) {
+        H(i, 0) = dot(X.col(j), X.col(as_scalar(ind_b)));
+        i++;
+      }
+    } else {
+      H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+    }
 
     if (standardize)
       H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
@@ -104,13 +114,13 @@ public:
                                    const uvec& active_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_strong = setDiff(restricted_set, active_set);
+    uvec inactive_restricted = setDiff(restricted_set, active_set);
 
     const vec tmp = X.cols(active_set) * Hinv_s;
 
     c_grad.zeros();
 
-    c_grad(inactive_strong) = tmp.t() * X.cols(inactive_strong);
+    c_grad(inactive_restricted) = tmp.t() * X.cols(inactive_restricted);
     c_grad(active_set) = s(active_set);
   }
 
@@ -121,7 +131,7 @@ public:
                                    const uvec& active_set,
                                    const uvec& restricted_set)
   {
-    uvec inactive_strong = setDiff(restricted_set, active_set);
+    uvec inactive_restricted = setDiff(restricted_set, active_set);
 
     c_grad.zeros();
 
@@ -132,14 +142,14 @@ public:
       double tmp_sum = sum(tmp);
 
 #pragma omp parallel for
-      for (auto&& j : inactive_strong) {
+      for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
       }
     } else {
       vec tmp = X.cols(active_set) * Hinv_s;
 
 #pragma omp parallel for
-      for (auto&& j : inactive_strong) {
+      for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp);
       }
     }
