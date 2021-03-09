@@ -11,7 +11,9 @@ void
 updateHessian(mat& H,
               mat& Hinv,
               uvec& active_set,
-              uvec& active_prev_set,
+              uvec& active_set_prev,
+              uvec& active_perm,
+              uvec& active_perm_prev,
               const std::unique_ptr<Model>& model,
               const T& X,
               const bool verify_hessian,
@@ -21,8 +23,8 @@ updateHessian(mat& H,
 {
   const uword n = X.n_rows;
 
-  uvec deactivate = safeSetDiff(active_prev_set, active_set);
-  uvec activate = safeSetDiff(active_set, active_prev_set);
+  uvec deactivate = setDiff(active_set_prev, active_set);
+  uvec activate = setDiff(active_set, active_set_prev);
 
   if (!deactivate.is_empty() && !reset_hessian) {
     if (verbosity >= 1) {
@@ -32,16 +34,16 @@ updateHessian(mat& H,
 
     std::vector<uword> keep_std, drop_std;
 
-    for (uword i = 0; i < active_prev_set.n_elem; ++i) {
-      if (contains(active_set, active_prev_set(i))) {
+    for (uword i = 0; i < active_perm_prev.n_elem; ++i) {
+      if (contains(active_perm, active_perm_prev(i))) {
         keep_std.emplace_back(i);
       } else {
         drop_std.emplace_back(i);
       }
     }
 
-    const uvec keep = conv_to<uvec>::from(keep_std);
-    const uvec drop = conv_to<uvec>::from(drop_std);
+    const uvec keep(keep_std);
+    const uvec drop(drop_std);
 
     const mat Hinv_kd = Hinv(keep, drop);
     const mat Hinv_kk = Hinv(keep, keep);
@@ -52,7 +54,7 @@ updateHessian(mat& H,
     H.shed_cols(drop);
     H.shed_rows(drop);
 
-    active_prev_set = safeSetIntersect(active_prev_set, active_set);
+    active_perm_prev.shed_rows(drop);
   }
 
   if (!activate.is_empty()) {
@@ -62,7 +64,7 @@ updateHessian(mat& H,
     }
 
     mat D = model->hessian(X, activate);
-    const mat B = model->hessianUpperRight(X, active_prev_set, activate);
+    const mat B = model->hessianUpperRight(X, active_perm_prev, activate);
     const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;
@@ -84,10 +86,11 @@ updateHessian(mat& H,
     H.submat(0, H_n, size(B)) = B;
     H.submat(H_n, H_p, size(D)) = D;
     H = symmatu(H);
-    mat H_00(size(Hinv));
-    H_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
+
+    mat Hinv_00(size(Hinv));
+    Hinv_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
     Hinv.set_size(H.n_rows, H.n_cols);
-    Hinv.submat(0, 0, size(H_00)) = H_00;
+    Hinv.submat(0, 0, size(Hinv_00)) = Hinv_00;
     Hinv.submat(0, H_n, size(B)) = -Hinv_B_Sinv;
     Hinv.submat(H_n, H_p, size(D)) = Sinv;
     Hinv = symmatu(Hinv);

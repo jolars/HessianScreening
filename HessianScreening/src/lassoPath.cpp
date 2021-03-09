@@ -360,6 +360,8 @@ lassoPathImpl(T X,
       if (approx_hessian || family == "gaussian") {
         updateHessian(H,
                       Hinv,
+                      active_set,
+                      active_set_prev,
                       active_perm,
                       active_perm_prev,
                       model,
