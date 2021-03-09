@@ -10,16 +10,16 @@ using namespace arma;
 template<typename T>
 std::tuple<uvec, uvec>
 findDuplicates(uvec& active_set,
-               uvec& active_prev_set,
+               uvec& active_set_prev,
                const T& X,
                const std::unique_ptr<Model>& model)
 {
-  uvec activate = safeSetDiff(active_set, active_prev_set);
+  const uvec activate = setDiff(active_set, active_set_prev);
 
   std::vector<uword> originals, duplicates;
 
   if (!activate.is_empty()) {
-    mat D = model->hessian(X, activate);
+    const mat D = model->hessian(X, activate);
 
     for (uword i = 0; i < D.n_rows - 1; ++i) {
       if (!contains(duplicates, activate(i))) {

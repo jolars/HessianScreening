@@ -131,6 +131,7 @@ lassoPathImpl(T X,
   uvec active(p, fill::zeros);
   std::vector<uword> originals;
   std::vector<uword> duplicates;
+  uvec duplicated(p, fill::zeros);
 
   uvec first_active = find(abs(c) == lambda_max);
 
@@ -146,12 +147,15 @@ lassoPathImpl(T X,
   uvec ever_active = active;
   uvec screened = active;
   uvec strong = active;
+  uvec strong_set = find(strong);
 
   uvec violations(p, fill::zeros);
 
   uvec active_perm = find(active);
   uvec inactive_set = find(active == false);
   uvec active_perm_prev = active_perm;
+  uvec active_set = active_perm;
+  uvec active_set_prev = active_set;
 
   mat H = model->hessian(X, active_perm);
   mat Hinv = inv(symmatl(H));
@@ -225,7 +229,7 @@ lassoPathImpl(T X,
       cd_time += timer.toc() - t0;
 
       n_passes_i_sum += n_passes_i;
-      uvec unscreened = screened == false;
+      uvec unscreened_set = find(screened == false && duplicated == false);
 
       if (screening_type_choice == "gap_safe") {
         // For dynamic screening rules, `avg_screened` is the mean number of
@@ -239,20 +243,16 @@ lassoPathImpl(T X,
       if (check_kkt) {
         violations.fill(false);
         if (screening_type == "strong" || screening_type == "edpp") {
-          uvec check_set = find(unscreened);
-          model->updateCorrelation(X, check_set);
-          kktCheck(violations, screened, c, check_set, lambda);
+          model->updateCorrelation(X, unscreened_set);
+          kktCheck(violations, screened, c, unscreened_set, lambda);
 
         } else {
-          uvec check_set =
-            safeSetDiff(find(strong && unscreened).eval(), duplicates);
+          uvec check_set = setIntersect(unscreened_set, strong_set);
           model->updateCorrelation(X, check_set);
           kktCheck(violations, screened, c, check_set, lambda);
 
           if (!any(violations)) {
-            uvec not_strong_and_unscreened =
-              find((strong == false) && unscreened);
-            uvec check_set = safeSetDiff(not_strong_and_unscreened, duplicates);
+            uvec check_set = setDiff(unscreened_set, strong_set);
             model->updateCorrelation(X, check_set);
             kktCheck(violations, screened, c, check_set, lambda);
           }
@@ -284,13 +284,13 @@ lassoPathImpl(T X,
 
     if (i > 1) {
       active = abs(abs(c) - lambda) <= std::pow(datum::eps, 0.25) || beta != 0;
+      active_set = find(active);
       s.zeros();
-      s(find(active)) = sign(c(find(active)));
+      s(active_set) = sign(c(active_set));
     }
 
-    active_perm =
-      join_vert(safeSetIntersect(active_perm_prev, find(active).eval()),
-                safeSetDiff(find(active).eval(), active_perm_prev));
+    active_perm = join_vert(safeSetIntersect(active_perm_prev, active_set),
+                            setDiff(active_set, active_set_prev));
     inactive_set = find(active == false);
 
     dev = model->deviance();
@@ -300,7 +300,7 @@ lassoPathImpl(T X,
     // find duplicates among the just-activated predictors, drop them, and
     // adjust the coefficients accordingly
     auto [new_originals, new_duplicates] =
-      findDuplicates(active_perm, active_perm_prev, X, model);
+      findDuplicates(active_set, active_set_prev, X, model);
 
     if (!new_duplicates.empty()) {
       for (auto&& orig : new_originals) {
@@ -316,16 +316,18 @@ lassoPathImpl(T X,
       duplicates.insert(
         duplicates.end(), new_duplicates.begin(), new_duplicates.end());
 
+      duplicated(new_duplicates).fill(true);
       active(new_duplicates).fill(false);
       active_perm = safeSetDiff(active_perm, new_duplicates);
+      active_set = setDiff(active_set, sort(new_duplicates));
       inactive(new_duplicates).fill(true);
       inactive_set = find(inactive);
       ever_active(new_duplicates).fill(false);
     }
 
     uword new_active = sum(active && (active_prev == false));
-    ever_active(active_perm).fill(true);
-    n_active.emplace_back(active_perm.n_elem);
+    ever_active(active_set).fill(true);
+    n_active.emplace_back(active_set.n_elem);
     n_new_active.emplace_back(new_active);
 
     betas.insert_cols(betas.n_cols, beta);
@@ -406,6 +408,7 @@ lassoPathImpl(T X,
     double lambda_next = getNextLambda(lambda, inactive_set, new_active, i);
 
     strong = abs(c) >= 2 * lambda_next - lambda;
+    strong_set = find(strong);
     n_strong.emplace_back(sum(strong));
 
     screened = screenPredictors(model,
@@ -426,13 +429,14 @@ lassoPathImpl(T X,
                                 standardize);
 
     // make sure duplicates stay out
-    screened(conv_to<uvec>::from(duplicates)).fill(false);
+    screened(find(duplicated)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
       beta(active_perm) = beta(active_perm) + (lambda - lambda_next) * Hinv_s;
     }
 
     active_perm_prev = active_perm;
+    active_set_prev = active_set;
 
     lambda = lambda_next;
 
@@ -442,6 +446,8 @@ lassoPathImpl(T X,
   rescaleCoefficients(betas, X_mean, X_sd, y_center);
 
   full_time = timer.toc() - full_time;
+
+  umat duplicates_mat = join_horiz(uvec(originals), uvec(duplicates));
 
   return List::create(Named("beta") = wrap(betas),
                       Named("lambda") = wrap(lambdas),
@@ -455,6 +461,7 @@ lassoPathImpl(T X,
                       Named("screened") = wrap(n_screened),
                       Named("strong") = wrap(n_strong),
                       Named("new_active") = wrap(n_new_active),
+                      Named("duplicates") = wrap(duplicates_mat),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
                       Named("cd_time") = wrap(cd_times),
