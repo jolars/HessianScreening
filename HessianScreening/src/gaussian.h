@@ -101,51 +101,50 @@ public:
                                    const mat& X,
                                    const vec& Hinv_s,
                                    const vec& s,
-                                   const uvec& active,
-                                   const uvec& active_perm,
-                                   const uvec& restricted)
+                                   const uvec& active_set,
+                                   const uvec& restricted_set)
   {
-    const uvec inactive_restricted = find(active == false && restricted);
-    const vec tmp = X.cols(active_perm) * Hinv_s;
+    uvec inactive_strong = setDiff(restricted_set, active_set);
+
+    const vec tmp = X.cols(active_set) * Hinv_s;
 
     c_grad.zeros();
 
-    c_grad(inactive_restricted) = tmp.t() * X.cols(inactive_restricted);
-    c_grad(find(active)) = s(find(active));
+    c_grad(inactive_strong) = tmp.t() * X.cols(inactive_strong);
+    c_grad(active_set) = s(active_set);
   }
 
   void updateGradientOfCorrelation(vec& c_grad,
                                    const sp_mat& X,
                                    const vec& Hinv_s,
                                    const vec& s,
-                                   const uvec& active,
-                                   const uvec& active_perm,
-                                   const uvec& restricted)
+                                   const uvec& active_set,
+                                   const uvec& restricted_set)
   {
-    uvec inactive_restricted = find(active == false && restricted);
+    uvec inactive_strong = setDiff(restricted_set, active_set);
 
     c_grad.zeros();
 
     if (standardize) {
       vec tmp =
-        X.cols(active_perm) * Hinv_s - dot(X_mean_scaled(active_perm), Hinv_s);
+        X.cols(active_set) * Hinv_s - dot(X_mean_scaled(active_set), Hinv_s);
 
       double tmp_sum = sum(tmp);
 
 #pragma omp parallel for
-      for (auto&& j : inactive_restricted) {
+      for (auto&& j : inactive_strong) {
         c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
       }
     } else {
-      vec tmp = X.cols(active_perm) * Hinv_s;
+      vec tmp = X.cols(active_set) * Hinv_s;
 
 #pragma omp parallel for
-      for (auto&& j : inactive_restricted) {
+      for (auto&& j : inactive_strong) {
         c_grad(j) = dot(X.col(j), tmp);
       }
     }
 
-    c_grad(find(active)) = s(find(active));
+    c_grad(active_set) = s(active_set);
   }
 
   void standardizeY() { y -= mean(y); }

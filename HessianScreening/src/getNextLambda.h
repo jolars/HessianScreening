@@ -35,13 +35,15 @@ struct GetNextLambda
     , verbosity{ verbosity } {};
 
   double operator()(const double lambda,
-                    const uvec& inactive_set,
+                    const uvec& active,
                     const uword n_new_active,
                     const uword step_number)
   {
     if (screening_type != "hessian_adaptive") {
       return lambda_grid(step_number);
     }
+
+    uvec inactive_set = find(active == false);
 
     if (inactive_set.is_empty()) {
       return lambda_min;

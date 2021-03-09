@@ -131,17 +131,15 @@ public:
                                            const mat& X,
                                            const vec& Hinv_s,
                                            const vec& s,
-                                           const uvec& active,
-                                           const uvec& active_perm,
-                                           const uvec& restricted) = 0;
+                                           const uvec& active_set,
+                                           const uvec& restricted_set) = 0;
 
   virtual void updateGradientOfCorrelation(vec& c_grad,
                                            const sp_mat& X,
                                            const vec& Hinv_s,
                                            const vec& s,
-                                           const uvec& active,
-                                           const uvec& active_perm,
-                                           const uvec& restricted) = 0;
+                                           const uvec& active_set,
+                                           const uvec& restricted_set) = 0;
 
   virtual void standardizeY() = 0;
 

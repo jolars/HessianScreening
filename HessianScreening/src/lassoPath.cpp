@@ -142,7 +142,6 @@ lassoPathImpl(T X,
 
   active(first_active(0)) = true;
 
-  uvec inactive = active == false;
   uvec active_prev = active;
   uvec ever_active = active;
   uvec screened = active;
@@ -152,7 +151,6 @@ lassoPathImpl(T X,
   uvec violations(p, fill::zeros);
 
   uvec active_perm = find(active);
-  uvec inactive_set = find(active == false);
   uvec active_perm_prev = active_perm;
   uvec active_set = active_perm;
   uvec active_set_prev = active_set;
@@ -291,7 +289,6 @@ lassoPathImpl(T X,
 
     active_perm = join_vert(safeSetIntersect(active_perm_prev, active_set),
                             setDiff(active_set, active_set_prev));
-    inactive_set = find(active == false);
 
     dev = model->deviance();
     devs.emplace_back(dev);
@@ -319,13 +316,11 @@ lassoPathImpl(T X,
       duplicated(new_duplicates).fill(true);
       active(new_duplicates).fill(false);
       active_perm = safeSetDiff(active_perm, new_duplicates);
-      active_set = setDiff(active_set, sort(new_duplicates));
-      inactive(new_duplicates).fill(true);
-      inactive_set = find(inactive);
+      active_set = find(active);
       ever_active(new_duplicates).fill(false);
     }
 
-    uword new_active = sum(active && (active_prev == false));
+    uword new_active = setDiff(active_set, active_set_prev).n_elem;
     ever_active(active_set).fill(true);
     n_active.emplace_back(active_set.n_elem);
     n_new_active.emplace_back(new_active);
@@ -333,14 +328,14 @@ lassoPathImpl(T X,
     betas.insert_cols(betas.n_cols, beta);
 
     if (verbosity >= 1) {
-      Rprintf("  active: %i, new active: %i\n", active_perm.n_elem, new_active);
+      Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
     }
 
     bool stop_path = checkStoppingConditions(i,
                                              n,
                                              p,
                                              path_length,
-                                             active_perm.n_elem,
+                                             active_set.n_elem,
                                              lambda,
                                              lambda_min,
                                              dev,
@@ -370,11 +365,14 @@ lassoPathImpl(T X,
                       approx_hessian,
                       verbosity,
                       reset_hessian);
+
+        Hinv_s = Hinv * s(active_perm);
+        Hinv_s = Hinv_s(sort_index(active_perm)); // reset permutation
       } else {
         // for logistic regression and no approxiation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
-        H = model->hessian(X, active_perm);
+        H = model->hessian(X, active_set);
 
         vec eigval;
         mat eigvec;
@@ -387,11 +385,10 @@ lassoPathImpl(T X,
         }
 
         Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
+        Hinv_s = Hinv * s(active_set);
       }
 
       hess_times.emplace_back(timer.toc() - t0);
-
-      Hinv_s = Hinv * s(active_perm);
 
       // for hessian_adaptive we need to use all predictors, but this is not the
       // case for the standard hessian method
@@ -402,12 +399,12 @@ lassoPathImpl(T X,
       t0 = timer.toc();
 
       model->updateGradientOfCorrelation(
-        c_grad, X, Hinv_s, s, active, active_perm, restricted);
+        c_grad, X, Hinv_s, s, active_set, find(restricted));
 
       gradcorr_times.emplace_back(timer.toc() - t0);
     }
 
-    double lambda_next = getNextLambda(lambda, inactive_set, new_active, i);
+    double lambda_next = getNextLambda(lambda, active, new_active, i);
 
     strong = abs(c) >= 2 * lambda_next - lambda;
     strong_set = find(strong);
@@ -434,7 +431,7 @@ lassoPathImpl(T X,
     screened(find(duplicated)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
-      beta(active_perm) = beta(active_perm) + (lambda - lambda_next) * Hinv_s;
+      beta(active_set) = beta(active_set) + (lambda - lambda_next) * Hinv_s;
     }
 
     active_perm_prev = active_perm;
