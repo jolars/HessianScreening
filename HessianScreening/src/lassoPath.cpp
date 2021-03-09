@@ -149,17 +149,17 @@ lassoPathImpl(T X,
 
   uvec violations(p, fill::zeros);
 
-  uvec active_set = find(active);
+  uvec active_perm = find(active);
   uvec inactive_set = find(active == false);
-  uvec active_set_prev = active_set;
+  uvec active_perm_prev = active_perm;
 
-  mat H = model->hessian(X, active_set);
+  mat H = model->hessian(X, active_perm);
   mat Hinv = inv(symmatl(H));
 
   vec s(p, fill::zeros);
-  s(active_set) = sign(c(active_set));
+  s(active_perm) = sign(c(active_perm));
 
-  vec Hinv_s = Hinv * s(active_set);
+  vec Hinv_s = Hinv * s(active_perm);
 
   const double null_dev = model->deviance();
   double dev = null_dev;
@@ -288,8 +288,8 @@ lassoPathImpl(T X,
       s(find(active)) = sign(c(find(active)));
     }
 
-    active_set = join_vert(setIntersect(active_set_prev, find(active).eval()),
-                           setDiff(find(active).eval(), active_set_prev));
+    active_perm = join_vert(setIntersect(active_perm_prev, find(active).eval()),
+                            setDiff(find(active).eval(), active_perm_prev));
     inactive_set = find(active == false);
 
     dev = model->deviance();
@@ -299,7 +299,7 @@ lassoPathImpl(T X,
     // find duplicates among the just-activated predictors, drop them, and
     // adjust the coefficients accordingly
     auto [new_originals, new_duplicates] =
-      findDuplicates(active_set, active_set_prev, X, model);
+      findDuplicates(active_perm, active_perm_prev, X, model);
 
     if (!new_duplicates.empty()) {
       for (auto&& orig : new_originals) {
@@ -316,28 +316,28 @@ lassoPathImpl(T X,
         duplicates.end(), new_duplicates.begin(), new_duplicates.end());
 
       active(new_duplicates).fill(false);
-      active_set = setDiff(active_set, new_duplicates);
+      active_perm = setDiff(active_perm, new_duplicates);
       inactive(new_duplicates).fill(true);
       inactive_set = find(inactive);
       ever_active(new_duplicates).fill(false);
     }
 
-    uword new_active = setDiff(active_set, active_set_prev).n_elem;
-    ever_active(active_set).fill(true);
-    n_active.emplace_back(active_set.n_elem);
+    uword new_active = setDiff(active_perm, active_perm_prev).n_elem;
+    ever_active(active_perm).fill(true);
+    n_active.emplace_back(active_perm.n_elem);
     n_new_active.emplace_back(new_active);
 
     betas.insert_cols(betas.n_cols, beta);
 
     if (verbosity >= 1) {
-      Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
+      Rprintf("  active: %i, new active: %i\n", active_perm.n_elem, new_active);
     }
 
     bool stop_path = checkStoppingConditions(i,
                                              n,
                                              p,
                                              path_length,
-                                             active_set.n_elem,
+                                             active_perm.n_elem,
                                              lambda,
                                              lambda_min,
                                              dev,
@@ -357,8 +357,8 @@ lassoPathImpl(T X,
       if (approx_hessian || family == "gaussian") {
         updateHessian(H,
                       Hinv,
-                      active_set,
-                      active_set_prev,
+                      active_perm,
+                      active_perm_prev,
                       model,
                       X,
                       verify_hessian,
@@ -369,7 +369,7 @@ lassoPathImpl(T X,
         // for logistic regression and no approxiation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
-        H = model->hessian(X, active_set);
+        H = model->hessian(X, active_perm);
 
         vec eigval;
         mat eigvec;
@@ -386,18 +386,18 @@ lassoPathImpl(T X,
 
       hess_times.emplace_back(timer.toc() - t0);
 
-      Hinv_s = Hinv * s(active_set);
+      Hinv_s = Hinv * s(active_perm);
 
       // for hessian_adaptive we need to use all predictors, but this is not the
       // case for the standard hessian method
-      uvec restricted_set = screening_type == "hessian"
-                              ? find(abs(c) >= 2 * lambda_grid(i) - lambda)
-                              : find(abs(c) >= 2 * lambda_min - lambda);
+      uvec restricted = screening_type == "hessian"
+                          ? abs(c) >= 2 * lambda_grid(i) - lambda
+                          : abs(c) >= 2 * lambda_min - lambda;
 
       t0 = timer.toc();
 
       model->updateGradientOfCorrelation(
-        c_grad, X, Hinv_s, s, active_set, inactive_set, restricted_set);
+        c_grad, X, Hinv_s, s, active, active_perm, restricted);
 
       gradcorr_times.emplace_back(timer.toc() - t0);
     }
@@ -428,10 +428,10 @@ lassoPathImpl(T X,
     screened(conv_to<uvec>::from(duplicates)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
-      beta(active_set) = beta(active_set) + (lambda - lambda_next) * Hinv_s;
+      beta(active_perm) = beta(active_perm) + (lambda - lambda_next) * Hinv_s;
     }
 
-    active_set_prev = active_set;
+    active_perm_prev = active_perm;
 
     lambda = lambda_next;
 

@@ -181,21 +181,23 @@ public:
                                    const mat& X,
                                    const vec& Hinv_s,
                                    const vec& s,
-                                   const uvec& active_set,
-                                   const uvec& inactive_set,
-                                   const uvec& restricted_set)
+                                   const uvec& active,
+                                   const uvec& active_perm,
+                                   const uvec& restricted)
   {
-    uvec inactive_restricted = setIntersect(inactive_set, restricted_set);
-    uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
+    const uvec inactive_restricted = find((active == false) && restricted);
 
-    const vec tmp = w % (X.cols(active_set) * Hinv_s);
+    const vec tmp = w % (X.cols(active_perm) * Hinv_s);
+
+    c_grad.zeros();
 
 #pragma omp parallel for
     for (auto&& j : inactive_restricted) {
       c_grad(j) = dot(X.unsafe_col(j), tmp);
     }
 
-    c_grad(inactive_notrestricted).zeros();
+    uvec active_set = find(active);
+
     c_grad(active_set) = s(active_set);
   }
 
@@ -203,31 +205,33 @@ public:
                                    const sp_mat& X,
                                    const vec& Hinv_s,
                                    const vec& s,
-                                   const uvec& active_set,
-                                   const uvec& inactive_set,
-                                   const uvec& restricted_set)
+                                   const uvec& active,
+                                   const uvec& active_perm,
+                                   const uvec& restricted)
   {
-    uvec inactive_restricted = intersect(inactive_set, restricted_set);
-    uvec inactive_notrestricted = setDiff(inactive_set, restricted_set);
+    const uvec inactive_restricted = find(active == false && restricted);
 
-    vec dsq = sqrt(w);
-    mat D = diagmat(w);
-    mat Dsq = diagmat(dsq);
+    const vec dsq = sqrt(w);
+    const mat D = diagmat(w);
+    const mat Dsq = diagmat(dsq);
+
+    c_grad.zeros();
 
     if (standardize) {
-      mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
-      mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
+      const mat Dsq_X = Dsq * X.cols(inactive_restricted);
+      const mat Dsq_Xa = Dsq * X.cols(active_perm);
 
-      mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
-      mat dsq_mua_Hinv_s = dsq * (X_mean_scaled(active_set).t() * Hinv_s);
-      mat Dsq_Xa_Hinv_s = Dsq_Xa * Hinv_s;
+      const mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
+      const mat dsq_mua_Hinv_s =
+        dsq * (X_mean_scaled(active_perm).t() * Hinv_s);
+      const mat Dsq_Xa_Hinv_s = Dsq_Xa * Hinv_s;
 
       c_grad(inactive_restricted) =
         Dsq_X.t() * (Dsq_Xa_Hinv_s - dsq_mua_Hinv_s) +
         dsq_mu.t() * (dsq_mua_Hinv_s - Dsq_Xa_Hinv_s);
 
     } else {
-      const vec tmp = w % (X.cols(active_set) * Hinv_s);
+      const vec tmp = w % (X.cols(active_perm) * Hinv_s);
 
 #pragma omp parallel for
       for (auto&& j : inactive_restricted) {
@@ -235,7 +239,8 @@ public:
       }
     }
 
-    c_grad(inactive_notrestricted).zeros();
+    const uvec active_set = find(active);
+
     c_grad(active_set) = s(active_set);
   }
 
