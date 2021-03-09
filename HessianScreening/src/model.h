@@ -279,6 +279,8 @@ public:
           dual_value = dual();
         }
 
+        primal_value_change = primal_value - primal_value_old;
+
         if (verbosity >= 2) {
           Rprintf("      primal: %f, dual: %f, primal_change: %f\n",
                   primal_value,
