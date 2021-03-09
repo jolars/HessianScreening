@@ -322,7 +322,7 @@ lassoPathImpl(T X,
       ever_active(new_duplicates).fill(false);
     }
 
-    uword new_active = setDiff(active_perm, active_perm_prev).n_elem;
+    uword new_active = sum(active && (active_prev == false));
     ever_active(active_perm).fill(true);
     n_active.emplace_back(active_perm.n_elem);
     n_new_active.emplace_back(new_active);
