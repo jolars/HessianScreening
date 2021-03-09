@@ -245,14 +245,14 @@ lassoPathImpl(T X,
 
         } else {
           uvec check_set =
-            setDiff(find(strong && unscreened).eval(), duplicates);
+            safeSetDiff(find(strong && unscreened).eval(), duplicates);
           model->updateCorrelation(X, check_set);
           kktCheck(violations, screened, c, check_set, lambda);
 
           if (!any(violations)) {
             uvec not_strong_and_unscreened =
               find((strong == false) && unscreened);
-            uvec check_set = setDiff(not_strong_and_unscreened, duplicates);
+            uvec check_set = safeSetDiff(not_strong_and_unscreened, duplicates);
             model->updateCorrelation(X, check_set);
             kktCheck(violations, screened, c, check_set, lambda);
           }
@@ -288,8 +288,9 @@ lassoPathImpl(T X,
       s(find(active)) = sign(c(find(active)));
     }
 
-    active_perm = join_vert(setIntersect(active_perm_prev, find(active).eval()),
-                            setDiff(find(active).eval(), active_perm_prev));
+    active_perm =
+      join_vert(safeSetIntersect(active_perm_prev, find(active).eval()),
+                safeSetDiff(find(active).eval(), active_perm_prev));
     inactive_set = find(active == false);
 
     dev = model->deviance();
@@ -316,7 +317,7 @@ lassoPathImpl(T X,
         duplicates.end(), new_duplicates.begin(), new_duplicates.end());
 
       active(new_duplicates).fill(false);
-      active_perm = setDiff(active_perm, new_duplicates);
+      active_perm = safeSetDiff(active_perm, new_duplicates);
       inactive(new_duplicates).fill(true);
       inactive_set = find(inactive);
       ever_active(new_duplicates).fill(false);

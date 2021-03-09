@@ -27,14 +27,11 @@ contains(const T& x, const S& what)
 inline uvec
 setUnion(const uvec& a, const uvec& b)
 {
-  std::vector<uword> out = conv_to<std::vector<uword>>::from(a);
+  std::vector<unsigned> out;
   out.reserve(a.n_elem + b.n_elem);
 
-  for (auto&& b_i : b) {
-    if (!contains(out, b_i)) {
-      out.emplace_back(b_i);
-    }
-  }
+  std::set_union(
+    a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(out));
 
   out.shrink_to_fit();
 
@@ -47,11 +44,8 @@ setDiff(const uvec& a, const uvec& b)
   std::vector<uword> out;
   out.reserve(a.n_elem);
 
-  for (auto&& a_i : a) {
-    if (!contains(b, a_i)) {
-      out.emplace_back(a_i);
-    }
-  }
+  std::set_difference(
+    a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(out));
 
   out.shrink_to_fit();
 
@@ -64,8 +58,41 @@ setIntersect(const uvec& a, const uvec& b)
   std::vector<uword> out;
   out.reserve(std::min(a.n_elem, b.n_elem));
 
+  std::set_intersection(
+    a.begin(), a.end(), b.begin(), b.end(), std::back_inserter(out));
+
+  out.shrink_to_fit();
+
+  return conv_to<uvec>::from(out);
+}
+
+// set intersection that retains permutation in `a`
+inline uvec
+safeSetIntersect(const uvec& a, const uvec& b)
+{
+  std::vector<uword> out;
+  out.reserve(std::min(a.n_elem, b.n_elem));
+
   for (auto&& a_i : a) {
     if (contains(b, a_i)) {
+      out.emplace_back(a_i);
+    }
+  }
+
+  out.shrink_to_fit();
+
+  return conv_to<uvec>::from(out);
+}
+
+// set difference that retains permutation in `a`
+inline uvec
+safeSetDiff(const uvec& a, const uvec& b)
+{
+  std::vector<uword> out;
+  out.reserve(a.n_elem);
+
+  for (auto&& a_i : a) {
+    if (!contains(b, a_i)) {
       out.emplace_back(a_i);
     }
   }

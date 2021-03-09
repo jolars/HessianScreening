@@ -14,7 +14,7 @@ findDuplicates(uvec& active_set,
                const T& X,
                const std::unique_ptr<Model>& model)
 {
-  uvec activate = setDiff(active_set, active_prev_set);
+  uvec activate = safeSetDiff(active_set, active_prev_set);
 
   std::vector<uword> originals, duplicates;
 

@@ -21,8 +21,8 @@ updateHessian(mat& H,
 {
   const uword n = X.n_rows;
 
-  uvec deactivate = setDiff(active_prev_set, active_set);
-  uvec activate = setDiff(active_set, active_prev_set);
+  uvec deactivate = safeSetDiff(active_prev_set, active_set);
+  uvec activate = safeSetDiff(active_set, active_prev_set);
 
   if (!deactivate.is_empty() && !reset_hessian) {
     if (verbosity >= 1) {
@@ -52,7 +52,7 @@ updateHessian(mat& H,
     H.shed_cols(drop);
     H.shed_rows(drop);
 
-    active_prev_set = setIntersect(active_prev_set, active_set);
+    active_prev_set = safeSetIntersect(active_prev_set, active_set);
   }
 
   if (!activate.is_empty()) {
@@ -89,9 +89,8 @@ updateHessian(mat& H,
     Hinv.set_size(H.n_rows, H.n_cols);
     Hinv.submat(0, 0, size(H_00)) = H_00;
     Hinv.submat(0, H_n, size(B)) = -Hinv_B_Sinv;
-    Hinv.submat(H_n, H_p, size(D))  = Sinv;
+    Hinv.submat(H_n, H_p, size(D)) = Sinv;
     Hinv = symmatu(Hinv);
-
   }
 
   if (reset_hessian) {
