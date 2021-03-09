@@ -231,18 +231,19 @@ public:
       const mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
       const mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
 
-      const mat dsq_mu = dsq * X_mean_scaled(inactive_strong).t();
+      const mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
       const mat dsq_mua_Hinv_s = dsq * (X_mean_scaled(active_set).t() * Hinv_s);
       const mat Dsq_Xa_Hinv_s = Dsq_Xa * Hinv_s;
 
-      c_grad(inactive_strong) = Dsq_X.t() * (Dsq_Xa_Hinv_s - dsq_mua_Hinv_s) +
-                                dsq_mu.t() * (dsq_mua_Hinv_s - Dsq_Xa_Hinv_s);
+      c_grad(inactive_restricted) =
+        Dsq_X.t() * (Dsq_Xa_Hinv_s - dsq_mua_Hinv_s) +
+        dsq_mu.t() * (dsq_mua_Hinv_s - Dsq_Xa_Hinv_s);
 
     } else {
       const vec tmp = w % (X.cols(active_set) * Hinv_s);
 
 #pragma omp parallel for
-      for (auto&& j : inactive_strong) {
+      for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp);
       }
     }
