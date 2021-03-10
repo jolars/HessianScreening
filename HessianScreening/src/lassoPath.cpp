@@ -229,7 +229,6 @@ lassoPathImpl(T X,
       cd_time += timer.toc() - t0;
 
       n_passes_i_sum += n_passes_i;
-      uvec unscreened_set = find(screened == false && duplicated == false);
 
       if (screening_type_choice == "gap_safe") {
         // For dynamic screening rules, `avg_screened` is the mean number of
@@ -241,7 +240,10 @@ lassoPathImpl(T X,
       t0 = timer.toc();
 
       if (check_kkt) {
+        uvec unscreened_set = find(screened == false && duplicated == false);
+
         violations.fill(false);
+
         if (screening_type == "strong" || screening_type == "edpp") {
           model->updateCorrelation(X, unscreened_set);
           kktCheck(violations, screened, c, unscreened_set, lambda);
