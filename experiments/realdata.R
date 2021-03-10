@@ -9,10 +9,11 @@ datasets <- c(
   "arcene",
   "abalone",
   "cadata",
-  "golub",
-  # "gisette-train",
-  "leukemia-train"
-  # "dorothea"
+  "gisette-train",
+  "leukemia-train",
+  "dorothea",
+  "rcv1-train",
+  "e2006-tfidf-train"
 )
 
 g <- expand_grid(
