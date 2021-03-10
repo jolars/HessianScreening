@@ -166,10 +166,10 @@ lassoPathImpl(T X,
   const double null_dev = model->deviance();
   double dev = null_dev;
 
-  bool check_kkt = screening_type != "gap_safe";
+  bool check_kkt = screening_type != "gap_safe" && screening_type != "edpp";
 
   std::vector<double> cd_times;
-  std::vector<double> corr_times;
+  std::vector<double> kkt_times;
   std::vector<double> gradcorr_times;
   std::vector<double> hess_times;
   std::vector<double> duplicates_times;
@@ -244,7 +244,7 @@ lassoPathImpl(T X,
 
         violations.fill(false);
 
-        if (screening_type == "strong" || screening_type == "edpp") {
+        if (screening_type == "strong") {
           model->updateCorrelation(X, unscreened_set);
           kktCheck(violations, screened, c, unscreened_set, lambda);
 
@@ -273,7 +273,7 @@ lassoPathImpl(T X,
         n_violations.emplace_back(n_violations_i);
         lambdas.emplace_back(lambda);
         cd_times.emplace_back(cd_time);
-        corr_times.emplace_back(kkt_time);
+        kkt_times.emplace_back(kkt_time);
 
         break;
       } else {
@@ -474,7 +474,7 @@ lassoPathImpl(T X,
                       Named("full_time") = wrap(full_time),
                       Named("cd_time") = wrap(cd_times),
                       Named("hess_time") = wrap(hess_times),
-                      Named("corr_time") = wrap(corr_times),
+                      Named("kkt_time") = wrap(kkt_times),
                       Named("gradcorr_time") = wrap(gradcorr_times),
                       Named("duplicates_time") = wrap(duplicates_times));
 }
