@@ -64,7 +64,7 @@ updateHessian(mat& H,
     }
 
     mat D = model->hessian(X, activate);
-    const mat B = model->hessianUpperRight(X, active_perm_prev, activate);
+    mat B = model->hessianUpperRight(X, active_perm_prev, activate);
     const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;
