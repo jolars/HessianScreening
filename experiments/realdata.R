@@ -74,4 +74,4 @@ for (i in seq_len(nrow(g))) {
   g$active[i] <- list(fit$active)
 }
 
-saveRDS(g, "results/realdata.R")
+saveRDS(g, "results/realdata.rds")
