@@ -15,7 +15,7 @@ from: r-base:4.0.4
 
     Rscript -e 'renv::restore()'
 
-    R CMD INSTALL HessianScreening
+    R CMD INSTALL --preclean --no-multiarch HessianScreening
 
     chmod -R a+rX /Project
 
