@@ -254,15 +254,6 @@ public:
           if (beta_j_old != beta(j)) {
             adjustResidual(X, j, beta(j) - beta_j_old);
           }
-          if(j == 23189){
-            Rcpp::Rcout << "j = " << j << ":\n";
-            Rcpp::Rcout << "beta = " << beta(j) << " old = " << beta_j_old << "\n";
-            Rcpp::Rcout << "lambda = " << lambda << "\n";
-            Rcpp::Rcout << "c(j) = " << c(j) << "\n";
-            Rcpp::Rcout << "hess_j = " << hess_j << "\n";
-            Rcpp::Rcout << " primal_diff = " <<  primal(lambda, screened_set) - primal_value_old2 << "\n";
-            primal_value_old2 =  primal(lambda, screened_set);
-          }
         }
 
         primal_value = primal(lambda, screened_set);
