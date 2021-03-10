@@ -6,12 +6,12 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
   "arcene",
-  # "abalone",
+  "abalone",
   "cadata",
   "golub",
-  "gisette-train",
+  # "gisette-train",
   "leukemia-train"
-  # "dorothea"
+  #"dorothea"
 )
 
 g <- expand_grid(
@@ -40,7 +40,11 @@ for (i in seq_len(nrow(g))) {
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
-  time <- system.time({
+  n_it <- 5
+
+  time <- double(n_it + 1)
+
+  for (k in seq_along(time)) {
     fit <- lassoPath(
       X,
       y,
@@ -48,15 +52,17 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       verbosity = 0
     )
-  })
+
+    time[k] <- fit$full_time
+  }
 
   g$n[i] <- nrow(X)
   g$p[i] <- ncol(X)
   g$family[i] <- family
-  g$time[i] <- time[3]
+  g$time[i] <- mean(time[-1]) # skip first trial
   g$density[i] <- Matrix::nnzero(X) / length(X)
   g$total_violations[i] <- sum(fit$violations)
-  g$avg_screened[i] <- mean(fit$active/fit$screened)
+  g$avg_screened[i] <- mean(fit$active / fit$screened)
   g$violations[i] <- list(fit$violations)
   g$screened[i] <- list(fit$screened)
   g$active[i] <- list(fit$active)
