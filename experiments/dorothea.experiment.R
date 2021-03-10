@@ -5,14 +5,14 @@ library(HessianScreening)
 d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 X <- d$X
 y <- d$y
-family <- "gaussian"
+family <- "binomial"
 screening_type <- "hessian"
 fit.w <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "working",
-    # verbosity = 0
+    verbosity = 0
 )
 fit <- lassoPath(
     X,
@@ -27,14 +27,14 @@ fit <- lassoPath(
 cat("hessian:\n")
 cat("full = ", fit$full_time, "\n")
 cat("cd_time = ", sum(fit$cd_time), "\n")
-cat("corr_time = ", sum(fit$corr_time), "\n")
+cat("kkt_time = ", sum(fit$kkt_time), "\n")
 cat("hess_time = ", sum(fit$hess_time), "\n")
 cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
 cat("***************\n")
 cat("working:\n")
 cat("full = ", fit.w$full_time, "\n")
 cat("cd_time = ", sum(fit.w$cd_time), "\n")
-cat("corr_time = ", sum(fit.w$corr_time), "\n")
+cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
 
 
 plot(fit$passes, type = "l", ylim = c(0, 50))
