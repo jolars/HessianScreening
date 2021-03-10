@@ -13,8 +13,8 @@ from: rocker/r-ver:4.0.4
 %post
     # need to switch from pthreads to openmp to get right performance
     apt-get update
-    apt-get install -y libopenblas-openmp-dev
-    apt-get remove -y libopenblas-pthread-dev
+    apt-get install -y libopenblas-openmp-dev libopenblas0-openmp
+    apt-get remove -y libopenblas-pthread-dev libopenblas0-pthread
 
     cd Project
 
