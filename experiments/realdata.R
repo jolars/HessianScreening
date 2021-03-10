@@ -1,6 +1,7 @@
 library(HessianScreening)
 library(tidyr)
 library(tibble)
+library(Matrix)
 
 printf <- function(...) invisible(cat(sprintf(...)))
 
@@ -11,7 +12,7 @@ datasets <- c(
   "golub",
   # "gisette-train",
   "leukemia-train"
-  #"dorothea"
+  # "dorothea"
 )
 
 g <- expand_grid(
@@ -36,6 +37,11 @@ for (i in seq_len(nrow(g))) {
   X <- d$X
   y <- d$y
 
+  n <- nrow(X)
+  p <- ncol(X)
+
+  dens <- Matrix::nnzero(X) / (n*p)
+
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
@@ -56,14 +62,16 @@ for (i in seq_len(nrow(g))) {
     time[k] <- fit$full_time
   }
 
-  g$n[i] <- nrow(X)
-  g$p[i] <- ncol(X)
+  g$n[i] <- n
+  g$p[i] <- p
   g$family[i] <- family
   g$time[i] <- mean(time[-1]) # skip first trial
-  g$density[i] <- Matrix::nnzero(X) / length(X)
+  g$density[i] <- dens
   g$total_violations[i] <- sum(fit$violations)
   g$avg_screened[i] <- mean(fit$active / fit$screened)
   g$violations[i] <- list(fit$violations)
   g$screened[i] <- list(fit$screened)
   g$active[i] <- list(fit$active)
 }
+
+saveRDS(g, "results/realdata.R")

@@ -5,9 +5,9 @@
 #SBATCH --mail-user=johan.larsson@stat.lu.se
 #SBATCH --mail-type=ALL
 
-#SBATCH -J performance-realdata
-#SBATCH -o performance-realdata_%j.out
-#SBATCH -e performance-realdata_%j.err
+#SBATCH -J realdata
+#SBATCH -o realdata_%j.out
+#SBATCH -e realdata_%j.err
 
 #SBATCH -N 1
 #SBATCH --tasks-per-node=20
@@ -19,4 +19,4 @@ module purge
 export SINGULARITY_BIND="results:/Project/results"
 
 # run the test
-singularity run container.sif performance-realdata.R
+singularity run container.sif realdata.R
