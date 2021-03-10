@@ -79,20 +79,20 @@ updateHessian(mat& H,
     mat Sinv = Q * diagmat(1.0 / l) * Q.t();
     mat Hinv_B_Sinv = Hinv * B * Sinv;
 
-    const uword H_n = H.n_rows;
-    const uword H_p = H.n_cols;
+    const uword N = H.n_cols;
+    const uword M = D.n_cols;
 
-    H.resize(H.n_rows + D.n_rows, H.n_cols + D.n_cols);
-    H.submat(0, H_n, size(B)) = B;
-    H.submat(H_n, H_p, size(D)) = D;
+    mat Hinv_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
+
+    H.resize(N + M, N + M);
+    H.submat(0, N, size(N, M)) = std::move(B);
+    H.submat(N, N, size(M, M)) = std::move(D);
     H = symmatu(H);
 
-    mat Hinv_00(size(Hinv));
-    Hinv_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
-    Hinv.set_size(H.n_rows, H.n_cols);
-    Hinv.submat(0, 0, size(Hinv_00)) = Hinv_00;
-    Hinv.submat(0, H_n, size(B)) = -Hinv_B_Sinv;
-    Hinv.submat(H_n, H_p, size(D)) = Sinv;
+    Hinv.set_size(N + M, N + M);
+    Hinv.submat(0, 0, size(N, N)) = std::move(Hinv_00);
+    Hinv.submat(0, N, size(N, M)) = -Hinv_B_Sinv;
+    Hinv.submat(N, N, size(M, M)) = std::move(Sinv);
     Hinv = symmatu(Hinv);
   }
 
