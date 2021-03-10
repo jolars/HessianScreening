@@ -7,7 +7,6 @@ standardizeX(vec& X_mean, vec& X_sd, mat& X)
 {
   const uword p = X.n_cols;
 
-#pragma omp parallel for
   for (uword j = 0; j < p; j++) {
     X_mean(j) = mean(X.col(j));
     X.col(j) -= X_mean(j);
@@ -27,7 +26,6 @@ standardizeX(vec& X_mean, vec& X_sd, sp_mat& X)
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-#pragma omp parallel for
   for (uword j = 0; j < p; j++) {
     X_mean(j) = mean(X.col(j));
 

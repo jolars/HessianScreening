@@ -141,14 +141,12 @@ public:
 
       double tmp_sum = sum(tmp);
 
-#pragma omp parallel for
       for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp) - X_mean_scaled(j) * tmp_sum;
       }
     } else {
       vec tmp = X.cols(active_set) * Hinv_s;
 
-#pragma omp parallel for
       for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp);
       }

@@ -63,7 +63,7 @@ public:
 
   double hessianTerm(const mat& X, const uword j)
   {
-    return std::max(dot(square(X.col(j)), w), std::sqrt(datum::eps));
+    return std::max(dot(square(X.col(j)), w % residual), std::sqrt(datum::eps));
   }
 
   double hessianTerm(const sp_mat& X, const uword j)
@@ -206,7 +206,6 @@ public:
 
     c_grad.zeros();
 
-#pragma omp parallel for
     for (auto&& j : inactive_restricted) {
       c_grad(j) = dot(X.unsafe_col(j), tmp);
     }
@@ -242,7 +241,6 @@ public:
     } else {
       const vec tmp = w % (X.cols(active_set) * Hinv_s);
 
-#pragma omp parallel for
       for (auto&& j : inactive_restricted) {
         c_grad(j) = dot(X.col(j), tmp);
       }

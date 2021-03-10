@@ -54,7 +54,6 @@ screenPredictors(const std::unique_ptr<Model>& model,
 
     double center_sum = sum(center);
 
-#pragma omp parallel for
     for (uword j = 0; j < p; ++j) {
       XTcenter(j) -= dot(X.col(j), center);
 

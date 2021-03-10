@@ -95,7 +95,6 @@ public:
 
   void updateCorrelation(const mat& X, const uvec& ind)
   {
-#pragma omp parallel for
     for (auto&& j : ind) {
       c(j) = dot(X.unsafe_col(j), residual);
     }
@@ -103,7 +102,6 @@ public:
 
   void updateCorrelation(const sp_mat& X, const uvec& ind)
   {
-#pragma omp parallel for
     for (auto&& j : ind) {
       c(j) = dot(X.col(j), residual);
     }
