@@ -82,15 +82,13 @@ updateHessian(mat& H,
     const uword N = H.n_cols;
     const uword M = D.n_cols;
 
-    mat Hinv_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
-
     H.resize(N + M, N + M);
     H.submat(0, N, size(N, M)) = std::move(B);
     H.submat(N, N, size(M, M)) = std::move(D);
     H = symmatu(H);
 
-    Hinv.set_size(N + M, N + M);
-    Hinv.submat(0, 0, size(N, N)) = std::move(Hinv_00);
+    Hinv += Hinv_B_Sinv * B.t() * Hinv;
+    Hinv.resize(N + M, N + M);
     Hinv.submat(0, N, size(N, M)) = -Hinv_B_Sinv;
     Hinv.submat(N, N, size(M, M)) = std::move(Sinv);
     Hinv = symmatu(Hinv);
