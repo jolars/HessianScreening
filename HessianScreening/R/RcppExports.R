@@ -5,6 +5,14 @@ blockMatrixConstruction <- function(method = 0L, n = 9000L, m = 50L) {
     invisible(.Call(`_HessianScreening_blockMatrixConstruction`, method, n, m))
 }
 
+denseInnerProduct <- function(method = 0L, n = 100L, p = 1000L, m = 50L) {
+    invisible(.Call(`_HessianScreening_denseInnerProduct`, method, n, p, m))
+}
+
+sparseInnerProduct <- function(method = 0L, n = 100L, p = 1000L, m = 50L, density = 0.1, n_threads = 4L) {
+    invisible(.Call(`_HessianScreening_sparseInnerProduct`, method, n, p, m, density, n_threads))
+}
+
 #' Fit the Lasso Path
 #'
 #' @param X The predictor matrix

@@ -18,6 +18,34 @@ BEGIN_RCPP
     return R_NilValue;
 END_RCPP
 }
+// denseInnerProduct
+void denseInnerProduct(int method, unsigned n, unsigned p, unsigned m);
+RcppExport SEXP _HessianScreening_denseInnerProduct(SEXP methodSEXP, SEXP nSEXP, SEXP pSEXP, SEXP mSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type n(nSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type p(pSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type m(mSEXP);
+    denseInnerProduct(method, n, p, m);
+    return R_NilValue;
+END_RCPP
+}
+// sparseInnerProduct
+void sparseInnerProduct(int method, unsigned n, unsigned p, unsigned m, double density, int n_threads);
+RcppExport SEXP _HessianScreening_sparseInnerProduct(SEXP methodSEXP, SEXP nSEXP, SEXP pSEXP, SEXP mSEXP, SEXP densitySEXP, SEXP n_threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type n(nSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type p(pSEXP);
+    Rcpp::traits::input_parameter< unsigned >::type m(mSEXP);
+    Rcpp::traits::input_parameter< double >::type density(densitySEXP);
+    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
+    sparseInnerProduct(method, n, p, m, density, n_threads);
+    return R_NilValue;
+END_RCPP
+}
 // lassoPath
 Rcpp::List lassoPath(SEXP X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool approx_hessian, const arma::uword path_length, const arma::uword maxit, const double tol_decr, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPath(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP approx_hessianSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_decrSEXP, SEXP tol_infeasSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP verbositySEXP) {
@@ -46,6 +74,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_HessianScreening_blockMatrixConstruction", (DL_FUNC) &_HessianScreening_blockMatrixConstruction, 3},
+    {"_HessianScreening_denseInnerProduct", (DL_FUNC) &_HessianScreening_denseInnerProduct, 4},
+    {"_HessianScreening_sparseInnerProduct", (DL_FUNC) &_HessianScreening_sparseInnerProduct, 6},
     {"_HessianScreening_lassoPath", (DL_FUNC) &_HessianScreening_lassoPath, 15},
     {NULL, NULL, 0}
 };
