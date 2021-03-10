@@ -2,21 +2,24 @@
 #graphics.off()
 library(HessianScreening)
 
-#d <- readRDS(file.path("data", paste0("golub", ".rds")))
+
+#d <- readRDS(file.path("data", paste0("leukemia-train", ".rds")))
 #d <- readRDS(file.path("data", paste0("arcene", ".rds")))
-d <- readRDS(file.path("data", paste0("covtype", ".rds")))
+d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
+#d <- readRDS(file.path("data", paste0("covtype", ".rds")))
+
 X <- d$X
 y <- d$y
-family <- "gaussian"
+family <- "binomial"
 fit <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "hessian",
     hessian_warm_starts = TRUE,
-    approx_hessian = FALSE,
+    approx_hessian = TRUE,
     gamma = 0.01,
-    # verify_hessian = TRUE,
+    verify_hessian = FALSE,
     verbosity = 0
 )
 fit.w <- lassoPath(
@@ -24,20 +27,22 @@ fit.w <- lassoPath(
     y,
     family = family,
     screening_type = "working",
-     verbosity = 0
+    verbosity = 0
 )
 cat("***************\n")
 cat("hessian:\n")
 cat("full = ", fit$full_time, "\n")
 cat("cd_time = ", sum(fit$cd_time), "\n")
-cat("corr_time = ", sum(fit$corr_time), "\n")
+cat("kkt_time = ", sum(fit$corr_time), "\n")
 cat("hess_time = ", sum(fit$hess_time), "\n")
 cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
+cat("duplicates_time", sum(fit$duplicates_time), "\n")
 cat("***************\n")
-cat("working:\n")
+# cat("working:\n")
 cat("full = ", fit.w$full_time, "\n")
 cat("cd_time = ", sum(fit.w$cd_time), "\n")
-cat("corr_time = ", sum(fit.w$corr_time), "\n")
+cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
+cat("duplicates_time", sum(fit$duplicates_time), "\n")
 
 par(mfrow=c(2,2))
 plot(fit$active, type = "l", lty = 2, ylim = c(0, max(c(fit$active, fit$screened))))

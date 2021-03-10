@@ -23,8 +23,8 @@ updateHessian(mat& H,
 {
   const uword n = X.n_rows;
 
-  uvec deactivate = setDiff(active_set_prev, active_set);
-  uvec activate = setDiff(active_set, active_set_prev);
+  const uvec deactivate = setDiff(active_set_prev, active_set);
+  const uvec activate = setDiff(active_set, active_set_prev);
 
   if (!deactivate.is_empty() && !reset_hessian) {
     if (verbosity >= 1) {
@@ -46,10 +46,9 @@ updateHessian(mat& H,
     const uvec drop(drop_std);
 
     const mat Hinv_kd = Hinv(keep, drop);
-    const mat Hinv_kk = Hinv(keep, keep);
-    const mat Hinv_dd = Hinv(drop, drop);
 
-    Hinv = Hinv_kk - Hinv_kd * (solve(symmatu(Hinv_dd), Hinv_kd.t()));
+    Hinv = Hinv(keep, keep) -
+           Hinv_kd * (solve(symmatu(Hinv(drop, drop)), Hinv_kd.t()));
 
     H.shed_cols(drop);
     H.shed_rows(drop);
@@ -64,7 +63,7 @@ updateHessian(mat& H,
     }
 
     mat D = model->hessian(X, activate);
-    const mat B = model->hessianUpperRight(X, active_perm_prev, activate);
+    mat B = model->hessianUpperRight(X, active_perm_prev, activate);
     const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;
@@ -79,20 +78,18 @@ updateHessian(mat& H,
     mat Sinv = Q * diagmat(1.0 / l) * Q.t();
     mat Hinv_B_Sinv = Hinv * B * Sinv;
 
-    const uword H_n = H.n_rows;
-    const uword H_p = H.n_cols;
+    const uword N = H.n_cols;
+    const uword M = D.n_cols;
 
-    H.resize(H.n_rows + D.n_rows, H.n_cols + D.n_cols);
-    H.submat(0, H_n, size(B)) = B;
-    H.submat(H_n, H_p, size(D)) = D;
+    H.resize(N + M, N + M);
+    H.submat(0, N, size(N, M)) = std::move(B);
+    H.submat(N, N, size(M, M)) = std::move(D);
     H = symmatu(H);
 
-    mat Hinv_00(size(Hinv));
-    Hinv_00 = Hinv_B_Sinv * B.t() * Hinv + Hinv;
-    Hinv.set_size(H.n_rows, H.n_cols);
-    Hinv.submat(0, 0, size(Hinv_00)) = Hinv_00;
-    Hinv.submat(0, H_n, size(B)) = -Hinv_B_Sinv;
-    Hinv.submat(H_n, H_p, size(D)) = Sinv;
+    Hinv += Hinv_B_Sinv * B.t() * Hinv;
+    Hinv.resize(N + M, N + M);
+    Hinv.submat(0, N, size(N, M)) = -Hinv_B_Sinv;
+    Hinv.submat(N, N, size(M, M)) = std::move(Sinv);
     Hinv = symmatu(Hinv);
   }
 

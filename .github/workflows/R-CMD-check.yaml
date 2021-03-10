@@ -18,6 +18,8 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       RENV_PATHS_ROOT: ~/.local/share/renv
     steps:
+      - name: Install Dependencies
+        run: sudo apt update && sudo apt install -y libcurl4-openssl-dev
       - name: Checkout Repository
         uses: actions/checkout@master
       - name: Cache packages

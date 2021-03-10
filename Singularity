@@ -1,5 +1,5 @@
 Bootstrap: docker
-from: r-base:4.0.4
+from: rocker/r-ver:4.0.4
 
 %files
     data /Project/data
@@ -11,20 +11,25 @@ from: r-base:4.0.4
     .Rprofile /Project/.Rprofile
 
 %post
+    # need to switch from pthreads to openmp to get right performance
+    apt-get update
+    apt-get install -y libopenblas-openmp-dev libopenblas0-openmp
+    apt-get remove -y libopenblas-pthread-dev libopenblas0-pthread
+
     cd Project
 
     Rscript -e 'renv::restore()'
 
-    R CMD INSTALL HessianScreening
+    R CMD INSTALL --preclean --no-multiarch HessianScreening
 
     chmod -R a+rX /Project
 
 %runscript
     if [ -z "$@" ]; then
-        # if theres none, test R
+        # if there's no argument, simply test R
         Rscript -e 'sessionInfo()'
     else
-        # if theres an argument, then run it and hope it's an R script
+        # if there's an argument, then run it and hope it's an R script
         cd /Project
         Rscript -e "source(\"experiments/$@\")"
     fi
