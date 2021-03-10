@@ -63,7 +63,7 @@ public:
 
   double hessianTerm(const mat& X, const uword j)
   {
-    return std::max(dot(square(X.col(j)), w % residual), std::sqrt(datum::eps));
+    return std::max(dot(square(X.col(j)), w), std::sqrt(datum::eps));
   }
 
   double hessianTerm(const sp_mat& X, const uword j)
