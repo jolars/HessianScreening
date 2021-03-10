@@ -244,6 +244,7 @@ public:
         double primal_value_old = primal(lambda, screened_set);
         double dual_value_old = dual();
 
+        double primal_value_old2 = primal(lambda, screened_set);
         for (auto&& j : screened_set) {
           double beta_j_old = beta(j);
           updateCorrelation(X, j);
@@ -252,6 +253,15 @@ public:
 
           if (beta_j_old != beta(j)) {
             adjustResidual(X, j, beta(j) - beta_j_old);
+          }
+          if(j == 23189){
+            Rcpp::Rcout << "j = " << j << ":\n";
+            Rcpp::Rcout << "beta = " << beta(j) << " old = " << beta_j_old << "\n";
+            Rcpp::Rcout << "lambda = " << lambda << "\n";
+            Rcpp::Rcout << "c(j) = " << c(j) << "\n";
+            Rcpp::Rcout << "hess_j = " << hess_j << "\n";
+            Rcpp::Rcout << " primal_diff = " <<  primal(lambda, screened_set) - primal_value_old2 << "\n";
+            primal_value_old2 =  primal(lambda, screened_set);
           }
         }
 
@@ -286,6 +296,8 @@ public:
                   primal_value,
                   dual_value,
                   primal_value_change);
+          if(primal_value_change >20)
+            Rcpp::stop("inverse matrix computation is incorrect");
         }
 
         if (abs(primal_value_change) <= tol_gap * primal_value) {

@@ -2,8 +2,9 @@
 #graphics.off()
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("golub", ".rds")))
-d <- readRDS(file.path("data", paste0("arcene", ".rds")))
+#d <- readRDS(file.path("data", paste0("golub", ".rds")))
+#d <- readRDS(file.path("data", paste0("arcene", ".rds")))
+d <- readRDS(file.path("data", paste0("covtype", ".rds")))
 X <- d$X
 y <- d$y
 family <- "gaussian"
