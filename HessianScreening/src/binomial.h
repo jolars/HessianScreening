@@ -89,10 +89,7 @@ public:
   void adjustResidual(const mat& X, const uword j, const double beta_diff)
   {
     Xbeta += X.col(j) * beta_diff;
-    expXbeta = exp(Xbeta);
-    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
-    w = pr % (1 - pr);
-    residual = y - pr;
+    updateResidual();
   }
 
   void adjustResidual(const sp_mat& X, const uword j, const double beta_diff)
@@ -102,10 +99,7 @@ public:
     if (standardize)
       Xbeta -= X_mean_scaled(j) * beta_diff;
 
-    expXbeta = exp(Xbeta);
-    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
-    w = pr % (1 - pr);
-    residual = y - pr;
+    updateResidual();
   }
 
   mat hessian(const mat& X, const uvec& ind)
