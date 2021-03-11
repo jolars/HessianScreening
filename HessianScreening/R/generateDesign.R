@@ -60,7 +60,8 @@ generateDesign <- function(n,
       X <- X %*% t(U)
       sigma <- sqrt((t(beta) %*% Sigma %*% beta) / snr)
     } else if (rho_type == "constant") {
-      X <- matrix(rnorm(n), n, p) * sqrt(rho) + sqrt(1 - rho) * rnorm(n, p)
+      X <- matrix(rnorm(n), n, p) * sqrt(rho) +
+        sqrt(1 - rho) * matrix(rnorm(n*p), n, p)
       sigma <- sqrt((rho * sum(beta)^2 + (1 - rho) * sum(beta^2)) / snr)
     }
   } else {
