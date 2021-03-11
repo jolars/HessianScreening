@@ -2,10 +2,12 @@
 #graphics.off()
 library(HessianScreening)
 
+
 #d <- readRDS(file.path("data", paste0("leukemia-train", ".rds")))
 #d <- readRDS(file.path("data", paste0("arcene", ".rds")))
 d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 #d <- readRDS(file.path("data", paste0("covtype", ".rds")))
+
 X <- d$X
 y <- d$y
 family <- "binomial"

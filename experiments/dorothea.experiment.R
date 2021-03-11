@@ -12,7 +12,7 @@ fit.w <- lassoPath(
     y,
     family = family,
     screening_type = "working",
-    verbosity = 0
+    verbosity = 1
 )
 fit <- lassoPath(
     X,
@@ -20,7 +20,8 @@ fit <- lassoPath(
     family = family,
     screening_type = screening_type,
     hessian_warm_starts = TRUE,
-    verbosity = 0
+    approx_hessian = F,
+    verbosity = 1
 )
 
 # cat("***************\n")
@@ -37,5 +38,5 @@ cat("cd_time = ", sum(fit.w$cd_time), "\n")
 cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
 
 
-plot(fit$passes, type = "l", ylim = c(0, 50))
+plot(fit$passes, type = "l")
 lines(fit.w$passes, col = "red")

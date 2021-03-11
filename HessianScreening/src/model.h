@@ -242,6 +242,7 @@ public:
         double primal_value_old = primal(lambda, screened_set);
         double dual_value_old = dual();
 
+        double primal_value_old2 = primal(lambda, screened_set);
         for (auto&& j : screened_set) {
           double beta_j_old = beta(j);
           updateCorrelation(X, j);
@@ -284,6 +285,8 @@ public:
                   primal_value,
                   dual_value,
                   primal_value_change);
+          if(primal_value_change >20)
+            Rcpp::stop("inverse matrix computation is incorrect");
         }
 
         if (abs(primal_value_change) <= tol_gap * primal_value) {
