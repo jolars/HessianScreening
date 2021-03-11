@@ -13,6 +13,10 @@ sparseInnerProduct <- function(method = 0L, n = 100L, p = 1000L, m = 50L, densit
     invisible(.Call(`_HessianScreening_sparseInnerProduct`, method, n, p, m, density, n_threads))
 }
 
+innerProductStandardized <- function(method, X, ind, X_mean_scaled) {
+    .Call(`_HessianScreening_innerProductStandardized`, method, X, ind, X_mean_scaled)
+}
+
 #' Fit the Lasso Path
 #'
 #' @param X The predictor matrix

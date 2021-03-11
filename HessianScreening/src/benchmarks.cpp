@@ -94,3 +94,29 @@ sparseInnerProduct(int method = 0,
     }
   }
 }
+
+// [[Rcpp::export]]
+arma::mat
+innerProductStandardized(int method,
+                         const arma::sp_mat& X,
+                         const arma::uvec& ind,
+                         const arma::vec& X_mean_scaled)
+{
+  mat H = conv_to<mat>::from(X.cols(ind).t() * X.cols(ind));
+
+  if (method == 0) {
+    H -= X.n_rows * X_mean_scaled(ind) * X_mean_scaled(ind).t();
+  } else if (method == 1) {
+    uword n = X.n_rows;
+    uword p = ind.n_elem;
+
+    for (uword i = 0; i < p; ++i) {
+      for (uword j = i; j < p; ++j) {
+        H(i, j) -= n * X_mean_scaled(ind(i)) * X_mean_scaled(ind(j));
+        H(j, i) = H(i, j);
+      }
+    }
+  }
+
+  return H;
+}
