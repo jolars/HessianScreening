@@ -16,7 +16,7 @@ public:
 
   const bool approx_hessian;
 
-  const double p_min = 1e-9;
+  const double p_min = 1e-5;
   const double p_max = 1 - p_min;
 
   Binomial(vec& y,
