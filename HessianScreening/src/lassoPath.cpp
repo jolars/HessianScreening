@@ -440,7 +440,7 @@ lassoPathImpl(T X,
     screened(find(duplicated)).fill(false);
 
     if (hessian_warm_starts && hessian_type_screening) {
-      beta(active_set) = beta(active_set) + (lambda - lambda_next) * Hinv_s;
+      beta(active_set) += (lambda - lambda_next) * Hinv_s;
     }
 
     active_perm_prev = active_perm;
