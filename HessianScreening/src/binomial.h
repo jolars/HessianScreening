@@ -123,10 +123,11 @@ public:
 
       return H;
     } else {
-      mat H = conv_to<mat>::from(X.cols(ind).t() * diagmat(w) * X.cols(ind));
+      mat D = diagmat(w);
+      mat H = conv_to<mat>::from(X.cols(ind).t() * D * X.cols(ind));
 
       if (standardize) {
-        mat XmDX = X_mean_scaled(ind) * sum(diagmat(w) * X.cols(ind), 0);
+        mat XmDX = X_mean_scaled(ind) * sum(D * X.cols(ind), 0);
         H += sum(w) * X_mean_scaled(ind) * X_mean_scaled(ind).t() - XmDX -
              XmDX.t();
       }
@@ -156,7 +157,7 @@ public:
           i++;
         }
       } else {
-        H = conv_to<mat>::from(X.cols(ind_a).t() * X.cols(ind_b));
+        H = X.cols(ind_a).t() * X.cols(ind_b);
       }
 
       if (standardize)
@@ -165,6 +166,8 @@ public:
       return 0.25 * H;
 
     } else {
+      mat D = diagmat(w);
+
       if (ind_b.n_elem == 1) {
         uword i = 0;
         sp_mat w_Xb = w % X.col(as_scalar(ind_b));
@@ -173,12 +176,12 @@ public:
           i++;
         }
       } else {
-        H = conv_to<mat>::from(X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b));
+        H = X.cols(ind_a).t() * D * X.cols(ind_b);
       }
 
       if (standardize) {
-        mat XamDXb = X_mean_scaled(ind_a) * sum(diagmat(w) * X.cols(ind_b));
-        mat XbmDXa = X_mean_scaled(ind_b) * sum(diagmat(w) * X.cols(ind_a));
+        mat XamDXb = X_mean_scaled(ind_a) * sum(D * X.cols(ind_b));
+        mat XbmDXa = X_mean_scaled(ind_b) * sum(D * X.cols(ind_a));
         H += sum(w) * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t() -
              XbmDXa.t() - XamDXb;
       }
@@ -221,8 +224,9 @@ public:
     c_grad.zeros();
 
     if (standardize) {
-      const mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
-      const mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
+      const mat Dsq = diagmat(dsq);
+      const mat Dsq_X = Dsq * X.cols(inactive_restricted);
+      const mat Dsq_Xa = Dsq * X.cols(active_set);
 
       const mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
       const mat dsq_mua_Hinv_s = dsq * (X_mean_scaled(active_set).t() * Hinv_s);
