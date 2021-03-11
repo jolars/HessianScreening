@@ -35,7 +35,7 @@ sparseInnerProduct <- function(method = 0L, n = 100L, p = 1000L, m = 50L, densit
 #'        updates are correct. Used only for diagnostic purposes.
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #' @export
-lassoPath <- function(X, y, family = "gaussian", standardize = TRUE, screening_type = "working", hessian_warm_starts = TRUE, approx_hessian = TRUE, path_length = 100L, maxit = 1e6L, tol_decr = 1e-4, tol_infeas = 1e-4, tol_gap = 1e-4, gamma = 0.01, verify_hessian = FALSE, verbosity = 0L) {
+lassoPath <- function(X, y, family = "gaussian", standardize = TRUE, screening_type = "working", hessian_warm_starts = TRUE, approx_hessian = TRUE, path_length = 100L, maxit = 1e5L, tol_decr = 1e-7, tol_infeas = 1e-5, tol_gap = 1e-4, gamma = 0.01, verify_hessian = FALSE, verbosity = 0L) {
     .Call(`_HessianScreening_lassoPath`, X, y, family, standardize, screening_type, hessian_warm_starts, approx_hessian, path_length, maxit, tol_decr, tol_infeas, tol_gap, gamma, verify_hessian, verbosity)
 }
 
