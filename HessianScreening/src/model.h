@@ -46,6 +46,8 @@ public:
     , standardize(standardize)
   {}
 
+  virtual ~Model() = default;
+
   virtual double primal(const double lambda, const uvec& screened_set) = 0;
 
   virtual double dual() = 0;
