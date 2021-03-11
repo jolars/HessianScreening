@@ -286,7 +286,7 @@ lassoPathImpl(T X,
     }
 
     if (i > 1) {
-      active = abs(abs(c) - lambda) <= std::pow(datum::eps, 0.25) || beta != 0;
+      active = beta != 0;
       active_set = find(active);
       s.zeros();
       s(active_set) = sign(c(active_set));
