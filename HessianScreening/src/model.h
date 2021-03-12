@@ -149,12 +149,13 @@ public:
                                      const double lambda) = 0;
 
   template<typename T>
-  uvec safeScreening(uvec& screened,
+  void safeScreening(uvec& screened,
+                     uvec& screened_set,
                      const T& X,
                      const vec& XTcenter,
                      const double r_screen)
   {
-    for (auto&& j : screened) {
+    for (auto&& j : screened_set) {
       double r_normX_j = r_screen * std::sqrt(X_norms_squared(j));
 
       if (r_normX_j >= 1) {
@@ -172,7 +173,7 @@ public:
       }
     }
 
-    return find(screened);
+    screened_set = find(screened);
   }
 
   template<typename T>
@@ -184,6 +185,7 @@ public:
     const double lambda_max,
     const double null_deviance,
     const std::string screening_type,
+    const bool first_run,
     const uword maxit,
     const double tol_decr,
     const double tol_gap,
@@ -192,7 +194,7 @@ public:
   {
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe") {
+    if (screening_type == "gap_safe" && !first_run) {
       screened.fill(true);
     }
 
@@ -214,12 +216,14 @@ public:
       updateResidual();
 
       while (it < maxit) {
+        it++;
+
         if (verbosity >= 2) {
-          Rprintf("    iter: %i\n", it + 1);
+          Rprintf("    iter: %i\n", it);
         }
 
-        if (screening_type == "gap_safe" && it % screen_interval == 0) {
-          if (it > 0) {
+        if (screening_type == "gap_safe" && (it - 1) % screen_interval == 0) {
+          if (it > 1) {
             updateLinearPredictor(X, screened_set);
             updateResidual();
           }
@@ -238,7 +242,7 @@ public:
             r_screen = safeScreeningRadius(duality_gap, lambda);
           }
 
-          screened_set = safeScreening(screened, X, XTcenter, r_screen);
+          safeScreening(screened, screened_set, X, XTcenter, r_screen);
         }
 
         n_screened += screened_set.n_elem;
@@ -261,66 +265,63 @@ public:
         primal_value = primal(lambda, screened_set);
         dual_value = dual();
 
-        double primal_value_change = primal_value - primal_value_old;
+        // if we make no progress in either primal or dual objective, initialize
+        // line search
+        if (primal_value >= primal_value_old && dual_value <= dual_value_old) {
+          vec beta_screened = beta(screened_set);
 
-        double t = 1;
-        vec beta_screened = beta(screened_set);
+          uword line_it = 0;
+          double t = 1;
 
-        uword line_it = 0;
+          while (primal_value >= primal_value_old &&
+                 dual_value <= dual_value_old && line_it < 15) {
+            line_it++;
+            t *= 0.5;
 
-        while (primal_value >= primal_value_old &&
-               dual_value <= dual_value_old && line_it < 15) {
-          line_it++;
-          t *= 0.5;
+            beta(screened_set) =
+              (1 - t) * beta_screened_old + t * beta_screened;
 
-          beta(screened_set) = (1 - t) * beta_screened_old + t * beta_screened;
+            updateLinearPredictor(X, screened_set);
+            updateResidual();
 
-          updateLinearPredictor(X, screened_set);
-          updateResidual();
-
-          primal_value = primal(lambda, screened_set);
-          dual_value = dual();
+            primal_value = primal(lambda, screened_set);
+            dual_value = dual();
+          }
         }
 
-        primal_value_change = primal_value - primal_value_old;
+        duality_gap = std::abs(primal_value - dual_value);
 
         if (verbosity >= 2) {
-          Rprintf("      primal: %f, dual: %f, primal_change: %f\n",
+          Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
                   primal_value,
                   dual_value,
-                  primal_value_change);
+                  duality_gap);
         }
 
-        if (std::abs(primal_value_change) <= tol_decr * primal_value) {
-          dual_value = dual();
-          duality_gap = std::abs(primal_value - dual_value);
-
+        if (duality_gap <= tol_gap * null_deviance) {
           updateCorrelation(X, screened_set);
 
-          double max_infeas =
-            lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
+          double infeas = lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
 
           if (verbosity >= 2) {
             Rprintf("      infeasibility: %f, duality gap: %f\n",
-                    max_infeas,
+                    infeas,
                     duality_gap);
           }
 
-          if (max_infeas <= lambda_max * tol_infeas &&
+          if (infeas <= lambda_max * tol_infeas &&
               duality_gap <= tol_gap * null_deviance) {
             break;
           }
         }
 
         Rcpp::checkUserInterrupt();
-
-        it++;
       }
     } else {
       beta.zeros();
     }
 
-    double avg_screened = n_screened / static_cast<double>(it);
+    double avg_screened = n_screened / it;
 
     return { primal_value, dual_value, duality_gap, it, avg_screened };
   }

@@ -46,6 +46,22 @@ lassoPathImpl(T X,
 
   double full_time = timer.toc();
 
+  if (screening_type != "working" && screening_type != "hessian" &&
+      screening_type != "hessian_adaptive" && screening_type != "gap_safe" &&
+      screening_type != "edpp" && screening_type != "strong") {
+    Rcpp::stop("not a supported screening rule");
+  }
+
+  if (family == "binomial") {
+    vec y_unique = sort(unique(y));
+
+    if (y_unique.n_elem != 2) {
+      Rcpp::stop("y has more than two unique values");
+    } else if (y_unique(0) != 0 || y_unique(1) != 1) {
+      Rcpp::stop("y is not in {0, 1}");
+    }
+  }
+
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
@@ -131,7 +147,7 @@ lassoPathImpl(T X,
   std::vector<uword> n_new_active;
   std::vector<uword> n_passes;
   std::vector<uword> n_refits;
-  std::vector<uword> n_screened;
+  std::vector<double> n_screened;
   std::vector<uword> n_strong;
   std::vector<uword> n_violations;
 
@@ -211,9 +227,6 @@ lassoPathImpl(T X,
 
       double t0 = timer.toc();
 
-      auto screening_type_choice =
-        first_run && screening_type == "gap_safe" ? "working" : screening_type;
-
       if (first_run && screening_type != "gap_safe") {
         n_screened.emplace_back(sum(screened));
       }
@@ -225,7 +238,8 @@ lassoPathImpl(T X,
                    lambda,
                    lambda_max,
                    null_dev,
-                   screening_type_choice,
+                   screening_type,
+                   first_run,
                    maxit,
                    tol_decr,
                    tol_gap,
@@ -236,16 +250,13 @@ lassoPathImpl(T X,
 
       n_passes_i_sum += n_passes_i;
 
-      if (screening_type_choice == "gap_safe") {
-        // For dynamic screening rules, `avg_screened` is the mean number of
-        // screened predictors. For other rules, this is constant between
-        // iterations.
-        n_screened.emplace_back(avg_screened);
+      if (screening_type == "gap_safe" && !first_run) {
+        n_screened.push_back(avg_screened);
       }
 
       t0 = timer.toc();
 
-      if (check_kkt) {
+      if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
         uvec unscreened_set = find(screened == false && duplicated == false);
 
         violations.fill(false);
