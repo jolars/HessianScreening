@@ -1,5 +1,5 @@
 test_that("compare against glmnet with real data", {
-  library(glmnet)
+  suppressMessages(library(glmnet))
 
   datalist <- c("heart", "leukemia")
 
