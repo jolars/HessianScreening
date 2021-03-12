@@ -5,10 +5,17 @@ from: rocker/r-ver:4.0.4
     data /Project/data
     results /Project/results
     experiments /Project/experiments
+    R /Project/R
+    man /Project/man
+    src /Project/src
+    tests /Project/tests
     renv /Project/renv
+
+    DESCRIPTION /Project/DESCRIPTION
+    NAMESPACE /Project/NAMESPACE
     renv.lock /Project/renv.lock
-    HessianScreening /Project/HessianScreening
     .Rprofile /Project/.Rprofile
+    .Rbuildignore
 
 %post
     # need to switch from pthreads to openmp to get right performance
@@ -20,7 +27,7 @@ from: rocker/r-ver:4.0.4
 
     Rscript -e 'renv::restore()'
 
-    R CMD INSTALL --preclean --no-multiarch HessianScreening
+    R CMD INSTALL --preclean --no-multiarch .
 
     chmod -R a+rX /Project
 

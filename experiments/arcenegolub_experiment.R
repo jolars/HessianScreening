@@ -5,19 +5,31 @@ library(HessianScreening)
 
 #d <- readRDS(file.path("data", paste0("leukemia-train", ".rds")))
 #d <- readRDS(file.path("data", paste0("arcene", ".rds")))
-d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
+#d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 #d <- readRDS(file.path("data", paste0("covtype", ".rds")))
+d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
 
 X <- d$X
 y <- d$y
 family <- "binomial"
-fit <- lassoPath(
+fita <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "hessian",
     hessian_warm_starts = TRUE,
-    approx_hessian = TRUE,
+    log_hessian_update_type = "approx",
+    gamma = 0.01,
+    verify_hessian = FALSE,
+    verbosity = 0
+)
+fitf <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "hessian",
+    hessian_warm_starts = TRUE,
+    log_hessian_update_type = "full",
     gamma = 0.01,
     verify_hessian = FALSE,
     verbosity = 0
