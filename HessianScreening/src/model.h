@@ -239,8 +239,9 @@ public:
           }
 
           screened_set = safeScreening(screened, X, XTcenter, r_screen);
-          n_screened += screened_set.n_elem;
         }
+
+        n_screened += screened_set.n_elem;
 
         vec beta_screened_old = beta(screened_set);
         double primal_value_old = primal(lambda, screened_set);
