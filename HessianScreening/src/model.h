@@ -48,6 +48,8 @@ public:
 
   virtual ~Model() = default;
 
+  void setLogHessianUpdateType(const std::string new_log_hessian_update_type){};
+
   virtual double primal(const double lambda, const uvec& screened_set) = 0;
 
   virtual double dual() = 0;
@@ -288,7 +290,7 @@ public:
                   primal_value_change);
         }
 
-        if (abs(primal_value_change) <= tol_gap * primal_value) {
+        if (std::abs(primal_value_change) <= tol_decr * primal_value) {
           dual_value = dual();
           duality_gap = std::abs(primal_value - dual_value);
 

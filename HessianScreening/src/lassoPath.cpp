@@ -26,7 +26,8 @@ lassoPathImpl(T X,
               const bool standardize,
               const std::string screening_type,
               const bool hessian_warm_starts,
-              const bool approx_hessian,
+              std::string log_hessian_update_type,
+              const uword log_hessian_auto_threshold,
               const arma::uword path_length,
               const arma::uword maxit,
               const double tol_decr,
@@ -82,7 +83,7 @@ lassoPathImpl(T X,
                           n,
                           p,
                           standardize,
-                          approx_hessian);
+                          log_hessian_update_type);
 
   model->standardizeY();
 
@@ -168,6 +169,7 @@ lassoPathImpl(T X,
 
   bool check_kkt = screening_type != "gap_safe" && screening_type != "edpp";
 
+  std::vector<double> it_times;
   std::vector<double> cd_times;
   std::vector<double> kkt_times;
   std::vector<double> gradcorr_times;
@@ -183,6 +185,8 @@ lassoPathImpl(T X,
 
   while (true) {
     i++;
+
+    double it_time = timer.toc();
 
     if (verbosity >= 1) {
       Rprintf("step: %i, lambda: %.2f\n", i, lambda);
@@ -336,6 +340,15 @@ lassoPathImpl(T X,
 
     betas.insert_cols(betas.n_cols, beta);
 
+    if (active_set.n_elem > log_hessian_auto_threshold &&
+        log_hessian_update_type == "auto") {
+
+      log_hessian_update_type = "approx";
+      model->setLogHessianUpdateType("approx");
+      // active_perm = active_set;
+      // active_perm_prev = active_set_prev;
+    }
+
     if (verbosity >= 1) {
       Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
     }
@@ -353,15 +366,18 @@ lassoPathImpl(T X,
                                              screening_type,
                                              verbosity);
 
-    if (stop_path)
+    if (stop_path) {
+      hess_times.emplace_back(0);
+      it_times.emplace_back(timer.toc() - it_time);
       break;
+    }
 
     bool reset_hessian = false;
 
     if (hessian_type_screening) {
       double t0 = timer.toc();
 
-      if (approx_hessian || family == "gaussian") {
+      if (log_hessian_update_type == "approx" || family == "gaussian") {
         updateHessian(H,
                       Hinv,
                       active_set,
@@ -371,7 +387,6 @@ lassoPathImpl(T X,
                       model,
                       X,
                       verify_hessian,
-                      approx_hessian,
                       verbosity,
                       reset_hessian);
 
@@ -381,7 +396,7 @@ lassoPathImpl(T X,
         // for logistic regression and no approxiation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
-        H = model->hessian(X, active_set);
+        H = model->hessian(X, active_perm);
 
         vec eigval;
         mat eigvec;
@@ -394,7 +409,8 @@ lassoPathImpl(T X,
         }
 
         Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
-        Hinv_s = Hinv * s(active_set);
+        Hinv_s = Hinv * s(active_perm);
+        Hinv_s = Hinv_s(sort_index(active_perm)); // reset permutation
       }
 
       hess_times.emplace_back(timer.toc() - t0);
@@ -448,6 +464,8 @@ lassoPathImpl(T X,
 
     lambda = lambda_next;
 
+    it_times.emplace_back(timer.toc() - it_time);
+
     Rcpp::checkUserInterrupt();
   }
 
@@ -472,35 +490,35 @@ lassoPathImpl(T X,
                       Named("duplicates") = wrap(duplicates_mat),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
+                      Named("it_time") = wrap(it_times),
                       Named("cd_time") = wrap(cd_times),
                       Named("hess_time") = wrap(hess_times),
                       Named("kkt_time") = wrap(kkt_times),
-                      Named("gradcorr_time") = wrap(gradcorr_times),
-                      Named("duplicates_time") = wrap(duplicates_times));
+                      Named("gradcorr_time") = wrap(gradcorr_times));
 }
 
 //' Fit the Lasso Path
 //'
 //' @param X The predictor matrix
 //' @param y The reponse vector
-//' @param family The name of the famioy, "gaussian" or "logistic"
+//' @param family The name of the family, "gaussian" or "logistic"
 //' @param standardize Whether to standardize the predictors
 //' @param screening_type Which screening type to use, currently
 //'        `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
 //' @param hessian_warm_starts Whether to use warm starts based on Hessian
-//' @param approx_hessian Whether to approximate Hessian in the logistic
-//'        regression case
-//' @param path_length The length of the lasso path
-//' @param maxit Maximum number of iterations for Coordinate Descent loop
-//' @param tol_decr Tolerance threshold for change in primal value
-//' @param tol_infeas Tolerance threshold for maximum infeasibility
-//' @param tol_gap Tolerance threshold for duality gap
-//' @param gamma Percent of strong approximation to add to Hessian
-//'        approximation
-//' @param verify_hessian Whether ot not to verify that Hessian
-//'        updates are correct. Used only for diagnostic purposes.
-//' @param verbosity Controls the level of verbosity. 0 = no output.
-//' @export
+//' @param log_hessian_update_type what type of strategy to use for
+//'        updating the hessian for logistic regression
+//' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
+// this '        number decides when the updates switch from the full hessian
+// update '        to the approximation ' @param path_length The length of the
+// lasso path ' @param maxit Maximum number of iterations for Coordinate Descent
+// loop ' @param tol_decr Tolerance threshold for change in primal value '
+// @param tol_infeas Tolerance threshold for maximum infeasibility ' @param
+// tol_gap Tolerance threshold for duality gap ' @param gamma Percent of strong
+// approximation to add to Hessian '        approximation ' @param
+// verify_hessian Whether ot not to verify that Hessian '        updates are
+// correct. Used only for diagnostic purposes. ' @param verbosity Controls the
+// level of verbosity. 0 = no output. ' @export
 // [[Rcpp::export]]
 Rcpp::List
 lassoPath(SEXP X,
@@ -509,7 +527,8 @@ lassoPath(SEXP X,
           const bool standardize = true,
           const std::string screening_type = "working",
           const bool hessian_warm_starts = true,
-          const bool approx_hessian = true,
+          std::string log_hessian_update_type = "auto",
+          const arma::uword log_hessian_auto_threshold = 500,
           const arma::uword path_length = 100,
           const arma::uword maxit = 1e5,
           const double tol_decr = 1e-7,
@@ -528,7 +547,8 @@ lassoPath(SEXP X,
                            standardize,
                            screening_type,
                            hessian_warm_starts,
-                           approx_hessian,
+                           log_hessian_update_type,
+                           log_hessian_auto_threshold,
                            path_length,
                            maxit,
                            tol_decr,
@@ -546,7 +566,8 @@ lassoPath(SEXP X,
                          standardize,
                          screening_type,
                          hessian_warm_starts,
-                         approx_hessian,
+                         log_hessian_update_type,
+                         log_hessian_auto_threshold,
                          path_length,
                          maxit,
                          tol_decr,

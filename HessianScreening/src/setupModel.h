@@ -20,7 +20,7 @@ setupModel(const std::string family,
            const uword n,
            const uword p,
            const bool standardize,
-           const bool approx_hessian)
+           const std::string log_hessian_update_type)
 {
   if (family == "binomial")
     return std::make_unique<Binomial>(y,
@@ -33,7 +33,7 @@ setupModel(const std::string family,
                                       n,
                                       p,
                                       standardize,
-                                      approx_hessian);
+                                      log_hessian_update_type);
 
   return std::make_unique<Gaussian>(y,
                                     beta,

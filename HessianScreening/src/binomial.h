@@ -14,7 +14,7 @@ public:
   vec pr;
   vec w;
 
-  const bool approx_hessian;
+  std::string log_hessian_update_type;
 
   const double p_min = 1e-5;
   const double p_max = 1 - p_min;
@@ -29,14 +29,19 @@ public:
            const uword n,
            const uword p,
            const bool standardize,
-           const bool approx_hessian)
+           const std::string log_hessian_update_type)
     : Model{ y, beta, residual,   Xbeta, c, X_mean_scaled, X_norms_squared,
              n, p,    standardize }
     , expXbeta(y.n_elem, fill::zeros)
     , pr(y.n_elem, fill::zeros)
     , w(y.n_elem, fill::zeros)
-    , approx_hessian{ approx_hessian }
+    , log_hessian_update_type{ log_hessian_update_type }
   {}
+
+  void setLogHessianUpdateType(const std::string new_log_hessian_update_type)
+  {
+    log_hessian_update_type = new_log_hessian_update_type;
+  };
 
   double primal(const double lambda, const uvec& screened_set)
   {
@@ -104,7 +109,7 @@ public:
 
   mat hessian(const mat& X, const uvec& ind)
   {
-    if (approx_hessian) {
+    if (log_hessian_update_type == "approx") {
       return 0.25 * X.cols(ind).t() * X.cols(ind);
     } else {
       return X.cols(ind).t() * diagmat(w) * X.cols(ind);
@@ -113,7 +118,7 @@ public:
 
   mat hessian(const sp_mat& X, const uvec& ind)
   {
-    if (approx_hessian) {
+    if (log_hessian_update_type == "approx") {
       mat H = conv_to<mat>::from(X.cols(ind).t() * X.cols(ind));
 
       if (standardize)
@@ -138,7 +143,7 @@ public:
 
   mat hessianUpperRight(const mat& X, const uvec& ind_a, const uvec& ind_b)
   {
-    if (approx_hessian) {
+    if (log_hessian_update_type == "approx") {
       return 0.25 * X.cols(ind_a).t() * X.cols(ind_b);
     } else {
       return X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b);
@@ -149,7 +154,7 @@ public:
   {
     mat H(ind_a.n_elem, ind_b.n_elem);
 
-    if (approx_hessian) {
+    if (log_hessian_update_type == "approx") {
       if (ind_b.n_elem == 1) {
         uword i = 0;
         for (auto&& j : ind_a) {
