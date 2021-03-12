@@ -19,7 +19,6 @@ screenPredictors(const std::string screening_type,
                  const double lambda,
                  const double lambda_next,
                  const double gamma,
-                 const bool X_is_sparse,
                  const bool standardize)
 {
   uvec screened(X.n_cols);
@@ -49,11 +48,7 @@ screenPredictors(const std::string screening_type,
     vec center = residual / dual_scale + 0.5 * v_orth;
     double r_screen = 0.5 * norm(v_orth);
 
-    vec XTcenter = X.t() * center;
-
-    if (standardize && X_is_sparse) {
-      XTcenter -= X_mean_scaled * sum(center);
-    }
+    vec XTcenter = matTransposeMultiply(X, center, X_mean_scaled, standardize);
 
     screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) >= 1;
   }

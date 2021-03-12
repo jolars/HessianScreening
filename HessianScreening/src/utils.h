@@ -101,3 +101,53 @@ safeSetDiff(const uvec& a, const uvec& b)
 
   return conv_to<uvec>::from(out);
 }
+
+inline vec
+matTransposeMultiply(const mat& A,
+                     const vec& b,
+                     const vec& offset,
+                     const bool standardize)
+{
+  return A.t() * b;
+}
+
+inline vec
+matTransposeMultiply(const sp_mat& A,
+                     const vec& b,
+                     const vec& offset,
+                     const bool standardize)
+{
+  vec Atb = A.t() * b;
+
+  if (standardize) {
+    Atb -= offset * sum(b);
+  }
+
+  return Atb;
+}
+
+inline vec
+matTransposeMultiply(const mat& A,
+                     const vec& b,
+                     const uvec& ind,
+                     const vec& offset,
+                     const bool standardize)
+{
+  return A.cols(ind).t() * b;
+}
+
+inline vec
+matTransposeMultiply(const sp_mat& A,
+                     const vec& b,
+                     const uvec& ind,
+                     const vec& offset,
+                     const bool standardize)
+{
+  vec Atb = A.cols(ind).t() * b;
+
+  if (standardize) {
+    Atb -= offset * sum(b);
+  }
+
+  return Atb;
+}
