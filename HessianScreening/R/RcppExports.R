@@ -31,7 +31,7 @@ innerProductStandardized <- function(method, X, ind, X_mean_scaled) {
 #' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
 NULL
 
-lassoPath <- function(X, y, family = "gaussian", standardize = TRUE, screening_type = "working", hessian_warm_starts = TRUE, log_hessian_update_type = "auto", log_hessian_auto_threshold = 500L, path_length = 100L, maxit = 1e5L, tol_decr = 1e-7, tol_infeas = 1e-5, tol_gap = 1e-4, gamma = 0.01, verify_hessian = FALSE, verbosity = 0L) {
-    .Call(`_HessianScreening_lassoPath`, X, y, family, standardize, screening_type, hessian_warm_starts, log_hessian_update_type, log_hessian_auto_threshold, path_length, maxit, tol_decr, tol_infeas, tol_gap, gamma, verify_hessian, verbosity)
+lassoPath <- function(X, y, family = "gaussian", standardize = TRUE, screening_type = "working", hessian_warm_starts = TRUE, log_hessian_update_type = "auto", log_hessian_auto_threshold = 500L, path_length = 100L, maxit = 1e5L, tol_decr = 1e-7, tol_infeas = 1e-5, tol_gap = 1e-4, gamma = 0.01, verify_hessian = FALSE, force_kkt_check = FALSE, verbosity = 0L) {
+    .Call(`_HessianScreening_lassoPath`, X, y, family, standardize, screening_type, hessian_warm_starts, log_hessian_update_type, log_hessian_auto_threshold, path_length, maxit, tol_decr, tol_infeas, tol_gap, gamma, verify_hessian, force_kkt_check, verbosity)
 }
 

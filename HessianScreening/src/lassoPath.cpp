@@ -35,6 +35,7 @@ lassoPathImpl(T X,
               const double tol_gap,
               const double gamma,
               const bool verify_hessian,
+              const bool force_kkt_check,
               const arma::uword verbosity)
 {
   const uword n = X.n_rows;
@@ -172,7 +173,8 @@ lassoPathImpl(T X,
   const double null_dev = model->deviance();
   double dev = null_dev;
 
-  bool check_kkt = screening_type != "gap_safe" && screening_type != "edpp";
+  bool check_kkt = (screening_type != "gap_safe" && screening_type != "edpp") ||
+                   force_kkt_check;
 
   std::vector<double> it_times;
   std::vector<double> cd_times;
@@ -345,8 +347,8 @@ lassoPathImpl(T X,
 
       log_hessian_update_type = "approx";
       model->setLogHessianUpdateType("approx");
-      // active_perm = active_set;
-      // active_perm_prev = active_set_prev;
+      active_perm = active_set;
+      active_perm_prev = active_set_prev;
     }
 
     if (verbosity >= 1) {
@@ -396,7 +398,7 @@ lassoPathImpl(T X,
         // for logistic regression and no approxiation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
-        H = model->hessian(X, active_perm);
+        H = model->hessian(X, active_set);
 
         vec eigval;
         mat eigvec;
@@ -409,8 +411,7 @@ lassoPathImpl(T X,
         }
 
         Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
-        Hinv_s = Hinv * s(active_perm);
-        Hinv_s = Hinv_s(sort_index(active_perm)); // reset permutation
+        Hinv_s = Hinv * s(active_set);
       }
 
       hess_times.emplace_back(timer.toc() - t0);
@@ -536,6 +537,7 @@ lassoPath(SEXP X,
           const double tol_gap = 1e-4,
           const double gamma = 0.01,
           const bool verify_hessian = false,
+          const bool force_kkt_check = false,
           const arma::uword verbosity = 0)
 {
   if (Rf_isS4(X)) {
@@ -556,6 +558,7 @@ lassoPath(SEXP X,
                            tol_gap,
                            gamma,
                            verify_hessian,
+                           force_kkt_check,
                            verbosity);
     }
   } else {
@@ -575,6 +578,7 @@ lassoPath(SEXP X,
                          tol_gap,
                          gamma,
                          verify_hessian,
+                         force_kkt_check,
                          verbosity);
   }
 
