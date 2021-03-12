@@ -40,6 +40,11 @@ lassoPathImpl(T X,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
+  wall_clock timer;
+  timer.tic();
+
+  double full_time = timer.toc();
+
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
@@ -175,11 +180,6 @@ lassoPathImpl(T X,
   std::vector<double> gradcorr_times;
   std::vector<double> hess_times;
   std::vector<double> duplicates_times;
-
-  wall_clock timer;
-  timer.tic();
-
-  double full_time = timer.toc();
 
   uword i = 0;
 
