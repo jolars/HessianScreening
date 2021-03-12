@@ -17,7 +17,6 @@ updateHessian(mat& H,
               const std::unique_ptr<Model>& model,
               const T& X,
               const bool verify_hessian,
-              const bool approx_hessian,
               const uword verbosity,
               const bool reset_hessian)
 {
