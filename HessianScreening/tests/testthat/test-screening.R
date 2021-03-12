@@ -1,8 +1,39 @@
-# test_that("all screening rules work without errors", {
-#   n <- 100
-#   p <- 50
+test_that("screening methods work", {
+  set.seed(1014)
 
-#   d <- generateDesign(n, p)
+  n <- 50
+  p <- 200
 
-#   fit <- lassoPath(d$X, d$y, screening_type = "hessian_adaptive", verbosity = 1)
-# })
+  for (density in c(1, 0.5)) {
+
+    for (family in c("gaussian", "binomial")) {
+      d <- generateDesign(n, p, family = family)
+
+      X <- d$X
+      y <- d$y
+
+      fit_work <- lassoPath(X, y, family = family, screening_type = "working")
+
+      for (screening_type in c("hessian", "working", "strong", "gap_safe")) {
+        if (family == "gaussian" && screening_type == "edpp") {
+          next
+        }
+
+        fit <- lassoPath(X,
+                         y,
+                         family = family,
+                         screening_type = screening_type,
+                         verbosity = 0,
+                         force_kkt_check = TRUE)
+
+        steps <- 1:min(length(fit$lambda), length(fit_work$lambda))
+        expect_equal(fit_work$dev[steps], fit$dev[steps],
+                     tolerance = 1e-4)
+
+        if (screening_type %in% c("gap_safe", "edpp")) {
+          expect_equal(sum(fit$violations), 0)
+        }
+      }
+    }
+  }
+})
