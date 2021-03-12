@@ -6,8 +6,7 @@ using namespace arma;
 
 template<typename T>
 uvec
-screenPredictors(const std::unique_ptr<Model>& model,
-                 const std::string screening_type,
+screenPredictors(const std::string screening_type,
                  const uvec& strong,
                  const uvec& ever_active,
                  const vec& residual,
@@ -41,7 +40,7 @@ screenPredictors(const std::unique_ptr<Model>& model,
   } else if (screening_type == "edpp") {
     const uword p = X.n_cols;
 
-    double dual_scale = model->dual_scale;
+    double dual_scale = std::max(lambda, max(abs(c)));
     vec v1 = y / lambda - residual / dual_scale;
     vec v2 = y / lambda_next - residual / dual_scale;
 
@@ -50,19 +49,13 @@ screenPredictors(const std::unique_ptr<Model>& model,
     vec center = residual / dual_scale + 0.5 * v_orth;
     double r_screen = 0.5 * norm(v_orth);
 
-    vec XTcenter(p);
+    vec XTcenter = X.t() * center;
 
-    double center_sum = sum(center);
-
-    for (uword j = 0; j < p; ++j) {
-      XTcenter(j) = dot(X.col(j), center);
-
-      if (standardize && X_is_sparse) {
-        XTcenter(j) -= X_mean_scaled(j) * center_sum;
-      }
+    if (standardize && X_is_sparse) {
+      XTcenter -= X_mean_scaled * sum(center);
     }
 
-    screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) > 1;
+    screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) >= 1;
   }
 
   return screened;

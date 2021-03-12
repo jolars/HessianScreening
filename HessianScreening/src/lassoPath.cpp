@@ -447,8 +447,7 @@ lassoPathImpl(T X,
     strong_set = find(strong);
     n_strong.emplace_back(sum(strong));
 
-    screened = screenPredictors(model,
-                                screening_type,
+    screened = screenPredictors(screening_type,
                                 strong,
                                 ever_active,
                                 residual,
