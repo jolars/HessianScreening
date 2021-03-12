@@ -28,7 +28,7 @@ test_that("screening methods work", {
 
         steps <- 1:min(length(fit$lambda), length(fit_work$lambda))
         expect_equal(fit_work$dev[steps], fit$dev[steps],
-                     tolerance = 1e-4)
+                     tolerance = 1e-3)
 
         if (screening_type %in% c("gap_safe", "edpp")) {
           expect_equal(sum(fit$violations), 0)
