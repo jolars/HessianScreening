@@ -55,9 +55,9 @@ screenPredictors(const std::unique_ptr<Model>& model,
     double center_sum = sum(center);
 
     for (uword j = 0; j < p; ++j) {
-      XTcenter(j) -= dot(X.col(j), center);
+      XTcenter(j) = dot(X.col(j), center);
 
-      if (standardize) {
+      if (standardize && X_is_sparse) {
         XTcenter(j) -= X_mean_scaled(j) * center_sum;
       }
     }
