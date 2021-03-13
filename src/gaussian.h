@@ -39,7 +39,8 @@ public:
     } else {
       double alpha = lambda / dual_scale;
 
-      return alpha * dot(residual, y) - 0.5 * (alpha * squaredNorm(residual));
+      return alpha * dot(residual, y) -
+             0.5 * std::pow(alpha * norm(residual), 2);
     }
   }
 
