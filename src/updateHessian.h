@@ -81,7 +81,7 @@ updateHessian(mat& H,
     const uword M = D.n_cols;
 
     H.resize(N + M, N + M);
-    H.submat(0, N, size(N, M)) = std::move(B);
+    H.submat(0, N, size(N, M)) = B;
     H.submat(N, N, size(M, M)) = std::move(D);
     H = symmatu(H);
 
