@@ -37,8 +37,6 @@ screenPredictors(const std::string screening_type,
     // ever-active predictors to get a good warm start
     screened = ever_active;
   } else if (screening_type == "edpp") {
-    const uword p = X.n_cols;
-
     double dual_scale = std::max(lambda, max(abs(c)));
     vec v1 = y / lambda - residual / dual_scale;
     vec v2 = y / lambda_next - residual / dual_scale;
