@@ -11,14 +11,16 @@ lassoPath(
   standardize = TRUE,
   screening_type = "working",
   hessian_warm_starts = TRUE,
-  approx_hessian = TRUE,
+  log_hessian_update_type = "auto",
+  log_hessian_auto_threshold = 500L,
   path_length = 100L,
-  maxit = 1000000L,
-  tol_decr = 1e-04,
+  maxit = 100000L,
+  tol_decr = 1e-07,
   tol_infeas = 1e-04,
   tol_gap = 1e-04,
   gamma = 0.01,
   verify_hessian = FALSE,
+  force_kkt_check = FALSE,
   verbosity = 0L
 )
 }
@@ -27,7 +29,7 @@ lassoPath(
 
 \item{y}{The reponse vector}
 
-\item{family}{The name of the famioy, "gaussian" or "logistic"}
+\item{family}{The name of the family, "gaussian" or "logistic"}
 
 \item{standardize}{Whether to standardize the predictors}
 
@@ -36,26 +38,29 @@ lassoPath(
 
 \item{hessian_warm_starts}{Whether to use warm starts based on Hessian}
 
-\item{approx_hessian}{Whether to approximate Hessian in the logistic
-regression case}
+\item{log_hessian_update_type}{what type of strategy to use for
+updating the hessian for logistic regression}
+
+\item{log_hessian_auto_threshold}{if \code{log_hessian_update_type == "auto"},
+this number decides when the updates switch from the full hessian update
+to the approximation}
 
 \item{path_length}{The length of the lasso path}
 
 \item{maxit}{Maximum number of iterations for Coordinate Descent loop}
 
-\item{tol_decr}{Tolerance threshold for change in primal value}
+\item{tol_decr}{Tolerance threshold for change in primal value '}
 
-\item{tol_infeas}{Tolerance threshold for maximum infeasibility}
+\item{tol_infeas}{Tolerance threshold for maximum infeasibility '}
 
 \item{tol_gap}{Tolerance threshold for duality gap}
 
-\item{gamma}{Percent of strong approximation to add to Hessian
-approximation}
+\item{gamma}{Percent of strong approximation to add to Hessian approximation}
 
-\item{verify_hessian}{Whether ot not to verify that Hessian
-updates are correct. Used only for diagnostic purposes.}
+\item{verify_hessian}{Whether ot not to verify that Hessian updates are
+correct. Used only for diagnostic purposes.}
 
-\item{verbosity}{Controls the level of verbosity. 0 = no output.}
+\item{verbosity}{Controls the level of verbosity. 0 = no output. '}
 }
 \description{
 Fit the Lasso Path
