@@ -11,14 +11,14 @@ datasets <- c(
   "cadata",
   "gisette-train",
   "leukemia-train",
-  "dorothea",
+  "dorothea"
   "rcv1-train",
   "e2006-tfidf-train"
 )
 
 g <- expand_grid(
   dataset = datasets,
-  screening_type = c("working", "hessian"),
+  screening_type = c("working", "hessian", "gap_safe"),
   family = NA,
   n = NA,
   p = NA,
@@ -41,7 +41,7 @@ for (i in seq_len(nrow(g))) {
   n <- nrow(X)
   p <- ncol(X)
 
-  dens <- Matrix::nnzero(X) / (n*p)
+  dens <- Matrix::nnzero(X) / (n * p)
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
@@ -49,7 +49,7 @@ for (i in seq_len(nrow(g))) {
 
   n_it <- 5
 
-  time <- double(n_it + 1)
+  time <- double(n_it)
 
   for (k in seq_along(time)) {
     fit <- lassoPath(
@@ -66,7 +66,7 @@ for (i in seq_len(nrow(g))) {
   g$n[i] <- n
   g$p[i] <- p
   g$family[i] <- family
-  g$time[i] <- mean(time[-1]) # skip first trial
+  g$time[i] <- mean(time)
   g$density[i] <- dens
   g$total_violations[i] <- sum(fit$violations)
   g$avg_screened[i] <- mean(fit$active / fit$screened)
