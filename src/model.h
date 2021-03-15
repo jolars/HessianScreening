@@ -232,7 +232,7 @@ public:
 
           primal_value = primal(lambda, screened_set);
           dual_value = scaledDual(lambda);
-          duality_gap = primal_value - dual_value + datum::eps;
+          duality_gap = primal_value - dual_value;
 
           double r_screen{ 0 };
 
