@@ -1,37 +1,87 @@
+
 library(HessianScreening)
 library(RColorBrewer)
+library(tibble)
+library(dplyr)
+library(tidyr)
+library(progress)
 
-n <- 200
-p <- 5000
+g <- expand_grid(
+  np = list(c(1e4, 1e2), c(1e2, 1e4)),
+  n = NA,
+  p = NA,
+  rho = c(0, 0.5),
+  family = c("binomial", "gaussian"),
+  screening_type = c("hessian", "working", "gap_safe", "edpp"),
+  path_length = 100,
+  avg_screened = NA,
+  avg_violations = NA,
+  time = list(NA),
+  screened = list(NA),
+  active = list(NA)
+)
 
-d <- generateDesign(n, p)
+n_it <- 2
 
-X <- d$X
-y <- d$y
+pb <- progress_bar$new(
+  format = "  simulating [:bar] :percent eta: :eta",
+  total = nrow(g),
+  clear = FALSE,
+  width = 80
+)
 
-fit_hess <- lassoPath(X, y, screening_type = "hessian")
-#fit_work <- lassoPath(X, y, screening_type = "working")
-fit_strong <- lassoPath(X, y, screening_type = "strong")
-fit_gap <- lassoPath(X, y, screening_type = "gap_safe")
-fit_edpp <- lassoPath(X, y, screening_type = "edpp", force_kkt_check = TRUE)
+for (i in seq_len(nrow(g))) {
+  pb$tick()
 
-ylim <- extendrange(c(0, max(c(fit_hess$screened, fit_gap$screened))))
-cols <- c(1, brewer.pal(8, "Dark2"))
-lty <- c(2, 1, 1, 1, 1)
+  np <- g$np[i]
+  n <- np[[1]][1]
+  p <- np[[1]][2]
+  rho <- g$rho[i]
+  family <- g$family[i]
+  screening_type <- g$screening_type[i]
+  path_length <- g$path_length[i]
 
-#library(tikzDevice)
-#tikz("simulations.tex", width = 5, height = 5)
-plot(fit_hess$active, ylim = ylim, type = "l", lty = 2,
-     xlab = "Step",
-     ylab = "Screened Predictors")
+  if (family == "binomial" && screening_type == "edpp") {
+    next
+  }
 
-lines(fit_hess$screened, col = cols[2])
-lines(fit_strong$screened, col = cols[3])
-lines(fit_gap$screened, col = cols[4])
-lines(fit_edpp$screened, col = cols[5])
+  avg_screened <- violations <- time <- double(n_it)
+  active <- screened <- matrix(NA, nrow = n_it, ncol = path_length)
 
-labels <- c("active", "hessian", "strong", "Gap-SAFE", "EDPP")
+  for (j in seq_len(n_it)) {
+    set.seed(j)
 
-legend("topleft", legend = labels,
-       col = cols[seq_along(labels)], lty = lty)
-#dev.off()
+    d <- generateDesign(n, p, family = family, rho = rho)
+    X <- d$X
+    y <- d$y
+
+    fit <- lassoPath(X, y,
+      family = family, screening_type = screening_type,
+      path_length = path_length
+    )
+
+    n_lambda <- length(fit$lambda)
+
+    time[j] <- fit$full_time
+    avg_screened[j] <- mean(fit$active / fit$screened)
+    violations[j] <- sum(fit$violations)
+    screened[j, 1:n_lambda] <- fit$screened
+    active[j, 1:n_lambda] <- fit$active
+  }
+
+  keep <- !apply(screened, 2, anyNA)
+
+  active <- active[, keep]
+  screened <- screened[, keep]
+
+  g$n[i] <- n
+  g$p[i] <- p
+  g$family[i] <- family
+  g$time[i] <- list(time)
+  g$avg_screened[i] <- mean(avg_screened)
+  g$avg_violations[i] <- mean(violations)
+  g$screened[i] <- list(screened)
+  g$active[i] <- list(active)
+}
+
+saveRDS(g, "results/simulateddata.R")
