@@ -29,7 +29,6 @@ lassoPathImpl(T X,
               const uword log_hessian_auto_threshold,
               const arma::uword path_length,
               const arma::uword maxit,
-              const double tol_decr,
               const double tol_infeas,
               const double tol_gap,
               const double gamma,
@@ -240,7 +239,6 @@ lassoPathImpl(T X,
                    screening_type,
                    first_run,
                    maxit,
-                   tol_decr,
                    tol_gap,
                    tol_infeas,
                    verbosity);
@@ -513,21 +511,23 @@ lassoPathImpl(T X,
 //' @param family The name of the family, "gaussian" or "logistic"
 //' @param standardize Whether to standardize the predictors
 //' @param screening_type Which screening type to use, currently
-//'        `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
+//'   `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
 //' @param hessian_warm_starts Whether to use warm starts based on Hessian
 //' @param log_hessian_update_type what type of strategy to use for
-//'        updating the hessian for logistic regression
+//'   updating the hessian for logistic regression
 //' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
-// this '        number decides when the updates switch from the full hessian
-// update '        to the approximation ' @param path_length The length of the
-// lasso path ' @param maxit Maximum number of iterations for Coordinate Descent
-// loop ' @param tol_decr Tolerance threshold for change in primal value '
-// @param tol_infeas Tolerance threshold for maximum infeasibility ' @param
-// tol_gap Tolerance threshold for duality gap ' @param gamma Percent of strong
-// approximation to add to Hessian '        approximation ' @param
-// verify_hessian Whether ot not to verify that Hessian '        updates are
-// correct. Used only for diagnostic purposes. ' @param verbosity Controls the
-// level of verbosity. 0 = no output. ' @export
+//'   this number decides when the updates switch from the full hessian update
+//'   to the approximation
+//' @param path_length The length of the lasso path
+//' @param maxit Maximum number of iterations for Coordinate Descent loop
+//' @param tol_infeas Tolerance threshold for maximum infeasibility '
+//' @param tol_gap Tolerance threshold for duality gap
+//' @param gamma Percent of strong approximation to add to Hessian approximation
+//' @param verify_hessian Whether ot not to verify that Hessian updates are
+//'   correct. Used only for diagnostic purposes.
+//' @param verbosity Controls the level of verbosity. 0 = no output. '
+//'
+//' @export
 // [[Rcpp::export]]
 Rcpp::List
 lassoPath(SEXP X,
@@ -540,9 +540,8 @@ lassoPath(SEXP X,
           const arma::uword log_hessian_auto_threshold = 500,
           const arma::uword path_length = 100,
           const arma::uword maxit = 1e5,
-          const double tol_decr = 1e-7,
           const double tol_infeas = 1e-4,
-          const double tol_gap = 1e-4,
+          const double tol_gap = 1e-5,
           const double gamma = 0.01,
           const bool verify_hessian = false,
           const bool force_kkt_check = false,
@@ -560,7 +559,6 @@ lassoPath(SEXP X,
                            log_hessian_auto_threshold,
                            path_length,
                            maxit,
-                           tol_decr,
                            tol_infeas,
                            tol_gap,
                            gamma,
@@ -579,7 +577,6 @@ lassoPath(SEXP X,
                          log_hessian_auto_threshold,
                          path_length,
                          maxit,
-                         tol_decr,
                          tol_infeas,
                          tol_gap,
                          gamma,

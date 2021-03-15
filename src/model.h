@@ -187,7 +187,6 @@ public:
     const std::string screening_type,
     const bool first_run,
     const uword maxit,
-    const double tol_decr,
     const double tol_gap,
     const double tol_infeas,
     const uword verbosity)
@@ -295,7 +294,7 @@ public:
           Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
                   primal_value,
                   dual_value,
-                  duality_gap);
+                  duality_gap / null_deviance);
         }
 
         if (duality_gap <= tol_gap * null_deviance) {
@@ -305,7 +304,7 @@ public:
 
           if (verbosity >= 2) {
             Rprintf("      infeasibility: %f, duality gap: %f\n",
-                    infeas,
+                    infeas / lambda_max,
                     duality_gap);
           }
 

@@ -24,13 +24,24 @@ innerProductStandardized <- function(method, X, ind, X_mean_scaled) {
 #' @param family The name of the family, "gaussian" or "logistic"
 #' @param standardize Whether to standardize the predictors
 #' @param screening_type Which screening type to use, currently
-#'        `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
+#'   `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
 #' @param log_hessian_update_type what type of strategy to use for
-#'        updating the hessian for logistic regression
+#'   updating the hessian for logistic regression
 #' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
-NULL
-
+#'   this number decides when the updates switch from the full hessian update
+#'   to the approximation
+#' @param path_length The length of the lasso path
+#' @param maxit Maximum number of iterations for Coordinate Descent loop
+#' @param tol_decr Tolerance threshold for change in primal value '
+#' @param tol_infeas Tolerance threshold for maximum infeasibility '
+#' @param tol_gap Tolerance threshold for duality gap
+#' @param gamma Percent of strong approximation to add to Hessian approximation
+#' @param verify_hessian Whether ot not to verify that Hessian updates are
+#'   correct. Used only for diagnostic purposes.
+#' @param verbosity Controls the level of verbosity. 0 = no output. '
+#'
+#' @export
 lassoPath <- function(X, y, family = "gaussian", standardize = TRUE, screening_type = "working", hessian_warm_starts = TRUE, log_hessian_update_type = "auto", log_hessian_auto_threshold = 500L, path_length = 100L, maxit = 1e5L, tol_decr = 1e-7, tol_infeas = 1e-4, tol_gap = 1e-4, gamma = 0.01, verify_hessian = FALSE, force_kkt_check = FALSE, verbosity = 0L) {
     .Call(`_HessianScreening_lassoPath`, X, y, family, standardize, screening_type, hessian_warm_starts, log_hessian_update_type, log_hessian_auto_threshold, path_length, maxit, tol_decr, tol_infeas, tol_gap, gamma, verify_hessian, force_kkt_check, verbosity)
 }
