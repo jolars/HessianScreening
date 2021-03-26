@@ -15,9 +15,8 @@ lassoPath(
   log_hessian_auto_threshold = 500L,
   path_length = 100L,
   maxit = 100000L,
-  tol_decr = 1e-07,
   tol_infeas = 1e-04,
-  tol_gap = 1e-04,
+  tol_gap = 1e-05,
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,
@@ -48,8 +47,6 @@ to the approximation}
 \item{path_length}{The length of the lasso path}
 
 \item{maxit}{Maximum number of iterations for Coordinate Descent loop}
-
-\item{tol_decr}{Tolerance threshold for change in primal value '}
 
 \item{tol_infeas}{Tolerance threshold for maximum infeasibility '}
 
