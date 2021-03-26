@@ -11,14 +11,18 @@ datasets <- c(
   "cadata",
   "gisette-train",
   "leukemia-train",
-  "dorothea"
+  "dorothea",
   "rcv1-train",
-  "e2006-tfidf-train"
+  "e2006-tfidf-train",
+  "ijcnn1-train",
+  "news20",
+  "YearPredictionMSD-train"
 )
+
 
 g <- expand_grid(
   dataset = datasets,
-  screening_type = c("working", "hessian", "gap_safe"),
+  screening_type = c("working", "hessian", "gap_safe", "edpp"),
   family = NA,
   n = NA,
   p = NA,
@@ -45,13 +49,17 @@ for (i in seq_len(nrow(g))) {
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
+  if (family == "gaussian" && screening_type == "edpp") {
+    next
+  }
+
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
   n_it <- 5
 
   time <- double(n_it)
 
-  for (k in seq_along(time)) {
+  for (k in seq_len(n_it)) {
     fit <- lassoPath(
       X,
       y,
