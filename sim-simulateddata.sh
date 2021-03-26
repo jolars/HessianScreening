@@ -15,8 +15,5 @@
 # modules
 module purge
 
-# bind results folders in Project to host
-export SINGULARITY_BIND="results:/Project/results"
-
 # run the test
-singularity run container.sif simulateddata.R
+singularity run --bind results:/Project/results container.sif simulateddata.R
