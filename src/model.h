@@ -162,7 +162,7 @@ public:
         continue;
       }
 
-      if (std::abs(XTcenter(j)) + r_normX_j < 1) {
+      if (std::abs(XTcenter(j)) + r_normX_j + std::sqrt(datum::eps) < 1) {
         // predictor must be zero; update residual and remove from screened set
         if (beta(j) != 0) {
           adjustResidual(X, j, -beta(j));
@@ -201,7 +201,7 @@ public:
 
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
-    double duality_gap = primal_value - dual_value;
+    double duality_gap = std::max(primal_value - dual_value, 0.0);
 
     vec XTcenter(p);
 
@@ -232,7 +232,7 @@ public:
 
           primal_value = primal(lambda, screened_set);
           dual_value = scaledDual(lambda);
-          duality_gap = primal_value - dual_value;
+          duality_gap = std::max(primal_value - dual_value, 0.0);
 
           double r_screen{ 0 };
 
@@ -288,7 +288,7 @@ public:
           }
         }
 
-        duality_gap = std::abs(primal_value - dual_value);
+        duality_gap = std::max(primal_value - dual_value, 0.0);
 
         if (verbosity >= 2) {
           Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
