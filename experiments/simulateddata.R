@@ -7,7 +7,7 @@ library(tidyr)
 library(progress)
 
 g <- expand_grid(
-  np = list(c(1e4, 1e2), c(1e2, 1e4)),
+  np = list(c(5e4, 1e2), c(1e2, 5e4)),
   n = NA,
   p = NA,
   rho = c(0, 0.3, 0.6),
@@ -21,7 +21,7 @@ g <- expand_grid(
   active = list(NA)
 )
 
-n_it <- 2
+n_it <- 20
 
 pb <- progress_bar$new(
   format = "  simulating [:bar] :percent eta: :eta",
