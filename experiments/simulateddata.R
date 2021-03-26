@@ -25,14 +25,12 @@ n_it <- 20
 
 pb <- progress_bar$new(
   format = "  simulating [:bar] :percent eta: :eta",
-  total = nrow(g),
+  total = nrow(g) * n_it,
   clear = FALSE,
   width = 80
 )
 
 for (i in seq_len(nrow(g))) {
-  pb$tick()
-
   np <- g$np[i]
   n <- np[[1]][1]
   p <- np[[1]][2]
@@ -50,6 +48,7 @@ for (i in seq_len(nrow(g))) {
 
   for (j in seq_len(n_it)) {
     set.seed(j)
+    pb$tick()
 
     d <- generateDesign(n, p, family = family, rho = rho)
     X <- d$X
@@ -58,7 +57,8 @@ for (i in seq_len(nrow(g))) {
     fit <- lassoPath(
       X,
       y,
-      family = family, screening_type = screening_type,
+      family = family,
+      screening_type = screening_type,
       path_length = path_length
     )
 
