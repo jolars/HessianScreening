@@ -187,8 +187,7 @@ lassoPathImpl(T X,
   const double null_dev = model->deviance();
   double dev = null_dev;
 
-  bool check_kkt = (screening_type != "gap_safe" && screening_type != "edpp") ||
-                   force_kkt_check;
+  bool check_kkt = (screening_type != "gap_safe") || force_kkt_check;
 
   std::vector<double> it_times;
   std::vector<double> cd_times;
@@ -258,7 +257,7 @@ lassoPathImpl(T X,
 
         violations.fill(false);
 
-        if (screening_type == "strong") {
+        if (screening_type == "strong" || screening_type == "edpp") {
           model->updateCorrelation(X, unscreened_set);
           kktCheck(violations, screened, c, unscreened_set, lambda);
 
