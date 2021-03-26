@@ -10,7 +10,7 @@ g <- expand_grid(
   np = list(c(1e4, 1e2), c(1e2, 1e4)),
   n = NA,
   p = NA,
-  rho = c(0, 0.5),
+  rho = c(0, 0.3, 0.6),
   family = c("binomial", "gaussian"),
   screening_type = c("hessian", "working", "gap_safe", "edpp"),
   path_length = 100,
@@ -55,7 +55,9 @@ for (i in seq_len(nrow(g))) {
     X <- d$X
     y <- d$y
 
-    fit <- lassoPath(X, y,
+    fit <- lassoPath(
+      X,
+      y,
       family = family, screening_type = screening_type,
       path_length = path_length
     )
