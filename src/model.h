@@ -182,8 +182,6 @@ public:
     const T& X,
     const vec& X_norms_squared,
     const double lambda,
-    const double lambda_max,
-    const double null_deviance,
     const std::string screening_type,
     const bool first_run,
     const uword maxit,
@@ -201,7 +199,7 @@ public:
 
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
-    double duality_gap = std::max(primal_value - dual_value, 0.0);
+    double duality_gap = primal_value - dual_value;
 
     vec XTcenter(p);
 
@@ -232,13 +230,13 @@ public:
 
           primal_value = primal(lambda, screened_set);
           dual_value = scaledDual(lambda);
-          duality_gap = std::max(primal_value - dual_value, 0.0);
+          duality_gap = primal_value - dual_value;
 
           double r_screen{ 0 };
 
           if (screening_type == "gap_safe") {
             XTcenter = c / dual_scale;
-            r_screen = safeScreeningRadius(duality_gap, lambda);
+            r_screen = safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
           }
 
           safeScreening(screened, screened_set, X, XTcenter, r_screen);
@@ -254,7 +252,7 @@ public:
           double beta_j_old = beta(j);
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
-          beta(j) = prox(c(j) / hess_j + beta_j_old, lambda / hess_j);
+          beta(j) = prox(beta_j_old + c(j) / hess_j, lambda / hess_j);
 
           if (beta_j_old != beta(j)) {
             adjustResidual(X, j, beta(j) - beta_j_old);
@@ -273,7 +271,7 @@ public:
           double t = 1;
 
           while (primal_value >= primal_value_old &&
-                 dual_value <= dual_value_old && line_it < 15) {
+                 dual_value <= dual_value_old && line_it < 10) {
             line_it++;
             t *= 0.5;
 
@@ -288,28 +286,25 @@ public:
           }
         }
 
-        duality_gap = std::max(primal_value - dual_value, 0.0);
+        duality_gap = primal_value - dual_value;
 
         if (verbosity >= 2) {
           Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
                   primal_value,
                   dual_value,
-                  duality_gap / null_deviance);
+                  duality_gap / primal_value);
         }
 
-        if (duality_gap <= tol_gap * null_deviance) {
+        if (std::abs(duality_gap) <= tol_gap * primal_value) {
           updateCorrelation(X, screened_set);
 
           double infeas = lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
 
           if (verbosity >= 2) {
-            Rprintf("      infeasibility: %f, duality gap: %f\n",
-                    infeas / lambda_max,
-                    duality_gap);
+            Rprintf("      infeasibility: %f\n", infeas / lambda);
           }
 
-          if (infeas <= lambda_max * tol_infeas &&
-              duality_gap <= tol_gap * null_deviance) {
+          if (infeas <= lambda * tol_infeas) {
             break;
           }
         }
