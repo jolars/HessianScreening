@@ -196,6 +196,8 @@ lassoPathImpl(T X,
   std::vector<double> hess_times;
   std::vector<double> duplicates_times;
 
+  const double null_primal = model->primal(lambda_max, active_set);
+
   uword i = 0;
 
   while (true) {
@@ -233,6 +235,8 @@ lassoPathImpl(T X,
                    X,
                    X_norms_squared,
                    lambda,
+                   lambda_max,
+                   null_primal,
                    screening_type,
                    first_run,
                    maxit,

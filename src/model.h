@@ -182,6 +182,8 @@ public:
     const T& X,
     const vec& X_norms_squared,
     const double lambda,
+    const double lambda_max,
+    const double null_primal,
     const std::string screening_type,
     const bool first_run,
     const uword maxit,
@@ -292,19 +294,19 @@ public:
           Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
                   primal_value,
                   dual_value,
-                  duality_gap / primal_value);
+                  duality_gap / null_primal);
         }
 
-        if (std::abs(duality_gap) <= tol_gap * primal_value) {
+        if (std::abs(duality_gap) <= tol_gap * null_primal) {
           updateCorrelation(X, screened_set);
 
           double infeas = lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
 
           if (verbosity >= 2) {
-            Rprintf("      infeasibility: %f\n", infeas / lambda);
+            Rprintf("      infeasibility: %f\n", infeas / lambda_max);
           }
 
-          if (infeas <= lambda * tol_infeas) {
+          if (infeas <= lambda_max * tol_infeas) {
             break;
           }
         }
