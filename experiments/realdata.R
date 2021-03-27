@@ -9,16 +9,14 @@ datasets <- c(
   "arcene",
   "abalone",
   "cadata",
-  "gisette-train",
+  "colon-cancer",
   "leukemia-train",
-  "dorothea",
   "rcv1-train",
   "e2006-tfidf-train",
   "ijcnn1-train",
   "news20",
   "YearPredictionMSD-train"
 )
-
 
 g <- expand_grid(
   dataset = datasets,
@@ -55,7 +53,7 @@ for (i in seq_len(nrow(g))) {
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
-  n_it <- 5
+  n_it <- 1
 
   time <- double(n_it)
 
