@@ -254,10 +254,45 @@ public:
           double beta_j_old = beta(j);
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
-          beta(j) = prox(beta_j_old + c(j) / hess_j, lambda / hess_j);
 
-          if (beta_j_old != beta(j)) {
-            adjustResidual(X, j, beta(j) - beta_j_old);
+          double dir = c(j) / hess_j;
+
+          double t = 1;
+          double f_old = primal(lambda, screened_set);
+
+          double a = 0.1;
+          double b = 0.5;
+
+          // line search
+          while (true) {
+            double beta_tilde = beta(j);
+            beta(j) = prox(beta_j_old + t * dir, t * lambda / hess_j);
+
+            double d = beta(j) - beta_j_old;
+
+            if (beta_tilde != beta(j)) {
+              adjustResidual(X, j, beta(j) - beta_tilde);
+              double c_old = c(j);
+
+              updateCorrelation(X, j);
+
+              if (std::abs(std::max(c(j), c_old) - std::min(c(j), c_old)) <
+                  lambda) {
+                break;
+              }
+
+              double f = primal(lambda, screened_set);
+
+              if (f <= f_old - a * t * c(j) * d + 0.5 * d * d / t + 1e-12) {
+                break;
+              } else {
+                t *= b;
+              }
+            } else {
+              break;
+            }
+
+            Rcpp::checkUserInterrupt();
           }
         }
 
@@ -266,27 +301,28 @@ public:
 
         // if we make no progress in either primal or dual objective, initialize
         // line search
-        if (primal_value >= primal_value_old && dual_value <= dual_value_old) {
-          vec beta_screened = beta(screened_set);
+        // if (primal_value >= primal_value_old && dual_value <= dual_value_old)
+        // {
+        //   vec beta_screened = beta(screened_set);
 
-          uword line_it = 0;
-          double t = 1;
+        //   uword line_it = 0;
+        //   double t = 1;
 
-          while (primal_value >= primal_value_old &&
-                 dual_value <= dual_value_old && line_it < 10) {
-            line_it++;
-            t *= 0.5;
+        //   while (primal_value >= primal_value_old &&
+        //          dual_value <= dual_value_old && line_it < 10) {
+        //     line_it++;
+        //     t *= 0.5;
 
-            beta(screened_set) =
-              (1 - t) * beta_screened_old + t * beta_screened;
+        //     beta(screened_set) =
+        //       (1 - t) * beta_screened_old + t * beta_screened;
 
-            updateLinearPredictor(X, screened_set);
-            updateResidual();
+        //     updateLinearPredictor(X, screened_set);
+        //     updateResidual();
 
-            primal_value = primal(lambda, screened_set);
-            dual_value = dual();
-          }
-        }
+        //     primal_value = primal(lambda, screened_set);
+        //     dual_value = dual();
+        //   }
+        // }
 
         duality_gap = primal_value - dual_value;
 
