@@ -11,11 +11,12 @@ datasets <- c(
   "cadata",
   "colon-cancer",
   "leukemia-train",
-  "rcv1-train",
   "e2006-tfidf-train",
   "ijcnn1-train",
-  "news20",
-  "YearPredictionMSD-train"
+  "YearPredictionMSD-train",
+  "madelon-train",
+  "e2006-log1p-test",
+  "news20"
 )
 
 g <- expand_grid(
