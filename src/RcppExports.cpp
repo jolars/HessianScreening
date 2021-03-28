@@ -6,60 +6,6 @@
 
 using namespace Rcpp;
 
-// blockMatrixConstruction
-void blockMatrixConstruction(int method, unsigned n, unsigned m);
-RcppExport SEXP _HessianScreening_blockMatrixConstruction(SEXP methodSEXP, SEXP nSEXP, SEXP mSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type n(nSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type m(mSEXP);
-    blockMatrixConstruction(method, n, m);
-    return R_NilValue;
-END_RCPP
-}
-// denseInnerProduct
-void denseInnerProduct(int method, unsigned n, unsigned p, unsigned m);
-RcppExport SEXP _HessianScreening_denseInnerProduct(SEXP methodSEXP, SEXP nSEXP, SEXP pSEXP, SEXP mSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type n(nSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type p(pSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type m(mSEXP);
-    denseInnerProduct(method, n, p, m);
-    return R_NilValue;
-END_RCPP
-}
-// sparseInnerProduct
-void sparseInnerProduct(int method, unsigned n, unsigned p, unsigned m, double density, int n_threads);
-RcppExport SEXP _HessianScreening_sparseInnerProduct(SEXP methodSEXP, SEXP nSEXP, SEXP pSEXP, SEXP mSEXP, SEXP densitySEXP, SEXP n_threadsSEXP) {
-BEGIN_RCPP
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type n(nSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type p(pSEXP);
-    Rcpp::traits::input_parameter< unsigned >::type m(mSEXP);
-    Rcpp::traits::input_parameter< double >::type density(densitySEXP);
-    Rcpp::traits::input_parameter< int >::type n_threads(n_threadsSEXP);
-    sparseInnerProduct(method, n, p, m, density, n_threads);
-    return R_NilValue;
-END_RCPP
-}
-// innerProductStandardized
-arma::mat innerProductStandardized(int method, const arma::sp_mat& X, const arma::uvec& ind, const arma::vec& X_mean_scaled);
-RcppExport SEXP _HessianScreening_innerProductStandardized(SEXP methodSEXP, SEXP XSEXP, SEXP indSEXP, SEXP X_mean_scaledSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type method(methodSEXP);
-    Rcpp::traits::input_parameter< const arma::sp_mat& >::type X(XSEXP);
-    Rcpp::traits::input_parameter< const arma::uvec& >::type ind(indSEXP);
-    Rcpp::traits::input_parameter< const arma::vec& >::type X_mean_scaled(X_mean_scaledSEXP);
-    rcpp_result_gen = Rcpp::wrap(innerProductStandardized(method, X, ind, X_mean_scaled));
-    return rcpp_result_gen;
-END_RCPP
-}
 // lassoPath
 Rcpp::List lassoPath(SEXP X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, std::string log_hessian_update_type, const arma::uword log_hessian_auto_threshold, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPath(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_thresholdSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_infeasSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP verbositySEXP) {
@@ -88,10 +34,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_HessianScreening_blockMatrixConstruction", (DL_FUNC) &_HessianScreening_blockMatrixConstruction, 3},
-    {"_HessianScreening_denseInnerProduct", (DL_FUNC) &_HessianScreening_denseInnerProduct, 4},
-    {"_HessianScreening_sparseInnerProduct", (DL_FUNC) &_HessianScreening_sparseInnerProduct, 6},
-    {"_HessianScreening_innerProductStandardized", (DL_FUNC) &_HessianScreening_innerProductStandardized, 4},
     {"_HessianScreening_lassoPath", (DL_FUNC) &_HessianScreening_lassoPath, 16},
     {NULL, NULL, 0}
 };
