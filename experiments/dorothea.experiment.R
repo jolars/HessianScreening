@@ -2,26 +2,49 @@ rm(list = ls())
 graphics.off()
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
+d <- readRDS(file.path("data", paste0("news20", ".rds")))
 X <- d$X
 y <- d$y
 family <- "binomial"
 screening_type <- "hessian"
-fit.w <- lassoPath(
+tol_gap <- 1e-4
+tol_infeas <- 1e-3
+
+fit_working <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "working",
-    verbosity = 1
+    verbosity = 1,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas
 )
-fit <- lassoPath(
+fit_hessian <- lassoPath(
     X,
     y,
     family = family,
-    screening_type = screening_type,
-    hessian_warm_starts = TRUE,
-    approx_hessian = F,
-    verbosity = 1
+    screening_type = "hessian",
+    verbosity = 1,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas
+)
+fit_edpp <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "edpp",
+    verbosity = 1,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas
+)
+fit_gapsafe <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "gap_safe",
+    verbosity = 1,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas
 )
 
 # cat("***************\n")
