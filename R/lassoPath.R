@@ -8,6 +8,8 @@
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
 #' @param log_hessian_update_type What type of strategy to use for
 #'   updating the hessian for logistic regression
+#' @param log_hessian_auto_update_freq Frequency of hessian updates when
+#'   `log_hessian_update_type = "auto"`
 #' @param path_length The (desired) length of the lasso path
 #' @param maxit Maximum number of iterations for Coordinate Descent loop
 #' @param tol_infeas Tolerance threshold for maximum infeasibility
@@ -35,6 +37,7 @@ lassoPath <- function(X,
                       ),
                       hessian_warm_starts = TRUE,
                       log_hessian_update_type = c("auto", "full", "approx"),
+                      log_hessian_auto_update_freq = 10,
                       path_length = 100L,
                       maxit = 1e5,
                       tol_infeas = 1e-3,
@@ -64,6 +67,7 @@ lassoPath <- function(X,
       screening_type,
       hessian_warm_starts,
       log_hessian_update_type,
+      log_hessian_auto_update_freq,
       path_length,
       maxit,
       tol_infeas,
@@ -83,6 +87,7 @@ lassoPath <- function(X,
       screening_type,
       hessian_warm_starts,
       log_hessian_update_type,
+      log_hessian_auto_update_freq,
       path_length,
       maxit,
       tol_infeas,

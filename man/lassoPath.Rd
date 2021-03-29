@@ -13,6 +13,7 @@ lassoPath(
     "strong"),
   hessian_warm_starts = TRUE,
   log_hessian_update_type = c("auto", "full", "approx"),
+  log_hessian_auto_update_freq = 10,
   path_length = 100L,
   maxit = 1e+05,
   tol_infeas = 0.001,
@@ -39,6 +40,9 @@ lassoPath(
 
 \item{log_hessian_update_type}{What type of strategy to use for
 updating the hessian for logistic regression}
+
+\item{log_hessian_auto_update_freq}{Frequency of hessian updates when
+\code{log_hessian_update_type = "auto"}}
 
 \item{path_length}{The (desired) length of the lasso path}
 
