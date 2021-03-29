@@ -52,13 +52,23 @@ lassoPath(T& X,
       Rcpp::stop("EDPP cannot be used in logistic regression");
   }
 
+  const double sparsity = getSparsity(X);
+
+  uword log_hessian_auto_update_freq = 1;
+
   const bool log_hessian_auto = log_hessian_update_type == "auto";
 
-  const double sparsity = getSparsity(X);
-  const uword log_hessian_auto_update_freq =
-    std::max(1,
-             static_cast<int>(
-               std::round(sparsity * std::min(n, p) / std::max(n, p) * 10)));
+  if (log_hessian_update_type == "auto") {
+    // log_hessian_update_type =
+    //   sparsity * std::min(n, p) / std::max(n, p) > 0.1 ? "approx"
+    //                                                          : "full";
+    // log_hessian_auto_update_freq =
+    //   std::max(1,
+    //            static_cast<int>(
+    //              std::round(sparsity * std::min(n, p) / std::max(n, p) *
+    //              10)));
+    log_hessian_auto_update_freq = 10;
+  }
 
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
@@ -366,8 +376,6 @@ lassoPath(T& X,
       } else {
         log_hessian_update_type = "approx";
         model->setLogHessianUpdateType("approx");
-        active_perm = active_set;
-        active_perm_prev = active_set_prev;
       }
     }
 
@@ -432,6 +440,8 @@ lassoPath(T& X,
 
         Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
         Hinv_s = Hinv * s(active_set);
+
+        active_perm = active_set;
       }
 
       hess_times.emplace_back(timer.toc() - t0);
