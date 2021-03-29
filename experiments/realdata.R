@@ -54,6 +54,9 @@ for (i in seq_len(nrow(g))) {
     next
   }
 
+  log_hessian_update_type <-
+    ifelse((1 - dens) * min(n, p) / max(n, p) * 10 < 0.1, "full", "approx")
+
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
   n_it <- 1
@@ -67,7 +70,7 @@ for (i in seq_len(nrow(g))) {
       family = family,
       screening_type = screening_type,
       verbosity = 0,
-      log_hessian_update_type = "full"
+      log_hessian_update_type = log_hessian_update_type
     )
 
     time[k] <- fit$full_time
