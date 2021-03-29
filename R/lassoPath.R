@@ -29,7 +29,8 @@ lassoPath <- function(X,
                         "hessian",
                         "hessian_adaptive",
                         "edpp",
-                        "gap_safe"
+                        "gap_safe",
+                        "strong"
                       ),
                       hessian_warm_starts = TRUE,
                       log_hessian_update_type = c("auto", "full", "approx"),

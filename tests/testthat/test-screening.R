@@ -30,7 +30,7 @@ test_that("screening methods work", {
         expect_equal(fit_work$dev[steps], fit$dev[steps],
                      tolerance = 1e-3)
 
-        if (screening_type %in% c("gap_safe", "edpp")) {
+        if (screening_type %in% c("gap_safe")) {
           expect_equal(sum(fit$violations), 0)
         }
       }
