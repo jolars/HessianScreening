@@ -7,7 +7,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
   "arcene",
-  "abalone",
+  "cadata",
   "dorothea",
   "gisette-train",
   "colon-cancer",
@@ -18,7 +18,6 @@ datasets <- c(
   "e2006-tfidf-train",
   "e2006-log1p-train",
   "rcv1-train",
-  "covtype",
   "news20"
 )
 
@@ -47,7 +46,7 @@ for (i in seq_len(nrow(g))) {
   n <- nrow(X)
   p <- ncol(X)
 
-  dens <- Matrix::nnzero(X) / (n * p)
+  dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
@@ -68,7 +67,7 @@ for (i in seq_len(nrow(g))) {
       family = family,
       screening_type = screening_type,
       verbosity = 0,
-      log_hessian_update_type = "approx"
+      log_hessian_update_type = "full"
     )
 
     time[k] <- fit$full_time
