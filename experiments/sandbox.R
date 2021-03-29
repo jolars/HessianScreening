@@ -1,8 +1,6 @@
-rm(list = ls())
-graphics.off()
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
+d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 X <- d$X
 y <- d$y
 n <- nrow(X)
@@ -12,11 +10,7 @@ screening_type <- "hessian"
 tol_gap <- 1e-4
 tol_infeas <- 1e-3
 
-sparsity <- 1 - Matrix::nnzero(X)/length(X)
-
-a <- min(n, p) / max(n, p)
-
-update_freq <- max(1, sparsity * a * 10)
+sparsity <- 1 - Matrix::nnzero(X) / length(X)
 
 fit_working <- lassoPath(
     X,
@@ -25,8 +19,12 @@ fit_working <- lassoPath(
     screening_type = "working",
     verbosity = 1,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas
+    tol_infeas = tol_infeas,
+    line_search = TRUE
 )
+
+fit_working$full_time
+
 fit_hessian <- lassoPath(
     X,
     y,
@@ -56,19 +54,19 @@ fit_gapsafe <- lassoPath(
     tol_infeas = tol_infeas
 )
 
+# # cat("***************\n")
+# cat("hessian:\n")
+# cat("full = ", fit$full_time, "\n")
+# cat("cd_time = ", sum(fit$cd_time), "\n")
+# cat("kkt_time = ", sum(fit$kkt_time), "\n")
+# cat("hess_time = ", sum(fit$hess_time), "\n")
+# cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
 # cat("***************\n")
-cat("hessian:\n")
-cat("full = ", fit$full_time, "\n")
-cat("cd_time = ", sum(fit$cd_time), "\n")
-cat("kkt_time = ", sum(fit$kkt_time), "\n")
-cat("hess_time = ", sum(fit$hess_time), "\n")
-cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
-cat("***************\n")
-cat("working:\n")
-cat("full = ", fit.w$full_time, "\n")
-cat("cd_time = ", sum(fit.w$cd_time), "\n")
-cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
+# cat("working:\n")
+# cat("full = ", fit.w$full_time, "\n")
+# cat("cd_time = ", sum(fit.w$cd_time), "\n")
+# cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
 
 
-plot(fit$passes, type = "l")
-lines(fit.w$passes, col = "red")
+# plot(fit$passes, type = "l")
+# lines(fit.w$passes, col = "red")
