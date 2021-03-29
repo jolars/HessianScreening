@@ -26,7 +26,6 @@ lassoPath(T& X,
           const std::string screening_type,
           const bool hessian_warm_starts,
           std::string log_hessian_update_type,
-          const uword log_hessian_auto_update_freq,
           const uword path_length,
           const uword maxit,
           const double tol_infeas,
@@ -53,6 +52,12 @@ lassoPath(T& X,
   }
 
   const bool log_hessian_auto = log_hessian_update_type == "auto";
+
+  const double sparsity = getSparsity(X);
+  const uword log_hessian_auto_update_freq =
+    std::max(1,
+             static_cast<int>(
+               std::round(sparsity * std::min(n, p) / std::max(n, p) * 10)));
 
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
@@ -518,7 +523,6 @@ lassoPathDense(arma::mat X,
                const std::string screening_type,
                const bool hessian_warm_starts,
                std::string log_hessian_update_type,
-               const arma::uword log_hessian_auto_update_freq,
                const arma::uword path_length,
                const arma::uword maxit,
                const double tol_infeas,
@@ -535,7 +539,6 @@ lassoPathDense(arma::mat X,
                    screening_type,
                    hessian_warm_starts,
                    log_hessian_update_type,
-                   log_hessian_auto_update_freq,
                    path_length,
                    maxit,
                    tol_infeas,
@@ -555,7 +558,6 @@ lassoPathSparse(arma::sp_mat X,
                 const std::string screening_type,
                 const bool hessian_warm_starts,
                 std::string log_hessian_update_type,
-                const arma::uword log_hessian_auto_update_freq,
                 const arma::uword path_length,
                 const arma::uword maxit,
                 const double tol_infeas,
@@ -572,7 +574,6 @@ lassoPathSparse(arma::sp_mat X,
                    screening_type,
                    hessian_warm_starts,
                    log_hessian_update_type,
-                   log_hessian_auto_update_freq,
                    path_length,
                    maxit,
                    tol_infeas,

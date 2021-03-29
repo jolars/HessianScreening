@@ -4,21 +4,19 @@
 #' @param y The reponse vector
 #' @param family The name of the family, "gaussian" or "logistic"
 #' @param standardize Whether to standardize the predictors
-#' @param screening_type Which screening type to use, currently
-#'   `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
+#' @param screening_type Screening rule
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
-#' @param log_hessian_update_type what type of strategy to use for
+#' @param log_hessian_update_type What type of strategy to use for
 #'   updating the hessian for logistic regression
-#' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
-#'   this number decides when the updates switch from the full hessian update
-#'   to the approximation
-#' @param path_length The length of the lasso path
+#' @param path_length The (desired) length of the lasso path
 #' @param maxit Maximum number of iterations for Coordinate Descent loop
 #' @param tol_infeas Tolerance threshold for maximum infeasibility
 #' @param tol_gap Tolerance threshold for duality gap
 #' @param gamma Percent of strong approximation to add to Hessian approximation
-#' @param verify_hessian Whether ot not to verify that Hessian updates are
+#' @param verify_hessian Whether to not to verify that Hessian updates are
 #'   correct. Used only for diagnostic purposes.
+#' @param force_kkt_check Whether to force KKT checks even when screening rule
+#'   is safe
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
 #' @export
@@ -54,10 +52,6 @@ lassoPath <- function(X,
 
   if (sparse) {
     X <- as(X, "dgCMatrix")
-    sparsity <- 1 - Matrix::nnzero(X) / (n * p)
-
-    log_hessian_update_freq <-
-      max(1, ceiling(sparsity * min(n, p) / max(n, p) * 10))
 
     lassoPathSparse(
       X,
@@ -67,7 +61,6 @@ lassoPath <- function(X,
       screening_type,
       hessian_warm_starts,
       log_hessian_update_type,
-      log_hessian_update_freq,
       path_length,
       maxit,
       tol_infeas,
@@ -86,7 +79,6 @@ lassoPath <- function(X,
       screening_type,
       hessian_warm_starts,
       log_hessian_update_type,
-      1L,
       path_length,
       maxit,
       tol_infeas,

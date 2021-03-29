@@ -31,15 +31,14 @@ lassoPath(
 
 \item{standardize}{Whether to standardize the predictors}
 
-\item{screening_type}{Which screening type to use, currently
-\code{"hessian"}, \code{"working"},\code{"gap_safe"}, or \code{"edpp"}.}
+\item{screening_type}{Screening rule}
 
 \item{hessian_warm_starts}{Whether to use warm starts based on Hessian}
 
-\item{log_hessian_update_type}{what type of strategy to use for
+\item{log_hessian_update_type}{What type of strategy to use for
 updating the hessian for logistic regression}
 
-\item{path_length}{The length of the lasso path}
+\item{path_length}{The (desired) length of the lasso path}
 
 \item{maxit}{Maximum number of iterations for Coordinate Descent loop}
 
@@ -49,14 +48,13 @@ updating the hessian for logistic regression}
 
 \item{gamma}{Percent of strong approximation to add to Hessian approximation}
 
-\item{verify_hessian}{Whether ot not to verify that Hessian updates are
+\item{verify_hessian}{Whether to not to verify that Hessian updates are
 correct. Used only for diagnostic purposes.}
 
-\item{verbosity}{Controls the level of verbosity. 0 = no output.}
+\item{force_kkt_check}{Whether to force KKT checks even when screening rule
+is safe}
 
-\item{log_hessian_auto_threshold}{if \code{log_hessian_update_type == "auto"},
-this number decides when the updates switch from the full hessian update
-to the approximation}
+\item{verbosity}{Controls the level of verbosity. 0 = no output.}
 }
 \description{
 Lasso Path with Hessian Screening Rules
