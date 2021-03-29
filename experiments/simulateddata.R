@@ -86,4 +86,4 @@ for (i in seq_len(nrow(g))) {
   g$active[i] <- list(active)
 }
 
-saveRDS(g, "results/simulateddata.R")
+saveRDS(g, "results/simulateddata.rds")
