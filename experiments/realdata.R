@@ -15,10 +15,11 @@ datasets <- c(
   "ijcnn1-train",
   "YearPredictionMSD-train",
   "madelon-train",
-  "news20",
   "e2006-tfidf-train",
   "e2006-log1p-train",
-  "rcv1-train"
+  "rcv1-train",
+  "covtype",
+  "news20"
 )
 
 g <- expand_grid(
