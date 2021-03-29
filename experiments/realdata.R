@@ -8,15 +8,17 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   "arcene",
   "abalone",
+  "dorothea",
   "gisette-train",
   "colon-cancer",
   "leukemia-train",
-  "e2006-tfidf-train",
   "ijcnn1-train",
   "YearPredictionMSD-train",
   "madelon-train",
-  "e2006-log1p-test",
-  "news20"
+  "news20",
+  "e2006-tfidf-train",
+  "e2006-log1p-train",
+  "rcv1-train"
 )
 
 g <- expand_grid(
@@ -82,5 +84,7 @@ for (i in seq_len(nrow(g))) {
   g$screened[i] <- list(fit$screened)
   g$active[i] <- list(fit$active)
 }
+
+cat("DONE!\n")
 
 saveRDS(g, "results/realdata.rds")
