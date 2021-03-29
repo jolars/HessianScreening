@@ -265,11 +265,8 @@ public:
           if (v != 0) {
             if (family == "binomial") {
               // line search
-              primal_value = primal(lambda, screened_set);
-
-              double t = 1;
-
-              double primal_value_old = primal_value;
+              double primal_value_old = primal(lambda, screened_set);
+              double t = 1; // learning rate
 
               while (true) {
                 double beta_j_prev = beta(j);
