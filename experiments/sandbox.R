@@ -1,6 +1,6 @@
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
+d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
 X <- d$X
 y <- d$y
 n <- nrow(X)
@@ -11,6 +11,8 @@ tol_gap <- 1e-4
 tol_infeas <- 1e-3
 
 sparsity <- 1 - Matrix::nnzero(X) / length(X)
+
+sparsity * min(n, p) / max(n, p) * 10
 
 fit_working <- lassoPath(
     X,
