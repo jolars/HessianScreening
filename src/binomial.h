@@ -19,7 +19,8 @@ public:
   const double p_min = 1e-5;
   const double p_max = 1 - p_min;
 
-  Binomial(vec& y,
+  Binomial(const std::string family,
+           vec& y,
            vec& beta,
            vec& residual,
            vec& Xbeta,
@@ -30,8 +31,8 @@ public:
            const uword p,
            const bool standardize,
            const std::string log_hessian_update_type)
-    : Model{ y, beta, residual,   Xbeta, c, X_mean_scaled, X_norms_squared,
-             n, p,    standardize }
+    : Model{ family,          y, beta, residual,   Xbeta, c, X_mean_scaled,
+             X_norms_squared, n, p,    standardize }
     , expXbeta(y.n_elem, fill::zeros)
     , pr(y.n_elem, fill::zeros)
     , w(y.n_elem, fill::zeros)

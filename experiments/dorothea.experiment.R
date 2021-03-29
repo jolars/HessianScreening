@@ -2,13 +2,21 @@ rm(list = ls())
 graphics.off()
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("news20", ".rds")))
+d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
 X <- d$X
 y <- d$y
+n <- nrow(X)
+p <- ncol(X)
 family <- "binomial"
 screening_type <- "hessian"
 tol_gap <- 1e-4
 tol_infeas <- 1e-3
+
+sparsity <- 1 - Matrix::nnzero(X)/length(X)
+
+a <- min(n, p) / max(n, p)
+
+update_freq <- max(1, sparsity * a * 10)
 
 fit_working <- lassoPath(
     X,
@@ -26,7 +34,8 @@ fit_hessian <- lassoPath(
     screening_type = "hessian",
     verbosity = 1,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas
+    tol_infeas = tol_infeas,
+    log_hessian_update_type = "auto"
 )
 fit_edpp <- lassoPath(
     X,

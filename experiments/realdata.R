@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   "arcene",
   "abalone",
-  "cadata",
+  "gisette-train",
   "colon-cancer",
   "leukemia-train",
   "e2006-tfidf-train",
@@ -48,7 +48,7 @@ for (i in seq_len(nrow(g))) {
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
-  if (family == "gaussian" && screening_type == "edpp") {
+  if (family == "binomial" && screening_type == "edpp") {
     next
   }
 
@@ -64,7 +64,8 @@ for (i in seq_len(nrow(g))) {
       y,
       family = family,
       screening_type = screening_type,
-      verbosity = 0
+      verbosity = 0,
+      log_hessian_update_type = "approx"
     )
 
     time[k] <- fit$full_time

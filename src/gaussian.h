@@ -10,7 +10,8 @@ using namespace arma;
 class Gaussian : public Model
 {
 public:
-  Gaussian(vec& y,
+  Gaussian(const std::string family,
+           vec& y,
            vec& beta,
            vec& residual,
            vec& Xbeta,
@@ -20,8 +21,8 @@ public:
            const uword n,
            const uword p,
            const bool standardize)
-    : Model{ y, beta, residual,   Xbeta, c, X_mean_scaled, X_norms_squared,
-             n, p,    standardize }
+    : Model{ family,          y, beta, residual,   Xbeta, c, X_mean_scaled,
+             X_norms_squared, n, p,    standardize }
   {}
 
   double primal(const double lambda, const uvec& screened_set)

@@ -9,6 +9,8 @@ using namespace arma;
 class Model
 {
 public:
+  const std::string family;
+
   vec& y;
   vec& beta;
   vec& residual;
@@ -24,7 +26,8 @@ public:
 
   double dual_scale{ 0 };
 
-  Model(vec& y,
+  Model(const std::string family,
+        vec& y,
         vec& beta,
         vec& residual,
         vec& Xbeta,
@@ -34,7 +37,8 @@ public:
         const uword n,
         const uword p,
         const bool standardize)
-    : y(y)
+    : family(family)
+    , y(y)
     , beta(beta)
     , residual(residual)
     , Xbeta(Xbeta)
@@ -186,6 +190,7 @@ public:
     const double null_primal,
     const std::string screening_type,
     const bool first_run,
+    const uword step,
     const uword maxit,
     const double tol_gap,
     const double tol_infeas,
@@ -193,15 +198,18 @@ public:
   {
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe" && !first_run) {
+    if (screening_type == "gap_safe" && !first_run)
       screened.fill(true);
-    }
 
     uvec screened_set = find(screened);
 
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
     double duality_gap = primal_value - dual_value;
+
+    // line search parameters
+    const double a = 0.1;
+    const double b = 0.5;
 
     vec XTcenter(p);
 
@@ -246,105 +254,69 @@ public:
 
         n_screened += screened_set.n_elem;
 
-        vec beta_screened_old = beta(screened_set);
-        double primal_value_old = primal(lambda, screened_set);
-        double dual_value_old = dual();
-
         for (auto&& j : screened_set) {
-          double beta_j_old = beta(j);
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
 
-          double dir = c(j) / hess_j;
+          double beta_j_old = beta(j);
+          double v =
+            prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
 
-          double t = 1;
-          double f_old = primal(lambda, screened_set);
+          if (v != 0) {
+            if (family == "binomial") {
+              // line search
+              primal_value = primal(lambda, screened_set);
 
-          double a = 0.1;
-          double b = 0.5;
+              double t = 1;
 
-          // line search
-          while (true) {
-            double beta_tilde = beta(j);
-            beta(j) = prox(beta_j_old + t * dir, t * lambda / hess_j);
+              double primal_value_old = primal_value;
 
-            double d = beta(j) - beta_j_old;
+              while (true) {
+                double beta_j_prev = beta(j);
 
-            if (beta_tilde != beta(j)) {
-              adjustResidual(X, j, beta(j) - beta_tilde);
-              double c_old = c(j);
+                beta(j) = beta_j_old + t * v;
+                adjustResidual(X, j, beta(j) - beta_j_prev);
 
-              updateCorrelation(X, j);
+                primal_value = primal(lambda, screened_set);
 
-              if (std::abs(std::max(c(j), c_old) - std::min(c(j), c_old)) <
-                  lambda) {
-                break;
-              }
+                if (primal_value * (1 - std::sqrt(datum::eps)) <=
+                    primal_value_old - a * t * c(j) * v +
+                      a * lambda * (std::abs(beta(j)) - std::abs(beta_j_old))) {
+                  break;
+                } else {
+                  t *= b;
+                }
 
-              double f = primal(lambda, screened_set);
-
-              if (f <= f_old - a * t * c(j) * d + 0.5 * d * d / t + 1e-12) {
-                break;
-              } else {
-                t *= b;
+                Rcpp::checkUserInterrupt();
               }
             } else {
-              break;
+              beta(j) = beta_j_old + v;
+              adjustResidual(X, j, beta(j) - beta_j_old);
             }
-
-            Rcpp::checkUserInterrupt();
           }
         }
 
         primal_value = primal(lambda, screened_set);
         dual_value = dual();
 
-        // if we make no progress in either primal or dual objective, initialize
-        // line search
-        // if (primal_value >= primal_value_old && dual_value <= dual_value_old)
-        // {
-        //   vec beta_screened = beta(screened_set);
-
-        //   uword line_it = 0;
-        //   double t = 1;
-
-        //   while (primal_value >= primal_value_old &&
-        //          dual_value <= dual_value_old && line_it < 10) {
-        //     line_it++;
-        //     t *= 0.5;
-
-        //     beta(screened_set) =
-        //       (1 - t) * beta_screened_old + t * beta_screened;
-
-        //     updateLinearPredictor(X, screened_set);
-        //     updateResidual();
-
-        //     primal_value = primal(lambda, screened_set);
-        //     dual_value = dual();
-        //   }
-        // }
-
         duality_gap = primal_value - dual_value;
 
-        if (verbosity >= 2) {
+        if (verbosity >= 2)
           Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
                   primal_value,
                   dual_value,
                   duality_gap / null_primal);
-        }
 
         if (std::abs(duality_gap) <= tol_gap * null_primal) {
           updateCorrelation(X, screened_set);
 
           double infeas = lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
 
-          if (verbosity >= 2) {
+          if (verbosity >= 2)
             Rprintf("      infeasibility: %f\n", infeas / lambda_max);
-          }
 
-          if (infeas <= lambda_max * tol_infeas) {
+          if (infeas <= lambda_max * tol_infeas)
             break;
-          }
         }
 
         Rcpp::checkUserInterrupt();

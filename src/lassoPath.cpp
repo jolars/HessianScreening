@@ -19,36 +19,25 @@ using namespace Rcpp;
 
 template<typename T>
 Rcpp::List
-lassoPathImpl(T X,
-              arma::vec y,
-              const std::string family,
-              const bool standardize,
-              const std::string screening_type,
-              const bool hessian_warm_starts,
-              std::string log_hessian_update_type,
-              const uword log_hessian_auto_threshold,
-              const arma::uword path_length,
-              const arma::uword maxit,
-              const double tol_infeas,
-              const double tol_gap,
-              const double gamma,
-              const bool verify_hessian,
-              const bool force_kkt_check,
-              const arma::uword verbosity)
+lassoPath(T& X,
+          vec& y,
+          const std::string family,
+          const bool standardize,
+          const std::string screening_type,
+          const bool hessian_warm_starts,
+          std::string log_hessian_update_type,
+          const uword log_hessian_auto_update_freq,
+          const uword path_length,
+          const uword maxit,
+          const double tol_infeas,
+          const double tol_gap,
+          const double gamma,
+          const bool verify_hessian,
+          const bool force_kkt_check,
+          const uword verbosity)
 {
   const uword n = X.n_rows;
   const uword p = X.n_cols;
-
-  wall_clock timer;
-  timer.tic();
-
-  double full_time = timer.toc();
-
-  if (screening_type != "working" && screening_type != "hessian" &&
-      screening_type != "hessian_adaptive" && screening_type != "gap_safe" &&
-      screening_type != "edpp" && screening_type != "strong") {
-    Rcpp::stop("not a supported screening rule");
-  }
 
   if (family == "binomial") {
     vec y_unique = sort(unique(y));
@@ -58,7 +47,12 @@ lassoPathImpl(T X,
     } else if (y_unique(0) != 0 || y_unique(1) != 1) {
       Rcpp::stop("y is not in {0, 1}");
     }
+
+    if (screening_type == "edpp")
+      Rcpp::stop("EDPP cannot be used in logistic regression");
   }
+
+  const bool log_hessian_auto = log_hessian_update_type == "auto";
 
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
@@ -198,6 +192,11 @@ lassoPathImpl(T X,
 
   const double null_primal = model->primal(lambda_max, active_set);
 
+  wall_clock timer;
+  timer.tic();
+
+  double full_time = timer.toc();
+
   uword i = 0;
 
   while (true) {
@@ -239,6 +238,7 @@ lassoPathImpl(T X,
                    null_primal,
                    screening_type,
                    first_run,
+                   i,
                    maxit,
                    tol_gap,
                    tol_infeas,
@@ -351,13 +351,17 @@ lassoPathImpl(T X,
 
     betas.insert_cols(betas.n_cols, beta);
 
-    if (active_set.n_elem > log_hessian_auto_threshold &&
-        log_hessian_update_type == "auto") {
-
-      log_hessian_update_type = "approx";
-      model->setLogHessianUpdateType("approx");
-      active_perm = active_set;
-      active_perm_prev = active_set_prev;
+    if (family == "binomial" && screening_type == "hessian" &&
+        log_hessian_auto) {
+      if (i % log_hessian_auto_update_freq == 0) {
+        log_hessian_update_type = "full";
+        model->setLogHessianUpdateType("full");
+      } else {
+        log_hessian_update_type = "approx";
+        model->setLogHessianUpdateType("approx");
+        active_perm = active_set;
+        active_perm_prev = active_set_prev;
+      }
     }
 
     if (verbosity >= 1) {
@@ -505,87 +509,76 @@ lassoPathImpl(T X,
                       Named("gradcorr_time") = wrap(gradcorr_times));
 }
 
-//' Fit the Lasso Path
-//'
-//' @param X The predictor matrix
-//' @param y The reponse vector
-//' @param family The name of the family, "gaussian" or "logistic"
-//' @param standardize Whether to standardize the predictors
-//' @param screening_type Which screening type to use, currently
-//'   `"hessian"`, `"working"`,`"gap_safe"`, or `"edpp"`.
-//' @param hessian_warm_starts Whether to use warm starts based on Hessian
-//' @param log_hessian_update_type what type of strategy to use for
-//'   updating the hessian for logistic regression
-//' @param log_hessian_auto_threshold if `log_hessian_update_type == "auto"`,
-//'   this number decides when the updates switch from the full hessian update
-//'   to the approximation
-//' @param path_length The length of the lasso path
-//' @param maxit Maximum number of iterations for Coordinate Descent loop
-//' @param tol_infeas Tolerance threshold for maximum infeasibility '
-//' @param tol_gap Tolerance threshold for duality gap
-//' @param gamma Percent of strong approximation to add to Hessian approximation
-//' @param verify_hessian Whether ot not to verify that Hessian updates are
-//'   correct. Used only for diagnostic purposes.
-//' @param verbosity Controls the level of verbosity. 0 = no output. '
-//'
-//' @export
 // [[Rcpp::export]]
 Rcpp::List
-lassoPath(SEXP X,
-          arma::vec y,
-          const std::string family = "gaussian",
-          const bool standardize = true,
-          const std::string screening_type = "working",
-          const bool hessian_warm_starts = true,
-          std::string log_hessian_update_type = "auto",
-          const arma::uword log_hessian_auto_threshold = 500,
-          const arma::uword path_length = 100,
-          const arma::uword maxit = 1e5,
-          const double tol_infeas = 1e-3,
-          const double tol_gap = 1e-4,
-          const double gamma = 0.01,
-          const bool verify_hessian = false,
-          const bool force_kkt_check = false,
-          const arma::uword verbosity = 0)
+lassoPathDense(arma::mat X,
+               arma::vec y,
+               const std::string family,
+               const bool standardize,
+               const std::string screening_type,
+               const bool hessian_warm_starts,
+               std::string log_hessian_update_type,
+               const arma::uword log_hessian_auto_update_freq,
+               const arma::uword path_length,
+               const arma::uword maxit,
+               const double tol_infeas,
+               const double tol_gap,
+               const double gamma,
+               const bool verify_hessian,
+               const bool force_kkt_check,
+               const arma::uword verbosity)
 {
-  if (Rf_isS4(X)) {
-    if (Rf_inherits(X, "dgCMatrix")) {
-      return lassoPathImpl(as<arma::sp_mat>(X),
-                           y,
-                           family,
-                           standardize,
-                           screening_type,
-                           hessian_warm_starts,
-                           log_hessian_update_type,
-                           log_hessian_auto_threshold,
-                           path_length,
-                           maxit,
-                           tol_infeas,
-                           tol_gap,
-                           gamma,
-                           verify_hessian,
-                           force_kkt_check,
-                           verbosity);
-    }
-  } else {
-    return lassoPathImpl(as<arma::mat>(X),
-                         y,
-                         family,
-                         standardize,
-                         screening_type,
-                         hessian_warm_starts,
-                         log_hessian_update_type,
-                         log_hessian_auto_threshold,
-                         path_length,
-                         maxit,
-                         tol_infeas,
-                         tol_gap,
-                         gamma,
-                         verify_hessian,
-                         force_kkt_check,
-                         verbosity);
-  }
+  return lassoPath(X,
+                   y,
+                   family,
+                   standardize,
+                   screening_type,
+                   hessian_warm_starts,
+                   log_hessian_update_type,
+                   log_hessian_auto_update_freq,
+                   path_length,
+                   maxit,
+                   tol_infeas,
+                   tol_gap,
+                   gamma,
+                   verify_hessian,
+                   force_kkt_check,
+                   verbosity);
+}
 
-  // should never end up here
-  return Rcpp::List::create();
+// [[Rcpp::export]]
+Rcpp::List
+lassoPathSparse(arma::sp_mat X,
+                arma::vec y,
+                const std::string family,
+                const bool standardize,
+                const std::string screening_type,
+                const bool hessian_warm_starts,
+                std::string log_hessian_update_type,
+                const arma::uword log_hessian_auto_update_freq,
+                const arma::uword path_length,
+                const arma::uword maxit,
+                const double tol_infeas,
+                const double tol_gap,
+                const double gamma,
+                const bool verify_hessian,
+                const bool force_kkt_check,
+                const arma::uword verbosity)
+{
+  return lassoPath(X,
+                   y,
+                   family,
+                   standardize,
+                   screening_type,
+                   hessian_warm_starts,
+                   log_hessian_update_type,
+                   log_hessian_auto_update_freq,
+                   path_length,
+                   maxit,
+                   tol_infeas,
+                   tol_gap,
+                   gamma,
+                   verify_hessian,
+                   force_kkt_check,
+                   verbosity);
 }

@@ -23,7 +23,8 @@ setupModel(const std::string family,
            const std::string log_hessian_update_type)
 {
   if (family == "binomial")
-    return std::make_unique<Binomial>(y,
+    return std::make_unique<Binomial>(family,
+                                      y,
                                       beta,
                                       residual,
                                       Xbeta,
@@ -35,7 +36,8 @@ setupModel(const std::string family,
                                       standardize,
                                       log_hessian_update_type);
 
-  return std::make_unique<Gaussian>(y,
+  return std::make_unique<Gaussian>(family,
+                                    y,
                                     beta,
                                     residual,
                                     Xbeta,
