@@ -11,8 +11,19 @@ tol_gap <- 1e-4
 tol_infeas <- 1e-3
 
 sparsity <- 1 - Matrix::nnzero(X) / length(X)
-
 sparsity * min(n, p) / max(n, p) * 10
+
+fit_hessian <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "hessian",
+    verbosity = 1,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas,
+    log_hessian_update_type = "auto",
+    log_hessian_auto_update_freq = 10
+)
 
 fit_working <- lassoPath(
     X,
@@ -23,20 +34,7 @@ fit_working <- lassoPath(
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
     line_search = TRUE
-)
 
-fit_working$full_time
-
-fit_hessian <- lassoPath(
-    X,
-    y,
-    family = family,
-    screening_type = "hessian",
-    verbosity = 1,
-    tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
-    log_hessian_update_type = "auto"
-)
 fit_edpp <- lassoPath(
     X,
     y,
