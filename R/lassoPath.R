@@ -17,6 +17,7 @@
 #'   correct. Used only for diagnostic purposes.
 #' @param force_kkt_check Whether to force KKT checks even when screening rule
 #'   is safe
+#' @param line_search Use line search when `family = "binomial"`
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
 #' @export
@@ -41,6 +42,7 @@ lassoPath <- function(X,
                       gamma = 0.01,
                       verify_hessian = FALSE,
                       force_kkt_check = FALSE,
+                      line_search = TRUE,
                       verbosity = 0) {
   family <- match.arg(family)
   screening_type <- match.arg(screening_type)
@@ -69,6 +71,7 @@ lassoPath <- function(X,
       gamma,
       verify_hessian,
       force_kkt_check,
+      line_search,
       verbosity
     )
   } else {
@@ -87,6 +90,7 @@ lassoPath <- function(X,
       gamma,
       verify_hessian,
       force_kkt_check,
+      line_search,
       verbosity
     )
   }

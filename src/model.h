@@ -194,6 +194,7 @@ public:
     const uword maxit,
     const double tol_gap,
     const double tol_infeas,
+    const bool line_search,
     const uword verbosity)
   {
     const uword p = X.n_cols;
@@ -212,6 +213,8 @@ public:
     const double b = 0.5;
 
     vec XTcenter(p);
+
+    vec t(p, fill::ones); // learning rates
 
     const uword screen_interval = 10;
 
@@ -263,25 +266,25 @@ public:
             prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
 
           if (v != 0) {
-            if (family == "binomial") {
+            if (family == "binomial" && line_search) {
               // line search
               double primal_value_old = primal(lambda, screened_set);
-              double t = 1; // learning rate
+              // double t = 1; // learning rate
 
               while (true) {
                 double beta_j_prev = beta(j);
 
-                beta(j) = beta_j_old + t * v;
+                beta(j) = beta_j_old + t(j) * v;
                 adjustResidual(X, j, beta(j) - beta_j_prev);
 
                 primal_value = primal(lambda, screened_set);
 
                 if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                    primal_value_old - a * t * c(j) * v +
+                    primal_value_old - a * t(j) * c(j) * v +
                       a * lambda * (std::abs(beta(j)) - std::abs(beta_j_old))) {
                   break;
                 } else {
-                  t *= b;
+                  t(j) *= b;
                 }
 
                 Rcpp::checkUserInterrupt();

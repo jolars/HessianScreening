@@ -20,6 +20,7 @@ lassoPath(
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,
+  line_search = TRUE,
   verbosity = 0
 )
 }
@@ -54,6 +55,8 @@ correct. Used only for diagnostic purposes.}
 
 \item{force_kkt_check}{Whether to force KKT checks even when screening rule
 is safe}
+
+\item{line_search}{Use line search when \code{family = "binomial"}}
 
 \item{verbosity}{Controls the level of verbosity. 0 = no output.}
 }

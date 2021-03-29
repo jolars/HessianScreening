@@ -33,6 +33,7 @@ lassoPath(T& X,
           const double gamma,
           const bool verify_hessian,
           const bool force_kkt_check,
+          const bool line_search,
           const uword verbosity)
 {
   const uword n = X.n_rows;
@@ -247,6 +248,7 @@ lassoPath(T& X,
                    maxit,
                    tol_gap,
                    tol_infeas,
+                   line_search,
                    verbosity);
 
       cd_time += timer.toc() - t0;
@@ -530,6 +532,7 @@ lassoPathDense(arma::mat X,
                const double gamma,
                const bool verify_hessian,
                const bool force_kkt_check,
+               const bool line_search,
                const arma::uword verbosity)
 {
   return lassoPath(X,
@@ -546,6 +549,7 @@ lassoPathDense(arma::mat X,
                    gamma,
                    verify_hessian,
                    force_kkt_check,
+                   line_search,
                    verbosity);
 }
 
@@ -565,6 +569,7 @@ lassoPathSparse(arma::sp_mat X,
                 const double gamma,
                 const bool verify_hessian,
                 const bool force_kkt_check,
+                const bool line_search,
                 const arma::uword verbosity)
 {
   return lassoPath(X,
@@ -581,5 +586,6 @@ lassoPathSparse(arma::sp_mat X,
                    gamma,
                    verify_hessian,
                    force_kkt_check,
+                   line_search,
                    verbosity);
 }
