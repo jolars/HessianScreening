@@ -59,7 +59,8 @@ for (i in seq_len(nrow(g))) {
       y,
       family = family,
       screening_type = screening_type,
-      path_length = path_length
+      path_length = path_length,
+      log_hessian_update_type = "full"
     )
 
     n_lambda <- length(fit$lambda)
