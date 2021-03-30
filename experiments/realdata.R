@@ -47,6 +47,7 @@ for (i in seq_len(nrow(g))) {
   p <- ncol(X)
 
   dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
+  sparsity <- 1 - dens
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
@@ -55,7 +56,7 @@ for (i in seq_len(nrow(g))) {
   }
 
   log_hessian_update_type <-
-    ifelse((1 - dens) * min(n, p) / max(n, p) * 10 < 0.1, "full", "approx")
+    ifelse(sparsity * n / max(n, p) < 0.001, "full", "approx")
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
