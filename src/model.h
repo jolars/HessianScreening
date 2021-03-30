@@ -270,11 +270,11 @@ public:
           if (v != 0) {
             if (family == "binomial" && line_search > 0) {
               // line search
-              bool line_  = false;
+              bool line_ = false;
               double primal_value_old;
-              if(line_search == 1){
-                primal_value_old =primal(lambda, screened_set);
-                line_  = true;
+              if (line_search == 1) {
+                primal_value_old = primal(lambda, screened_set);
+                line_ = true;
               }
 
               // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
@@ -287,16 +287,21 @@ public:
               adjustResidual(X, j, beta(j) - beta_j_old);
               double beta_j_prev = beta(j);
 
-              if(line_search == 2){
+              if (line_search == 2) {
                 updateCorrelation(X, j);
-                if(std::max(c_j_old,c(j)) - std::min(c_j_old,c(j)) > lambda_prev - lambda ){
+                if (std::max(c_j_old, c(j)) - std::min(c_j_old, c(j)) >
+                    lambda_prev - lambda) {
                   if (verbosity >= 2) {
-                    Rprintf("    linesearch type 2 at iter: %i, index: %i t: %e\n", it, j, t(j));
+                    Rprintf(
+                      "    linesearch type 2 at iter: %i, index: %i t: %e\n",
+                      it,
+                      j,
+                      t(j));
                   }
                   line_ = true;
-                  adjustResidual(X, j, beta_j_old - beta(j) );
-                  beta(j) = beta_j_old ;
-                  primal_value_old =primal(lambda, screened_set);
+                  adjustResidual(X, j, beta_j_old - beta(j));
+                  beta(j) = beta_j_old;
+                  primal_value_old = primal(lambda, screened_set);
                   beta(j) = beta_j_old + t(j) * v;
                   adjustResidual(X, j, beta(j) - beta_j_old);
                 }
@@ -304,19 +309,20 @@ public:
               while (line_) {
                 primal_value = primal(lambda, screened_set);
 
-                double dir_gph  = -c_j_old*v + lambda * (std::abs(beta(j)) - std::abs(beta_j_old));
+                double dir_gph = -c_j_old * v + lambda * (std::abs(beta(j)) -
+                                                          std::abs(beta_j_old));
                 if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                      primal_value_old + a * t(j) * dir_gph) {
-                    break;
+                    primal_value_old + a * t(j) * dir_gph) {
+                  break;
                 } else {
-                    t(j) *= b;
+                  t(j) *= b;
                 }
                 beta(j) = beta_j_old + t(j) * v;
                 adjustResidual(X, j, beta(j) - beta_j_prev);
                 beta_j_prev = beta(j);
                 Rcpp::checkUserInterrupt();
               }
-              if(t(j)< 1)
+              if (t(j) < 1)
                 t(j) /= b;
 
             } else {
