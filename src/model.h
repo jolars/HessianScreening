@@ -195,7 +195,7 @@ public:
     const uword maxit,
     const double tol_gap,
     const double tol_infeas,
-    const bool line_search,
+    const int line_search,
     const uword verbosity)
   {
     const uword p = X.n_cols;
@@ -268,26 +268,38 @@ public:
             prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
 
           if (v != 0) {
-            if (family == "binomial" && line_search) {
+            if (family == "binomial" && line_search > 0) {
               // line search
               bool line_  = false;
               double primal_value_old;
-              if(line_ == true){
-                primal_value_old =primal(lambda, screened_set);;
+              if(line_search == 1){
+                primal_value_old =primal(lambda, screened_set);
+                line_  = true;
               }
 
+              // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
+              // “Proximal Newton-type methods for minimizing composite
+              // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
+              // Accessed: Jan. 12, 2020. [Online]. Available:
+              // http://arxiv.org/abs/1206.1623)
               beta(j) = beta_j_old + t(j) * v;
               double c_j_old = c(j);
               adjustResidual(X, j, beta(j) - beta_j_old);
               double beta_j_prev = beta(j);
-              updateCorrelation(X, j);
-              if(std::max(c_j_old,c(j)) - std::min(c_j_old,c(j)) > lambda_prev - lambda ){
-                line_ = true;
-                adjustResidual(X, j, beta_j_old - beta(j) );
-                beta(j) = beta_j_old ;
-                primal_value_old =primal(lambda, screened_set);
-                beta(j) = beta_j_old + t(j) * v;
-                adjustResidual(X, j, beta(j) - beta_j_old);
+
+              if(line_search == 2){
+                updateCorrelation(X, j);
+                if(std::max(c_j_old,c(j)) - std::min(c_j_old,c(j)) > lambda_prev - lambda ){
+                  if (verbosity >= 2) {
+                    Rprintf("    linesearch type 2 at iter: %i, index: %i t: %e\n", it, j, t(j));
+                  }
+                  line_ = true;
+                  adjustResidual(X, j, beta_j_old - beta(j) );
+                  beta(j) = beta_j_old ;
+                  primal_value_old =primal(lambda, screened_set);
+                  beta(j) = beta_j_old + t(j) * v;
+                  adjustResidual(X, j, beta(j) - beta_j_old);
+                }
               }
               while (line_) {
                 primal_value = primal(lambda, screened_set);

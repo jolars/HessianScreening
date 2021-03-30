@@ -1,12 +1,12 @@
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("ijcnn1-train", ".rds")))
+d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
 X <- d$X
 y <- d$y
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 0
-line_search = T
+verbosity <- 2
+line_search = 2
 family <- "binomial"
 screening_type <- "hessian"
 tol_gap <- 1e-4
@@ -23,7 +23,7 @@ fit_hessian <- lassoPath(
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
-    log_hessian_update_type = "appro",
+    log_hessian_update_type = "approx",
     log_hessian_auto_update_freq = 10,
     line_search = line_search
 )
