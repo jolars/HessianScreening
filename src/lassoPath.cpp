@@ -128,7 +128,7 @@ lassoPath(T& X,
     exp(linspace(log(lambda_max), log(lambda_min), path_length));
 
   std::vector<double> lambdas;
-
+  double lambda_prev = 2*lambda_max;
   double lambda = lambda_max;
 
   const double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
@@ -250,6 +250,7 @@ lassoPath(T& X,
                    X,
                    X_norms_squared,
                    lambda,
+                   lambda_prev,
                    lambda_max,
                    null_primal,
                    screening_type,
@@ -490,7 +491,7 @@ lassoPath(T& X,
 
     active_perm_prev = active_perm;
     active_set_prev = active_set;
-
+    lambda_prev = lambda;
     lambda = lambda_next;
 
     it_times.emplace_back(timer.toc() - it_time);

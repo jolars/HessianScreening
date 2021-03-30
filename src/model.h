@@ -186,6 +186,7 @@ public:
     const T& X,
     const vec& X_norms_squared,
     const double lambda,
+    const double lambda_prev,
     const double lambda_max,
     const double null_primal,
     const std::string screening_type,
@@ -258,6 +259,7 @@ public:
         n_screened += screened_set.n_elem;
 
         for (auto&& j : screened_set) {
+
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
 
@@ -268,27 +270,43 @@ public:
           if (v != 0) {
             if (family == "binomial" && line_search) {
               // line search
-              double primal_value_old = primal(lambda, screened_set);
-              // double t = 1; // learning rate
+              bool line_  = false;
+              double primal_value_old;
+              if(line_ == true){
+                primal_value_old =primal(lambda, screened_set);;
+              }
 
-              while (true) {
-                double beta_j_prev = beta(j);
-
+              beta(j) = beta_j_old + t(j) * v;
+              double c_j_old = c(j);
+              adjustResidual(X, j, beta(j) - beta_j_old);
+              double beta_j_prev = beta(j);
+              updateCorrelation(X, j);
+              if(std::max(c_j_old,c(j)) - std::min(c_j_old,c(j)) > lambda_prev - lambda ){
+                line_ = true;
+                adjustResidual(X, j, beta_j_old - beta(j) );
+                beta(j) = beta_j_old ;
+                primal_value_old =primal(lambda, screened_set);
                 beta(j) = beta_j_old + t(j) * v;
-                adjustResidual(X, j, beta(j) - beta_j_prev);
-
+                adjustResidual(X, j, beta(j) - beta_j_old);
+              }
+              while (line_) {
                 primal_value = primal(lambda, screened_set);
 
+                double dir_gph  = -c_j_old*v + lambda * (std::abs(beta(j)) - std::abs(beta_j_old));
                 if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                    primal_value_old - a * t(j) * c(j) * v +
-                      a * lambda * (std::abs(beta(j)) - std::abs(beta_j_old))) {
-                  break;
+                      primal_value_old + a * t(j) * dir_gph) {
+                    break;
                 } else {
-                  t(j) *= b;
+                    t(j) *= b;
                 }
-
+                beta(j) = beta_j_old + t(j) * v;
+                adjustResidual(X, j, beta(j) - beta_j_prev);
+                beta_j_prev = beta(j);
                 Rcpp::checkUserInterrupt();
               }
+              if(t(j)< 1)
+                t(j) /= b;
+
             } else {
               beta(j) = beta_j_old + v;
               adjustResidual(X, j, beta(j) - beta_j_old);
