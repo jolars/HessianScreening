@@ -270,11 +270,12 @@ public:
           if (v != 0) {
             if (family == "binomial" && line_search > 0) {
               // line search
-              bool line_ = false;
+              bool do_line_search = false;
               double primal_value_old;
+
               if (line_search == 1) {
                 primal_value_old = primal(lambda, screened_set);
-                line_ = true;
+                do_line_search = true;
               }
 
               // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
@@ -298,7 +299,7 @@ public:
                       j,
                       t(j));
                   }
-                  line_ = true;
+                  do_line_search = true;
                   adjustResidual(X, j, beta_j_old - beta(j));
                   beta(j) = beta_j_old;
                   primal_value_old = primal(lambda, screened_set);
@@ -306,7 +307,8 @@ public:
                   adjustResidual(X, j, beta(j) - beta_j_old);
                 }
               }
-              while (line_) {
+
+              while (do_line_search) {
                 primal_value = primal(lambda, screened_set);
 
                 double dir_gph = -c_j_old * v + lambda * (std::abs(beta(j)) -
