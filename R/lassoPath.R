@@ -45,7 +45,7 @@ lassoPath <- function(X,
                       gamma = 0.01,
                       verify_hessian = FALSE,
                       force_kkt_check = FALSE,
-                      line_search = TRUE,
+                      line_search = 2,
                       verbosity = 0) {
   family <- match.arg(family)
   screening_type <- match.arg(screening_type)

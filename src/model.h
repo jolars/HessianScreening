@@ -186,6 +186,7 @@ public:
     const T& X,
     const vec& X_norms_squared,
     const double lambda,
+    const double lambda_prev,
     const double lambda_max,
     const double null_primal,
     const std::string screening_type,
@@ -194,7 +195,7 @@ public:
     const uword maxit,
     const double tol_gap,
     const double tol_infeas,
-    const bool line_search,
+    const int line_search,
     const uword verbosity)
   {
     const uword p = X.n_cols;
@@ -258,6 +259,7 @@ public:
         n_screened += screened_set.n_elem;
 
         for (auto&& j : screened_set) {
+
           updateCorrelation(X, j);
           double hess_j = hessianTerm(X, j);
 
@@ -266,35 +268,57 @@ public:
             prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
 
           if (v != 0) {
-            if (family == "binomial" && line_search) {
+            if (family == "binomial" && line_search > 0) {
+              // line search
+              bool line_  = false;
+              double primal_value_old;
+              if(line_search == 1){
+                primal_value_old =primal(lambda, screened_set);
+                line_  = true;
+              }
+
               // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
               // “Proximal Newton-type methods for minimizing composite
               // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
               // Accessed: Jan. 12, 2020. [Online]. Available:
               // http://arxiv.org/abs/1206.1623)
+              beta(j) = beta_j_old + t(j) * v;
+              double c_j_old = c(j);
+              adjustResidual(X, j, beta(j) - beta_j_old);
+              double beta_j_prev = beta(j);
 
-              double primal_value_old = primal(lambda, screened_set);
-
-              while (true) {
-                double beta_j_prev = beta(j);
-
-                beta(j) = beta_j_old + t(j) * v;
-                adjustResidual(X, j, beta(j) - beta_j_prev);
-
+              if(line_search == 2){
+                updateCorrelation(X, j);
+                if(std::max(c_j_old,c(j)) - std::min(c_j_old,c(j)) > lambda_prev - lambda ){
+                  if (verbosity >= 2) {
+                    Rprintf("    linesearch type 2 at iter: %i, index: %i t: %e\n", it, j, t(j));
+                  }
+                  line_ = true;
+                  adjustResidual(X, j, beta_j_old - beta(j) );
+                  beta(j) = beta_j_old ;
+                  primal_value_old =primal(lambda, screened_set);
+                  beta(j) = beta_j_old + t(j) * v;
+                  adjustResidual(X, j, beta(j) - beta_j_old);
+                }
+              }
+              while (line_) {
                 primal_value = primal(lambda, screened_set);
 
-                double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
-                                                   std::abs(beta_j_old));
-
+                double dir_gph  = -c_j_old*v + lambda * (std::abs(beta(j)) - std::abs(beta_j_old));
                 if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                    primal_value_old + a * t(j) * eta) {
-                  break;
+                      primal_value_old + a * t(j) * dir_gph) {
+                    break;
                 } else {
-                  t(j) *= b;
+                    t(j) *= b;
                 }
-
+                beta(j) = beta_j_old + t(j) * v;
+                adjustResidual(X, j, beta(j) - beta_j_prev);
+                beta_j_prev = beta(j);
                 Rcpp::checkUserInterrupt();
               }
+              if(t(j)< 1)
+                t(j) /= b;
+
             } else {
               beta(j) = beta_j_old + v;
               adjustResidual(X, j, beta(j) - beta_j_old);

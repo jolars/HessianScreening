@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 // lassoPathDense
-Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const bool line_search, const arma::uword verbosity);
+Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPathDense(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_infeasSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -27,14 +27,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< const bool >::type verify_hessian(verify_hessianSEXP);
     Rcpp::traits::input_parameter< const bool >::type force_kkt_check(force_kkt_checkSEXP);
-    Rcpp::traits::input_parameter< const bool >::type line_search(line_searchSEXP);
+    Rcpp::traits::input_parameter< const int >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
     rcpp_result_gen = Rcpp::wrap(lassoPathDense(X, y, family, standardize, screening_type, hessian_warm_starts, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_infeas, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
     return rcpp_result_gen;
 END_RCPP
 }
 // lassoPathSparse
-Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const bool line_search, const arma::uword verbosity);
+Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPathSparse(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_infeasSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -54,7 +54,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< const bool >::type verify_hessian(verify_hessianSEXP);
     Rcpp::traits::input_parameter< const bool >::type force_kkt_check(force_kkt_checkSEXP);
-    Rcpp::traits::input_parameter< const bool >::type line_search(line_searchSEXP);
+    Rcpp::traits::input_parameter< const int >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
     rcpp_result_gen = Rcpp::wrap(lassoPathSparse(X, y, family, standardize, screening_type, hessian_warm_starts, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_infeas, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
     return rcpp_result_gen;
