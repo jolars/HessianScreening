@@ -17,7 +17,7 @@ sparsity * min(n, p) / max(n, p)
 
 n / max(n, p) * sparsity
 
-fit_hessian <- lassoPath(
+fit_hessian1 <- lassoPath(
     X,
     y,
     family = family,
@@ -25,9 +25,21 @@ fit_hessian <- lassoPath(
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
-    line_search = line_search,
-    log_hessian_update_type = "full"
+    line_search = 2,
+    log_hessian_update_type = "approx"
 )
+fit_hessian2 <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "hessian",
+    verbosity = verbosity,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas,
+    line_search = 3,
+    log_hessian_update_type = "approx"
+)
+
 fit_working <- lassoPath(
     X,
     y,
