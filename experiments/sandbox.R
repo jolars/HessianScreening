@@ -5,8 +5,8 @@ X <- d$X
 y <- d$y
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 2
-line_search <- 2
+verbosity <- 1
+line_search <- 1
 family <- "binomial"
 screening_type <- "hessian"
 tol_gap <- 1e-4
@@ -25,15 +25,36 @@ fit_hessian <- lassoPath(
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
-    log_hessian_update_type = "approx",
-    log_hessian_auto_update_freq = 10,
-    line_search = line_search
+    line_search = line_search,
+    log_hessian_update_type = "full"
 )
 fit_working <- lassoPath(
     X,
     y,
     family = family,
     screening_type = "working",
+    verbosity = verbosity,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas,
+    line_search = line_search
+)
+
+fit_edpp <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "edpp",
+    verbosity = verbosity,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas,
+    line_search = line_search
+)
+
+fit_gapsafe <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "gap_safe",
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
