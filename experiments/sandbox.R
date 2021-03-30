@@ -1,6 +1,6 @@
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
+d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
 X <- d$X
 y <- d$y
 n <- nrow(X)
@@ -11,18 +11,18 @@ tol_gap <- 1e-4
 tol_infeas <- 1e-3
 
 sparsity <- 1 - Matrix::nnzero(X) / length(X)
-sparsity * min(n, p) / max(n, p) * 10
+sparsity * min(n, p) / max(n, p)
+
+n / max(n, p) * sparsity
 
 fit_hessian <- lassoPath(
     X,
     y,
     family = family,
-    screening_type = "hessian",
+    screening_type = "hessian_adaptive",
     verbosity = 1,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
-    log_hessian_update_type = "auto",
-    log_hessian_auto_update_freq = 10
+    tol_infeas = tol_infeas
 )
 
 fit_working <- lassoPath(
@@ -34,6 +34,7 @@ fit_working <- lassoPath(
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
     line_search = TRUE
+)
 
 fit_edpp <- lassoPath(
     X,
