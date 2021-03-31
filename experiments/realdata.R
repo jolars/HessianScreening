@@ -71,7 +71,8 @@ for (i in seq_len(nrow(g))) {
       family = family,
       screening_type = screening_type,
       verbosity = 0,
-      log_hessian_update_type = log_hessian_update_type
+      log_hessian_update_type = log_hessian_update_type,
+      line_search = 2
     )
 
     time[k] <- fit$full_time
