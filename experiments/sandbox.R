@@ -6,7 +6,7 @@ y <- d$y
 n <- nrow(X)
 p <- ncol(X)
 verbosity <- 1
-line_search <- 1
+line_search <- 2
 family <- "binomial"
 screening_type <- "hessian"
 tol_gap <- 1e-4
@@ -38,7 +38,7 @@ fit_working <- lassoPath(
     tol_infeas = tol_infeas,
     line_search = line_search
 )
-
+if(family != "binomial"){
 fit_edpp <- lassoPath(
     X,
     y,
@@ -49,6 +49,7 @@ fit_edpp <- lassoPath(
     tol_infeas = tol_infeas,
     line_search = line_search
 )
+}
 
 fit_gapsafe <- lassoPath(
     X,
@@ -75,7 +76,9 @@ cat("full = ", fit_working$full_time, "\n")
 cat("passes = ", sum(fit_working$passes), "\n")
 # cat("cd_time = ", sum(fit.w$cd_time), "\n")
 # cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
-
+cat("gapsafe:\n")
+cat("full = ", fit_gapsafe$full_time, "\n")
+cat("passes = ", sum(fit_gapsafe$passes), "\n")
 
 # plot(fit$passes, type = "l")
 # lines(fit.w$passes, col = "red")

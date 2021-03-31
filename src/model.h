@@ -332,6 +332,8 @@ public:
                 // http://arxiv.org/abs/1206.1623)
                 beta(j) = beta_j_old + t(j) * v;
                 double c_j_old = c(j);
+                double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
+                  std::abs(beta_j_old));
                 adjustResidual(X, j, beta(j) - beta_j_old);
                 double beta_j_prev = beta(j);
 
@@ -358,11 +360,8 @@ public:
                 while (do_line_search) {
                   primal_value = primal(lambda, screened_set);
 
-                  double dir_gph =
-                    -c_j_old * v +
-                    lambda * (std::abs(beta(j)) - std::abs(beta_j_old));
                   if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                      primal_value_old + a * t(j) * dir_gph) {
+                      primal_value_old + a * t(j) * eta) {
                     break;
                   } else {
                     t(j) *= b;
@@ -372,8 +371,12 @@ public:
                   beta_j_prev = beta(j);
                   Rcpp::checkUserInterrupt();
                 }
-                if (t(j) < 1)
-                  t(j) /= b;
+                if (t(j) < 1){
+                  if(line_search < 3)
+                    t(j) /= b;
+                }
+
+
 
               } else {
                 beta(j) = beta_j_old + v;
