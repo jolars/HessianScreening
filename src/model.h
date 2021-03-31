@@ -333,7 +333,7 @@ public:
                 beta(j) = beta_j_old + t(j) * v;
                 double c_j_old = c(j);
                 double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
-                  std::abs(beta_j_old));
+                                                   std::abs(beta_j_old));
                 adjustResidual(X, j, beta(j) - beta_j_old);
                 double beta_j_prev = beta(j);
 
@@ -371,12 +371,10 @@ public:
                   beta_j_prev = beta(j);
                   Rcpp::checkUserInterrupt();
                 }
-                if (t(j) < 1){
-                  if(line_search < 3)
+                if (t(j) < 1) {
+                  if (line_search < 3)
                     t(j) /= b;
                 }
-
-
 
               } else {
                 beta(j) = beta_j_old + v;
