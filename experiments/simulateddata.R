@@ -21,7 +21,7 @@ g <- expand_grid(
   active = list(NA)
 )
 
-n_it <- 4
+n_it <- 20
 
 for (i in seq_len(nrow(g))) {
   np <- g$np[i]
