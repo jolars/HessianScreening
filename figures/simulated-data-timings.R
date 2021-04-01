@@ -13,7 +13,7 @@ thm <- tactile.theme(c(12, 8),
   superpose.line = list(lty = 1:3)
 )
 
-d_raw <- readRDS("results/simulateddata.R") %>%
+d_raw <- readRDS("results/simulateddata.rds") %>%
   mutate(
     screening_type = recode(
       screening_type,
@@ -52,23 +52,6 @@ library(qualpalr)
 cols <- qualpal(4)
 
 cols <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-tikz("figures/simulateddata-gaussian-timings.tex", width = 5, height = 3)
-xyplot(
-  meantime ~ rho | np,
-  groups = screening_type,
-  data = d2_gaussian,
-  type = "b",
-  auto.key = list(lines = TRUE, points = FALSE),
-  prepanel = prepanel.ci,
-  lower = d2_gaussian$lo,
-  upper = d2_gaussian$hi,
-  panel = function(...) {
-    panel.ci(..., alpha = 0.2, grid = TRUE)
-    panel.xyplot(...)
-  }
-)
-dev.off()
 
 library(ggthemes)
 
