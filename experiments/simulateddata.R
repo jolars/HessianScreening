@@ -1,17 +1,17 @@
-
 library(HessianScreening)
 library(RColorBrewer)
 library(tibble)
 library(dplyr)
 library(tidyr)
-library(progress)
+
+printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
-  np = list(c(5e4, 1e2), c(1e2, 5e4)),
+  family = c("binomial", "gaussian"),
+  np = list(c(50000, 200), c(200, 50000)),
   n = NA,
   p = NA,
-  rho = c(0, 0.3, 0.6),
-  family = c("binomial", "gaussian"),
+  rho = c(0, 0.4, 0.8),
   screening_type = c("hessian", "working", "gap_safe", "edpp"),
   path_length = 100,
   avg_screened = NA,
@@ -21,14 +21,7 @@ g <- expand_grid(
   active = list(NA)
 )
 
-n_it <- 20
-
-pb <- progress_bar$new(
-  format = "  simulating [:bar] :percent eta: :eta",
-  total = nrow(g) * n_it,
-  clear = FALSE,
-  width = 80
-)
+n_it <- 4
 
 for (i in seq_len(nrow(g))) {
   np <- g$np[i]
@@ -46,9 +39,13 @@ for (i in seq_len(nrow(g))) {
   avg_screened <- violations <- time <- double(n_it)
   active <- screened <- matrix(NA, nrow = n_it, ncol = path_length)
 
+  printf(
+    "%02d/%i %-10s n: %4d p: %4d rho: %1.1f %-10s\n",
+    i, nrow(g), family, n, p, rho, screening_type
+  )
+
   for (j in seq_len(n_it)) {
     set.seed(j)
-    pb$tick()
 
     d <- generateDesign(n, p, family = family, rho = rho)
     X <- d$X
@@ -60,7 +57,10 @@ for (i in seq_len(nrow(g))) {
       family = family,
       screening_type = screening_type,
       path_length = path_length,
-      log_hessian_update_type = "full"
+      log_hessian_update_type = "full",
+      tol_gap = 1e-5,
+      tol_infeas = 1e-4,
+      line_search = 3
     )
 
     n_lambda <- length(fit$lambda)
