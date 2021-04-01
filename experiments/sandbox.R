@@ -1,43 +1,33 @@
 library(HessianScreening)
 
-d <- readRDS(file.path("data", paste0("dorothea", ".rds")))
+family <- "binomial"
+
+d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
+# d <- generateDesign(200, 20000, family = family, rho = 0.0, snr = 0.1)
 X <- d$X
 y <- d$y
 n <- nrow(X)
 p <- ncol(X)
 verbosity <- 1
 line_search <- 2
-family <- "binomial"
-screening_type <- "hessian"
-tol_gap <- 1e-4
+tol_gap <- 1e-5
 tol_infeas <- 1e-4
 
-sparsity <- 1 - Matrix::nnzero(X) / length(X)
-sparsity * min(n, p) / max(n, p)
+# sparsity <- 1 - Matrix::nnzero(X) / length(X)
+# sparsity * min(n, p) / max(n, p)
 
-n / max(n, p) * sparsity
+# n / max(n, p) * sparsity
 
-fit_hessian1 <- lassoPath(
+fit_hessian <- lassoPath(
     X,
     y,
     family = family,
-    screening_type = "hessian",
+    screening_type = "working",
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
-    line_search = 2,
-    log_hessian_update_type = "approx"
-)
-fit_hessian2 <- lassoPath(
-    X,
-    y,
-    family = family,
-    screening_type = "hessian",
-    verbosity = verbosity,
-    tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
-    line_search = 3,
-    log_hessian_update_type = "approx"
+    line_search = line_search,
+    log_hessian_update_type = "full"
 )
 
 fit_working <- lassoPath(
@@ -50,17 +40,18 @@ fit_working <- lassoPath(
     tol_infeas = tol_infeas,
     line_search = line_search
 )
-if(family != "binomial"){
-fit_edpp <- lassoPath(
-    X,
-    y,
-    family = family,
-    screening_type = "edpp",
-    verbosity = verbosity,
-    tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
-    line_search = line_search
-)
+
+if (family != "binomial") {
+    fit_edpp <- lassoPath(
+        X,
+        y,
+        family = family,
+        screening_type = "edpp",
+        verbosity = verbosity,
+        tol_gap = tol_gap,
+        tol_infeas = tol_infeas,
+        line_search = line_search
+    )
 }
 
 fit_gapsafe <- lassoPath(
