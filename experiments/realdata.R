@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   "arcene",
   "cadata",
-  "dorothea",
+  # "dorothea",
   "gisette-train",
   "colon-cancer",
   "leukemia-train",
@@ -72,7 +72,9 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       verbosity = 0,
       log_hessian_update_type = log_hessian_update_type,
-      line_search = 2
+      line_search = 3,
+      tol_gap = 1e-5,
+      tol_infeas = 1e-4
     )
 
     time[k] <- fit$full_time
