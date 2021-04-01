@@ -60,7 +60,7 @@ for (i in seq_len(nrow(g))) {
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
-  n_it <- 1
+  n_it <- 20
 
   time <- double(n_it)
 
@@ -78,6 +78,15 @@ for (i in seq_len(nrow(g))) {
     )
 
     time[k] <- fit$full_time
+
+    # stop if standard error is within 1% of mean
+    if (k > 1) {
+      time_se <- sd(time[1:k]) / k
+
+      if (time_se / mean(time[1:k]) < 0.01) {
+        break
+      }
+    }
   }
 
   g$n[i] <- n
