@@ -53,21 +53,10 @@ lassoPath(T& X,
       Rcpp::stop("EDPP cannot be used in logistic regression");
   }
 
-  const double sparsity = getSparsity(X);
+  bool log_hessian_auto = log_hessian_update_type == "auto";
 
-  // uword log_hessian_auto_update_freq = 1;
-
-  const bool log_hessian_auto = log_hessian_update_type == "auto";
-
-  if (log_hessian_update_type == "auto") {
-    // log_hessian_update_type =
-    //   sparsity * std::min(n, p) / std::max(n, p) > 0.1 ? "approx"
-    //                                                          : "full";
-    // log_hessian_auto_update_freq =
-    //   std::max(1,
-    //            static_cast<int>(
-    //              std::round(sparsity * std::min(n, p) / std::max(n, p) *
-    //              10)));
+  if (log_hessian_auto) {
+    log_hessian_update_type = "full";
   }
 
   const bool hessian_type_screening =
@@ -128,7 +117,7 @@ lassoPath(T& X,
     exp(linspace(log(lambda_max), log(lambda_min), path_length));
 
   std::vector<double> lambdas;
-  double lambda_prev = 2*lambda_max;
+  double lambda_prev = 2 * lambda_max;
   double lambda = lambda_max;
 
   const double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
@@ -232,6 +221,7 @@ lassoPath(T& X,
     bool first_run = true;
 
     double cd_time = 0;
+    double hess_time = 0;
     double kkt_time = 0;
 
     while (true) {
@@ -369,17 +359,6 @@ lassoPath(T& X,
 
     betas.insert_cols(betas.n_cols, beta);
 
-    if (family == "binomial" && screening_type == "hessian" &&
-        log_hessian_auto) {
-      if (i % log_hessian_auto_update_freq == 0) {
-        log_hessian_update_type = "full";
-        model->setLogHessianUpdateType("full");
-      } else {
-        log_hessian_update_type = "approx";
-        model->setLogHessianUpdateType("approx");
-      }
-    }
-
     if (verbosity >= 1) {
       Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
     }
@@ -445,7 +424,8 @@ lassoPath(T& X,
         active_perm = active_set;
       }
 
-      hess_times.emplace_back(timer.toc() - t0);
+      hess_time = timer.toc() - t0;
+      hess_times.emplace_back(hess_time);
 
       // for hessian_adaptive we need to use all predictors, but this is not the
       // case for the standard hessian method
@@ -459,6 +439,42 @@ lassoPath(T& X,
         c_grad, X, Hinv_s, s, active_set, find(restricted));
 
       gradcorr_times.emplace_back(timer.toc() - t0);
+    }
+
+    if (i > 10 && screening_type == "hessian" && log_hessian_auto) {
+      double cd_cum =
+        std::accumulate(cd_times.begin() + i - 5, cd_times.end(), 0.0);
+      double kkt_cum =
+        std::accumulate(kkt_times.begin() + i - 5, kkt_times.end(), 0.0);
+
+      if (verbosity > 0) {
+        Rprintf(
+          "  CD cum time = %2.4f, KKT cum time = %2.4f\n", cd_cum, kkt_cum);
+      }
+
+      if (kkt_cum > 2 * cd_cum) {
+        // if Hessian updates take longer than cd updates, switch to approx
+        // method
+        if (verbosity > 0)
+          Rprintf("  NOTE: switching to approx hessian updates\n");
+
+        log_hessian_update_type = "approx";
+        model->setLogHessianUpdateType("approx");
+        log_hessian_auto = false;
+
+        H = model->hessian(X, active_set);
+
+        vec eigval;
+        mat eigvec;
+        eig_sym(eigval, eigvec, symmatu(H));
+
+        if (eigval.min() < 1e-4 * n) {
+          H.diag() += 1e-4 * n;
+          eigval += 1e-4 * n;
+        }
+
+        Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
+      }
     }
 
     double lambda_next = getNextLambda(lambda, active, new_active, i);
