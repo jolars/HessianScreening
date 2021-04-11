@@ -8,10 +8,7 @@ library(tactile)
 library(tikzDevice)
 library(ggplot2)
 
-thm <- tactile.theme(c(12, 8),
-  plot.symbol = list(col = 1),
-  superpose.line = list(lty = 1:3)
-)
+theme_set(theme_minimal(base_size = 9))
 
 d_raw <- readRDS("results/simulateddata.rds") %>%
   mutate(
@@ -19,11 +16,11 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
       screening_type,
       "hessian" = "Hessian",
       "working" = "Working",
-      "edpp" = "EDPP",
-      "gap_safe" = "Gap-Safe"
+      "gap_safe" = "Gap-Safe",
+      "edpp" = "EDPP"
     ),
     rho = as.factor(rho),
-    np = paste(n, p, sep = " x ")
+    np = paste0("$n=", n, "$, $p=", p, "$")
   ) %>%
   select(np, n, p, rho, family, screening_type, time) %>%
   unnest(time)
@@ -41,50 +38,52 @@ d1 <-
   ) %>%
   mutate(
     hi = meantime + se,
-    lo = meantime - se
+    lo = meantime - se,
+    rel_time = meantime / min(meantime)
   )
 
 d2_gaussian <-
   filter(d1, family == "gaussian")
 
-library(qualpalr)
+d2_binomial <-
+  filter(d1, family == "binomial") %>%
+  drop_na(meantime)
 
-cols <- qualpal(4)
-
-cols <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cols <- c(
+  "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+  "#0072B2", "#D55E00", "#CC79A7"
+)
 
 library(ggthemes)
 
-tikz("figures/simulateddata-gaussian-timings.tex", width = 5, height = 3)
-pl <- ggplot(d2_gaussian, aes(rho,
-  meantime,
-  ymin = lo,
-  ymax = hi,
-  group = screening_type,
-  color = screening_type,
+tikz("figures/simulateddata-gaussian-timings.tex", width = 5, height = 2.5)
+ggplot(d2_gaussian, aes(
+  rho,
+  rel_time,
   fill = screening_type
 )) +
   geom_col(position = "dodge", col = 1) +
   facet_wrap("np") +
-  theme_minimal() +
-  # scale_fill_manual(values = cols) +
-  # scale_fill_colorblind() +
-  scale_fill_tableau() +
-  labs(color = "Screening", fill = "Screening")
+  scale_fill_manual(values = cols[1:4]) +
+  labs(
+    fill = "Screening",
+    x = "Correlation ($\\rho$)",
+    y = "Time"
+  )
 dev.off()
 
-d_gaussian <- filter(d_raw, family == "gaussian", p == 10000)
-
-# tikz("figures/simulateddata-gaussian-timings.tex", width = 5, height = 3)
-bwplot2(
-  rho ~ time,
-  col = 1,
-  grid = TRUE,
-  groups = screening_type,
-  data = d_gaussian,
-  auto.key = list(space = "right"),
-  ylab = expression(rho),
-  xlab = "Time",
-  par.settings = thm
-)
-# dev.off()
+tikz("figures/simulateddata-binomial-timings.tex", width = 5, height = 2.5)
+ggplot(d2_binomial, aes(
+  rho,
+  rel_time,
+  fill = screening_type
+)) +
+  geom_col(position = "dodge", col = 1) +
+  facet_wrap("np") +
+  scale_fill_manual(values = cols[2:4]) +
+  labs(
+    fill = "Screening",
+    x = "Correlation ($\\rho$)",
+    y = "Time"
+  )
+dev.off()
