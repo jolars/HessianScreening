@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
   family = c("binomial", "gaussian"),
-  np = list(c(50000, 200), c(200, 50000)),
+  scenario = c(1, 2, 3),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
@@ -24,16 +24,31 @@ g <- expand_grid(
 n_it <- 20
 
 for (i in seq_len(nrow(g))) {
-  np <- g$np[i]
-  n <- np[[1]][1]
-  p <- np[[1]][2]
   rho <- g$rho[i]
   family <- g$family[i]
   screening_type <- g$screening_type[i]
   path_length <- g$path_length[i]
+  scenario <- g$scenario[i]
 
   if (family == "binomial" && screening_type == "edpp") {
     next
+  }
+
+  if (scenario == 1) {
+    n <- 10000
+    p <- 100
+    snr <- 1
+    s <- 5
+  } else if (scenario == 2) {
+    n <- 400
+    p <- 500
+    snr <- 1
+    s <- 10
+  } else if (scenario == 3) {
+    n <- 400
+    p <- 40000
+    snr <- 2
+    s <- 20
   }
 
   avg_screened <- violations <- time <- double(n_it)
@@ -45,9 +60,9 @@ for (i in seq_len(nrow(g))) {
   )
 
   for (j in seq_len(n_it)) {
-    set.seed(j)
+    set.seed(j * i)
 
-    d <- generateDesign(n, p, family = family, rho = rho)
+    d <- generateDesign(n, p, family = family, rho = rho, snr = snr)
     X <- d$X
     y <- d$y
 
@@ -58,8 +73,8 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
-      tol_gap = 1e-5,
-      tol_infeas = 1e-4,
+      tol_gap = 1e-6,
+      tol_infeas = 1e-5,
       line_search = 3
     )
 
