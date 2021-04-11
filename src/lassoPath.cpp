@@ -126,13 +126,10 @@ lassoPath(T& X,
   uword n_target_nonzero = std::min(p, static_cast<uword>(std::ceil(tmp)));
   n_target_nonzero = std::max(static_cast<uword>(1), n_target_nonzero);
 
-  GetNextLambda getNextLambda{ c,
-                               c_grad,
-                               lambda_grid,
-                               lambda_min,
-                               lambda_min_step,
-                               screening_type,
-                               n_target_nonzero,
+  GetNextLambda getNextLambda{ beta,           c,
+                               c_grad,         lambda_grid,
+                               lambda_min,     lambda_min_step,
+                               screening_type, n_target_nonzero,
                                verbosity };
 
   std::vector<double> primals;
@@ -477,7 +474,7 @@ lassoPath(T& X,
       }
     }
 
-    double lambda_next = getNextLambda(lambda, active, new_active, i);
+    double lambda_next = getNextLambda(Hinv_s, lambda, active, new_active, i);
 
     strong = abs(c) >= 2 * lambda_next - lambda;
     strong_set = find(strong);

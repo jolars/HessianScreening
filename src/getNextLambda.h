@@ -6,6 +6,7 @@ using namespace arma;
 
 struct GetNextLambda
 {
+  const vec& beta;
   const vec& c;
   const vec& c_grad;
   const vec& lambda_grid;
@@ -17,7 +18,8 @@ struct GetNextLambda
 
   double lambda_next_mod{ 1 };
 
-  GetNextLambda(const vec& c,
+  GetNextLambda(const vec& beta,
+                const vec& c,
                 const vec& c_grad,
                 const vec& lambda_grid,
                 const double lambda_min,
@@ -25,7 +27,8 @@ struct GetNextLambda
                 const std::string screening_type,
                 const uword n_target_nonzero,
                 const uword verbosity)
-    : c(c)
+    : beta(beta)
+    , c(c)
     , c_grad(c_grad)
     , lambda_grid(lambda_grid)
     , lambda_min{ lambda_min }
@@ -34,7 +37,8 @@ struct GetNextLambda
     , n_target_nonzero{ n_target_nonzero }
     , verbosity{ verbosity } {};
 
-  double operator()(const double lambda,
+  double operator()(const vec& Hinv_s,
+                    const double lambda,
                     const uvec& active,
                     const uword n_new_active,
                     const uword step_number)
@@ -43,6 +47,7 @@ struct GetNextLambda
       return lambda_grid(step_number);
     }
 
+    uvec active_set = find(active);
     uvec inactive_set = find(active == false);
 
     if (inactive_set.is_empty()) {
@@ -63,6 +68,7 @@ struct GetNextLambda
       }
     }
 
+    // Estimate λ for when predictors are estimated to enter the model
     const vec c_inac = c(inactive_set);
     const vec c_grad_inac = c_grad(inactive_set);
 
@@ -72,8 +78,18 @@ struct GetNextLambda
     a(find(a >= lambda)).zeros();
     b(find(b >= lambda)).zeros();
 
-    vec lambda_pred = sort(max(a, b), "descend");
+    // vec lambda_pred = sort(max(a, b), "descend");
+    vec lambda_pred = max(a, b);
+
+    // Estimate λ for when predictors are estimated to leave the model
+    vec d = (beta(active_set) + lambda) / Hinv_s;
+    d(find(d >= lambda)).zeros();
+
+    lambda_pred = sort(join_vert(lambda_pred, d), "descend");
+
     double lambda_next = lambda_pred(n_target_nonzero - 1);
+
+    lambda_next += std::sqrt(datum::eps);
 
     lambda_next *= lambda_next_mod;
 
