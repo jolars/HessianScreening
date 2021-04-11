@@ -9,7 +9,7 @@ datasets <- c(
   "arcene",
   "cadata",
   # "dorothea",
-  "gisette-train",
+  # "gisette-train",
   "colon-cancer",
   "leukemia-train",
   "ijcnn1-train",
@@ -73,8 +73,8 @@ for (i in seq_len(nrow(g))) {
       verbosity = 0,
       log_hessian_update_type = log_hessian_update_type,
       line_search = 3,
-      tol_gap = 1e-5,
-      tol_infeas = 1e-4
+      tol_gap = 1e-6,
+      tol_infeas = 1e-5
     )
 
     time[k] <- fit$full_time
@@ -92,7 +92,7 @@ for (i in seq_len(nrow(g))) {
   g$n[i] <- n
   g$p[i] <- p
   g$family[i] <- family
-  g$time[i] <- mean(time)
+  g$time[i] <- mean(time[1:k])
   g$density[i] <- dens
   g$total_violations[i] <- sum(fit$violations)
   g$avg_screened[i] <- mean(fit$active / fit$screened)
