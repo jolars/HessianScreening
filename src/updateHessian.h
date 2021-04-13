@@ -17,8 +17,7 @@ updateHessian(mat& H,
               const std::unique_ptr<Model>& model,
               const T& X,
               const bool verify_hessian,
-              const uword verbosity,
-              const bool reset_hessian)
+              const uword verbosity)
 {
   const uword n = X.n_rows;
 
@@ -90,15 +89,6 @@ updateHessian(mat& H,
     H.submat(0, N, size(N, M)) = std::move(B);
     H.submat(N, N, size(M, M)) = std::move(D);
     H = symmatu(H);
-  }
-
-  if (reset_hessian) {
-    H = X.cols(active_set).t() * X.cols(active_set);
-    H.diag() += 1e-4 * n;
-    mat Q;
-    vec l;
-    eig_sym(l, Q, symmatu(H));
-    Hinv = Q * diagmat(1 / l) * Q.t();
   }
 
   if (verify_hessian) {

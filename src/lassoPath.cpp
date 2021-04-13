@@ -379,8 +379,6 @@ lassoPath(T& X,
       break;
     }
 
-    bool reset_hessian = false;
-
     if (hessian_type_screening) {
       double t0 = timer.toc();
 
@@ -394,8 +392,7 @@ lassoPath(T& X,
                       model,
                       X,
                       verify_hessian,
-                      verbosity,
-                      reset_hessian);
+                      verbosity);
 
         Hinv_s = Hinv * s(active_perm);
         Hinv_s = Hinv_s(sort_index(active_perm)); // reset permutation
