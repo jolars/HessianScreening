@@ -40,8 +40,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 500
+    n <- 900
+    p <- 1000
     snr <- 1
     s <- 10
   } else if (scenario == 3) {
