@@ -11,6 +11,7 @@
 
 #SBATCH -N 1
 #SBATCH --tasks-per-node=20
+#SBATCH --exclusive
 
 # modules
 module purge
