@@ -39,7 +39,11 @@ checkStoppingConditions(const uword step,
     return true;
   }
 
-  if (dev_ratio >= 0.999 || lambda <= lambda_min) {
+  if (dev_ratio >= 0.999) {
+    return true;
+  }
+
+  if (screening_type != "hessian_adaptive" && lambda <= lambda_min) {
     return true;
   }
 
@@ -47,7 +51,7 @@ checkStoppingConditions(const uword step,
     return true;
   }
 
-  if (screening_type != "hessian_adaptive" && step >= n_lambda) {
+  if (step >= n_lambda) {
     return true;
   }
 
