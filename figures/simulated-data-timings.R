@@ -20,7 +20,8 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
       "edpp" = "EDPP"
     ),
     rho = as.factor(rho),
-    np = paste0("$n=", n, "$, $p=", p, "$")
+    np = paste0("$n=", n, "$, $p=", p, "$"),
+    np = reorder(np, p),
   ) %>%
   select(np, n, p, rho, family, screening_type, time) %>%
   unnest(time)
@@ -56,7 +57,7 @@ cols <- c(
 
 library(ggthemes)
 
-tikz("figures/simulateddata-gaussian-timings.tex", width = 5, height = 2.5)
+tikz("figures/simulateddata-gaussian-timings.tex", width = 4.8, height = 2.5)
 ggplot(d2_gaussian, aes(
   rho,
   rel_time,
@@ -72,7 +73,7 @@ ggplot(d2_gaussian, aes(
   )
 dev.off()
 
-tikz("figures/simulateddata-binomial-timings.tex", width = 5, height = 2.5)
+tikz("figures/simulateddata-binomial-timings.tex", width = 4.8, height = 2.5)
 ggplot(d2_binomial, aes(
   rho,
   rel_time,
