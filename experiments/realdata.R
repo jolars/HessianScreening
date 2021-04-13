@@ -8,10 +8,8 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   "arcene",
   "cadata",
-  # "dorothea",
-  # "gisette-train",
+  "duke-breast-cancer",
   "colon-cancer",
-  "leukemia-train",
   "ijcnn1-train",
   "YearPredictionMSD-train",
   "madelon-train",
