@@ -3,8 +3,8 @@ test_that("gaussian and logistic models for simulated data", {
   library(glmnet)
 
   grid <- expand.grid(
-    np = list(c(100, 5), c(50, 100)),
-    density = c(0.2, 1),
+    np = list(c(100, 5), c(50, 200)),
+    density = c(0.5, 1),
     screening_type = c("working", "hessian"),
     family = c("gaussian", "binomial"),
     standardize = c(FALSE),
