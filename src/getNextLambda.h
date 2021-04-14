@@ -14,9 +14,14 @@ struct GetNextLambda
   const double lambda_min_step;
   const std::string screening_type;
   uword n_target_nonzero;
+  double n_target_nonzero_mod{ 1 };
   const uword verbosity;
 
-  double lambda_next_mod{ 1 };
+  double t{ 1 };
+  double eta{ 0.01 };
+
+  std::vector<double> ts = { 1.0 };
+  std::vector<double> n_target_nonzero_mods = { 1.0 };
 
   GetNextLambda(const vec& beta,
                 const vec& c,
@@ -35,6 +40,7 @@ struct GetNextLambda
     , lambda_min_step{ lambda_min_step }
     , screening_type{ screening_type }
     , n_target_nonzero{ n_target_nonzero }
+    , n_target_nonzero_mod{ 1 }
     , verbosity{ verbosity } {};
 
   double operator()(const vec& Hinv_s,
@@ -55,16 +61,15 @@ struct GetNextLambda
     }
 
     if (step_number > 1) {
-      if (n_new_active > n_target_nonzero) {
-        lambda_next_mod *= 1.01;
-      } else if (n_new_active < n_target_nonzero) {
-        lambda_next_mod /= 1.01;
-      }
+      t = (1.0 - eta) * t +
+          eta * std::max(1.0, static_cast<double>(n_new_active)) /
+            std::max(1.0, static_cast<double>(n_target_nonzero));
 
       n_target_nonzero = std::min(n_target_nonzero, inactive_set.n_elem);
 
       if (verbosity >= 1) {
-        Rprintf("  lambda_next_mod: %f\n", lambda_next_mod);
+        Rprintf("  t: %f\n", t);
+        Rprintf("  n_target_nonzero_mod: %f\n", n_target_nonzero_mod);
       }
     }
 
@@ -78,7 +83,6 @@ struct GetNextLambda
     a(find(a >= lambda)).zeros();
     b(find(b >= lambda)).zeros();
 
-    // vec lambda_pred = sort(max(a, b), "descend");
     vec lambda_pred = max(a, b);
 
     // Estimate λ for when predictors are estimated to leave the model
@@ -87,15 +91,9 @@ struct GetNextLambda
 
     lambda_pred = sort(join_vert(lambda_pred, d), "descend");
 
-    double lambda_next = lambda_pred(n_target_nonzero - 1);
+    double lambda_next = lambda_pred(static_cast<int>(n_target_nonzero) - 1);
 
-    lambda_next += std::sqrt(datum::eps);
-
-    lambda_next *= lambda_next_mod;
-
-    if (lambda - lambda_next < lambda_min_step || lambda - lambda_next < 0) {
-      lambda_next = std::max(lambda - lambda_min_step, lambda_min);
-    }
+    lambda_next *= t;
 
     return lambda_next;
   }
