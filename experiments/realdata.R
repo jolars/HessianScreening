@@ -6,15 +6,17 @@ library(Matrix)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
-  "arcene",
+  # gaussian
   "cadata",
-  "duke-breast-cancer",
-  "colon-cancer",
-  "ijcnn1-train",
-  "YearPredictionMSD-train",
-  "madelon-train",
   "e2006-tfidf-train",
   "e2006-log1p-train",
+  "YearPredictionMSD-train",
+  # binomial
+  "arcene",
+  "colon-cancer",
+  "duke-breast-cancer",
+  "ijcnn1-train",
+  "madelon-train",
   "rcv1-train",
   "news20"
 )
