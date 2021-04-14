@@ -11,11 +11,18 @@ cols <- c(
   "#0072B2", "#D55E00", "#CC79A7"
 )
 
-tikz("figures/tfidf-adaptive-vs-grid.tex", width = 3.7, height = 2)
+hline_data <- tribble(
+  ~dataset, ~m,
+  "e2006-tfidf", 16087 / 100,
+  "madelon", 500 / 100
+)
+
+tikz("figures/tfidf-adaptive-vs-grid.tex", width = 4.8, height = 2)
 ggplot(d, aes(step, newactive, col = method)) +
-  geom_hline(yintercept = mrk, linetype = 3) +
+  geom_hline(aes(yintercept = m), data = hline_data, linetype = 3) +
   geom_line() +
   labs(x = "Step", y = "Activated Predictors") +
   theme(legend.title = element_blank()) +
-  scale_color_manual(values = cols[2:3])
+  scale_color_manual(values = c(cols[2], 1)) +
+  facet_wrap(~dataset, scales = "free_y")
 dev.off()
