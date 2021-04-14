@@ -24,7 +24,7 @@ updateHessian(mat& H,
   const uvec deactivate = setDiff(active_set_prev, active_set);
   const uvec activate = setDiff(active_set, active_set_prev);
 
-  if (!deactivate.is_empty() && !reset_hessian) {
+  if (!deactivate.is_empty()) {
     if (verbosity >= 1) {
       Rprintf("    dropping deactivated predictors for inverse (n = %i)\n",
               deactivate.n_elem);
