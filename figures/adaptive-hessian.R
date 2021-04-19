@@ -1,5 +1,6 @@
 library(ggplot2)
 library(tikzDevice)
+library(tibble)
 
 theme_set(theme_minimal(base_size = 9))
 
@@ -17,7 +18,7 @@ hline_data <- tribble(
   "madelon", 500 / 100
 )
 
-tikz("figures/tfidf-adaptive-vs-grid.tex", width = 4.8, height = 2)
+tikz("figures/adaptive-vs-grid.tex", width = 5.6, height = 1.6)
 ggplot(d, aes(step, newactive, col = method)) +
   geom_hline(aes(yintercept = m), data = hline_data, linetype = 3) +
   geom_line() +
