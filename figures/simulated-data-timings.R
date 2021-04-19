@@ -10,7 +10,10 @@ library(ggplot2)
 
 theme_set(theme_minimal(base_size = 9))
 
+fw <- 5.6
+
 d_raw <- readRDS("results/simulateddata.rds") %>%
+  filter(screening_type != "strong", scenario != 2) %>%
   mutate(
     screening_type = recode(
       screening_type,
@@ -41,7 +44,8 @@ d1 <-
     hi = meantime + se,
     lo = meantime - se,
     rel_time = meantime / min(meantime)
-  )
+  ) %>%
+  drop_na(meantime)
 
 d2_gaussian <-
   filter(d1, family == "gaussian")
@@ -55,36 +59,35 @@ cols <- c(
   "#0072B2", "#D55E00", "#CC79A7"
 )
 
-library(ggthemes)
-
-tikz("figures/simulateddata-gaussian-timings.tex", width = 4.8, height = 2.5)
-ggplot(d2_gaussian, aes(
+tikz("figures/simulateddata-timings.tex", width = fw, height = 2.5)
+ggplot(d1, aes(
   rho,
   rel_time,
   fill = screening_type
 )) +
   geom_col(position = "dodge", col = 1) +
-  facet_wrap("np") +
-  scale_fill_manual(values = cols[1:4]) +
+  facet_wrap(c("family", "np"), nrow = 1) +
+  scale_fill_manual(values = cols[1:5]) +
   labs(
     fill = "Screening",
     x = "Correlation ($\\rho$)",
     y = "Time"
-  )
+  ) +
+  theme(legend.position = c(0.1, 0.7), legend.title = element_blank())
 dev.off()
 
-tikz("figures/simulateddata-binomial-timings.tex", width = 4.8, height = 2.5)
-ggplot(d2_binomial, aes(
-  rho,
-  rel_time,
-  fill = screening_type
-)) +
-  geom_col(position = "dodge", col = 1) +
-  facet_wrap("np") +
-  scale_fill_manual(values = cols[2:4]) +
-  labs(
-    fill = "Screening",
-    x = "Correlation ($\\rho$)",
-    y = "Time"
-  )
-dev.off()
+# tikz("figures/simulateddata-binomial-timings.tex", width = fw, height = 2)
+# ggplot(d2_binomial, aes(
+#   rho,
+#   rel_time,
+#   fill = screening_type
+# )) +
+#   geom_col(position = "dodge", col = 1) +
+#   facet_wrap("np") +
+#   scale_fill_manual(values = cols[2:5]) +
+#   labs(
+#     fill = "Screening",
+#     x = "Correlation ($\\rho$)",
+#     y = "Time"
+#   )
+# dev.off()
