@@ -12,6 +12,7 @@ lassoPath(
   screening_type = c("working", "hessian", "hessian_adaptive", "edpp", "gap_safe",
     "strong"),
   hessian_warm_starts = TRUE,
+  gap_safe_active_start = TRUE,
   log_hessian_update_type = c("full", "auto", "approx"),
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
@@ -36,7 +37,8 @@ lassoPath(
 
 \item{screening_type}{Screening rule}
 
-\item{hessian_warm_starts}{Whether to use warm starts based on Hessian}
+\item{hessian_warm_starts}{Whether to use the active start strategy for
+the Gap-Safe rule}
 
 \item{log_hessian_update_type}{What type of strategy to use for
 updating the hessian for logistic regression}

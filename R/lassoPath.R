@@ -6,6 +6,8 @@
 #' @param standardize Whether to standardize the predictors
 #' @param screening_type Screening rule
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
+#' @param hessian_warm_starts Whether to use the active start strategy for
+#'   the Gap-Safe rule
 #' @param log_hessian_update_type What type of strategy to use for
 #'   updating the hessian for logistic regression
 #' @param log_hessian_auto_update_freq Frequency of hessian updates when
@@ -36,6 +38,7 @@ lassoPath <- function(X,
                         "strong"
                       ),
                       hessian_warm_starts = TRUE,
+                      gap_safe_active_start = TRUE,
                       log_hessian_update_type = c("full", "auto", "approx"),
                       log_hessian_auto_update_freq = 10,
                       path_length = 100L,
@@ -66,6 +69,7 @@ lassoPath <- function(X,
       standardize,
       screening_type,
       hessian_warm_starts,
+      gap_safe_active_start,
       log_hessian_update_type,
       log_hessian_auto_update_freq,
       path_length,
@@ -86,6 +90,7 @@ lassoPath <- function(X,
       standardize,
       screening_type,
       hessian_warm_starts,
+      gap_safe_active_start,
       log_hessian_update_type,
       log_hessian_auto_update_freq,
       path_length,

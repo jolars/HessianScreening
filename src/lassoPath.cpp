@@ -25,6 +25,7 @@ lassoPath(T& X,
           const bool standardize,
           const std::string screening_type,
           const bool hessian_warm_starts,
+          const bool gap_safe_active_start,
           std::string log_hessian_update_type,
           const uword log_hessian_auto_update_freq,
           const uword path_length,
@@ -87,7 +88,7 @@ lassoPath(T& X,
     if (!standardize) {
       X_norms_squared = colNormsSquared(X);
     } else {
-      X_norms_squared.fill(n);
+      X_norms_squared.fill(static_cast<double>(n));
     }
   }
 
@@ -241,6 +242,7 @@ lassoPath(T& X,
                    lambda_max,
                    null_primal,
                    screening_type,
+                   gap_safe_active_start,
                    first_run,
                    i,
                    maxit,
@@ -253,13 +255,14 @@ lassoPath(T& X,
 
       n_passes_i_sum += n_passes_i;
 
-      if (screening_type == "gap_safe" && !first_run) {
+      if (screening_type == "gap_safe" &&
+          (!first_run || !gap_safe_active_start)) {
         n_screened.push_back(avg_screened);
       }
 
       t0 = timer.toc();
 
-      if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
+      if (check_kkt) {
         uvec unscreened_set = find(screened == false && duplicated == false);
 
         violations.fill(false);
@@ -285,7 +288,8 @@ lassoPath(T& X,
 
       n_violations_i += sum(violations);
 
-      if (!any(violations) && !(screening_type == "gap_safe" && first_run)) {
+      if (!any(violations) && !(screening_type == "gap_safe" &&
+                                gap_safe_active_start && first_run)) {
         duals.emplace_back(dual_value);
         primals.emplace_back(primal_value);
         n_passes.emplace_back(n_passes_i_sum);
@@ -545,6 +549,7 @@ lassoPathDense(arma::mat X,
                const bool standardize,
                const std::string screening_type,
                const bool hessian_warm_starts,
+               const bool gap_safe_active_start,
                std::string log_hessian_update_type,
                const arma::uword log_hessian_auto_update_freq,
                const arma::uword path_length,
@@ -563,6 +568,7 @@ lassoPathDense(arma::mat X,
                    standardize,
                    screening_type,
                    hessian_warm_starts,
+                   gap_safe_active_start,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,
@@ -584,6 +590,7 @@ lassoPathSparse(arma::sp_mat X,
                 const bool standardize,
                 const std::string screening_type,
                 const bool hessian_warm_starts,
+                const bool gap_safe_active_start,
                 std::string log_hessian_update_type,
                 const arma::uword log_hessian_auto_update_freq,
                 const arma::uword path_length,
@@ -602,6 +609,7 @@ lassoPathSparse(arma::sp_mat X,
                    standardize,
                    screening_type,
                    hessian_warm_starts,
+                   gap_safe_active_start,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,
