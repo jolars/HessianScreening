@@ -8,20 +8,21 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
   family = c("binomial", "gaussian"),
-  scenario = c(1, 2, 3),
+  scenario = c(1, 3),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
-  screening_type = c("hessian", "working", "gap_safe", "edpp"),
+  screening_type = c("hessian", "strong", "working", "gap_safe", "edpp"),
   path_length = 100,
   avg_screened = NA,
   avg_violations = NA,
   time = list(NA),
   screened = list(NA),
-  active = list(NA)
+  active = list(NA),
+  step = list(NA)
 )
 
-n_it <- 20
+n_it <- 2
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -39,11 +40,11 @@ for (i in seq_len(nrow(g))) {
     p <- 100
     snr <- 1
     s <- 5
-  } else if (scenario == 2) {
-    n <- 900
-    p <- 1000
-    snr <- 1
-    s <- 10
+  # } else if (scenario == 2) {
+  #   n <- 300
+  #   p <- 400
+  #   snr <- 1
+  #   s <- 10
   } else if (scenario == 3) {
     n <- 400
     p <- 40000
@@ -87,10 +88,10 @@ for (i in seq_len(nrow(g))) {
     active[j, 1:n_lambda] <- fit$active
   }
 
-  keep <- !apply(screened, 2, anyNA)
+  dontuse <- apply(screened, 2, anyNA)
 
-  active <- active[, keep]
-  screened <- screened[, keep]
+  active <- colMeans(active)
+  screened <- colMeans(screened)
 
   g$n[i] <- n
   g$p[i] <- p
@@ -100,6 +101,7 @@ for (i in seq_len(nrow(g))) {
   g$avg_violations[i] <- mean(violations)
   g$screened[i] <- list(screened)
   g$active[i] <- list(active)
+  g$step[i] <- list(1:path_length)
 }
 
 saveRDS(g, "results/simulateddata.rds")
