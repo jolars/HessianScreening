@@ -190,6 +190,7 @@ public:
     const double lambda_max,
     const double null_primal,
     const std::string screening_type,
+    const bool gap_safe_active_start,
     const bool first_run,
     const uword step,
     const uword maxit,
@@ -200,7 +201,7 @@ public:
   {
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe" && !first_run)
+    if (screening_type == "gap_safe" && (!first_run || !gap_safe_active_start))
       screened.fill(true);
 
     uvec screened_set = find(screened);
