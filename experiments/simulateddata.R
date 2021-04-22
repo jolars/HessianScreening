@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
   family = c("binomial", "gaussian"),
-  scenario = c(1, 3),
+  scenario = c(1, 2),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
@@ -22,7 +22,7 @@ g <- expand_grid(
   step = list(NA)
 )
 
-n_it <- 2
+n_it <- 100
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -40,12 +40,7 @@ for (i in seq_len(nrow(g))) {
     p <- 100
     snr <- 1
     s <- 5
-  # } else if (scenario == 2) {
-  #   n <- 300
-  #   p <- 400
-  #   snr <- 1
-  #   s <- 10
-  } else if (scenario == 3) {
+  } else if (scenario == 2) {
     n <- 400
     p <- 40000
     snr <- 2
@@ -61,7 +56,7 @@ for (i in seq_len(nrow(g))) {
   )
 
   for (j in seq_len(n_it)) {
-    set.seed(j * i)
+    set.seed(j)
 
     d <- generateDesign(n, p, family = family, rho = rho, snr = snr)
     X <- d$X
@@ -74,6 +69,7 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
+      gamma = 0.02,
       tol_gap = 1e-6,
       tol_infeas = 1e-5,
       line_search = 3
@@ -86,7 +82,22 @@ for (i in seq_len(nrow(g))) {
     violations[j] <- sum(fit$violations)
     screened[j, 1:n_lambda] <- fit$screened
     active[j, 1:n_lambda] <- fit$active
+
+    # stop if standard error is within 2.5% of mean
+    if (j > 19) {
+      time_se <- sd(time[1:j]) / sqrt(j)
+
+      if (time_se / mean(time[1:j]) < 0.025) {
+        break
+      }
+    }
   }
+
+  time <- time[1:j]
+  active <- active[1:j, ]
+  screened <- screened[1:j, ]
+  violations <- violations[1:j]
+  avg_screened <- avg_screened[1:j]
 
   dontuse <- apply(screened, 2, anyNA)
 
