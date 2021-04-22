@@ -8,6 +8,8 @@ library(tactile)
 library(tikzDevice)
 library(ggplot2)
 
+source("R/utils.R")
+
 theme_set(theme_minimal(base_size = 9))
 
 fw <- 5.6
@@ -19,7 +21,7 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
       screening_type,
       "hessian" = "Hessian",
       "working" = "Working",
-      "gap_safe" = "Gap-Safe",
+      "gap_safe" = "Gap Safe",
       "edpp" = "EDPP"
     ),
     rho = as.factor(rho),
@@ -47,19 +49,18 @@ d1 <-
   ) %>%
   drop_na(meantime)
 
-d2_gaussian <-
-  filter(d1, family == "gaussian")
-
-d2_binomial <-
-  filter(d1, family == "binomial") %>%
-  drop_na(meantime)
-
 cols <- c(
   "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
   "#0072B2", "#D55E00", "#CC79A7"
 )
 
-tikz("figures/simulateddata-timings.tex", width = fw, height = 2.5)
+options(
+  tikzDocumentDeclaration =
+    "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
+)
+
+file <- "figures/simulateddata-timings.tex"
+tikz(file, width = fw, height = 2.5, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
   rel_time,
@@ -76,18 +77,4 @@ ggplot(d1, aes(
   theme(legend.position = c(0.1, 0.7), legend.title = element_blank())
 dev.off()
 
-# tikz("figures/simulateddata-binomial-timings.tex", width = fw, height = 2)
-# ggplot(d2_binomial, aes(
-#   rho,
-#   rel_time,
-#   fill = screening_type
-# )) +
-#   geom_col(position = "dodge", col = 1) +
-#   facet_wrap("np") +
-#   scale_fill_manual(values = cols[2:5]) +
-#   labs(
-#     fill = "Screening",
-#     x = "Correlation ($\\rho$)",
-#     y = "Time"
-#   )
-# dev.off()
+renderPdf("figures/simulateddata-timings.tex")
