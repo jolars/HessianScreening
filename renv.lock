@@ -93,13 +93,6 @@
       "Repository": "CRAN",
       "Hash": "8772b10276b4b4a3dfaa5043f9ad94f8"
     },
-    "RcppParallel": {
-      "Package": "RcppParallel",
-      "Version": "5.0.3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "157a1155dc1bdbb6aba8dad88c9ef460"
-    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.1",
@@ -373,13 +366,6 @@
       "Repository": "CRAN",
       "Hash": "3eb6477d01eb5bbdc03f7d5f70f2733e"
     },
-    "ggthemes": {
-      "Package": "ggthemes",
-      "Version": "4.2.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "617fb2c300f68e8b1ba21043fba88fd7"
-    },
     "gh": {
       "Package": "gh",
       "Version": "1.2.0",
@@ -492,13 +478,6 @@
       "Repository": "CRAN",
       "Hash": "98138e0994d41508c7a6b84a0600cfcb"
     },
-    "kableExtra": {
-      "Package": "kableExtra",
-      "Version": "1.3.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "49b625e6aabe4c5f091f5850aba8ff78"
-    },
     "knitr": {
       "Package": "knitr",
       "Version": "1.31",
@@ -547,6 +526,13 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "d908914ae53b04d4c0c0fd72ecc35370"
+    },
+    "lemon": {
+      "Package": "lemon",
+      "Version": "0.4.5",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "0d3c29dada626b9d9391b98dac977e79"
     },
     "lifecycle": {
       "Package": "lifecycle",
@@ -646,6 +632,13 @@
       "Repository": "CRAN",
       "Hash": "cb57de933545960a86f03513e4bd2911"
     },
+    "plyr": {
+      "Package": "plyr",
+      "Version": "1.8.6",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "ec0e5ab4e5f851f6ef32cd1d1984957f"
+    },
     "png": {
       "Package": "png",
       "Version": "0.1-7",
@@ -694,20 +687,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "97def703420c8ab10d8f0e6c72101e02"
-    },
-    "qualpalr": {
-      "Package": "qualpalr",
-      "Version": "0.4.3",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "cbd64ba289d74f7b486f23d8f8cb7879"
-    },
-    "randtoolbox": {
-      "Package": "randtoolbox",
-      "Version": "1.30.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "826ed4853e2a94f21fe73076b573e43c"
     },
     "rappdirs": {
       "Package": "rappdirs",
@@ -779,13 +758,6 @@
       "Repository": "CRAN",
       "Hash": "edbf4cb1aefae783fd8d3a008ae51943"
     },
-    "rngWELL": {
-      "Package": "rngWELL",
-      "Version": "0.10-6",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "5bfc2b22e6f82943f552a9935b99f393"
-    },
     "roxygen2": {
       "Package": "roxygen2",
       "Version": "7.1.1",
@@ -814,26 +786,12 @@
       "Repository": "CRAN",
       "Hash": "0ec41191f744d0f5afad8c6f35cc36e4"
     },
-    "rvest": {
-      "Package": "rvest",
-      "Version": "1.0.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "74b905b0076e1de6e27f540c95ba68d5"
-    },
     "scales": {
       "Package": "scales",
       "Version": "1.1.1",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "6f76f71042411426ec8df6c54f34e6dd"
-    },
-    "selectr": {
-      "Package": "selectr",
-      "Version": "0.4-2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "3838071b66e0c566d55cc26bd6e27bf4"
     },
     "sessioninfo": {
       "Package": "sessioninfo",
@@ -877,26 +835,12 @@
       "Repository": "CRAN",
       "Hash": "39c4ac6d22dad33db0ee37b40810ea12"
     },
-    "svglite": {
-      "Package": "svglite",
-      "Version": "2.0.0",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "8fb6188960bf0f90996ce52f9c2106ac"
-    },
     "sys": {
       "Package": "sys",
       "Version": "3.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "b227d13e29222b4574486cfcbde077fa"
-    },
-    "systemfonts": {
-      "Package": "systemfonts",
-      "Version": "1.0.1",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "6e899d7c097698d50ec87b1d8e65f246"
     },
     "tactile": {
       "Package": "tactile",
@@ -981,13 +925,6 @@
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "20c45f1d511a3f730b7b469f4d11e104"
-    },
-    "webshot": {
-      "Package": "webshot",
-      "Version": "0.5.2",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "e99d80ad34457a4853674e89d5e806de"
     },
     "whisker": {
       "Package": "whisker",
