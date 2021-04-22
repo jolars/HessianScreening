@@ -48,7 +48,9 @@ screenPredictors(const std::string screening_type,
 
     vec XTcenter = matTransposeMultiply(X, center, X_mean_scaled, standardize);
 
-    screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) >= 1;
+    screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) +
+                 std::sqrt(datum::eps) >=
+               1;
   }
 
   return screened;
