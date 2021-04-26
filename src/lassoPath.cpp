@@ -262,7 +262,7 @@ lassoPath(T& X,
 
       t0 = timer.toc();
 
-      if (check_kkt) {
+      if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
         uvec unscreened_set = find(screened == false && duplicated == false);
 
         violations.fill(false);
