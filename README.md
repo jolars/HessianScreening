@@ -1,9 +1,61 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Code for Hessian Screening Rule Paper
+# Code for the Hessian Screening Rule
 
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/jolars/HessianScreening/workflows/R-CMD-check/badge.svg)](https://github.com/jolars/HessianScreening/actions)
 <!-- badges: end -->
+
+## Results
+
+The results from the simulations, which were run on a dedicated HPC
+cluster, are stored in <results/>. The figures and tables in the paper,
+generated from these results, are stored in </figures> and </tables>
+respectively.
+
+## Reproducing the Results
+
+The simulations are run through a Singularity container using the renv R
+package. In order to reproduce the results exactly, please follow these
+steps:
+
+1.  Clone the repository to your local hard drive. The datasets in this
+    repository are stored using Git-LFS, which you need to [install and
+    enable](https://git-lfs.github.com/) before cloning.
+
+2.  Build the singularity container by calling
+    
+    ``` shell
+    sudo singularity build container.sif Singularity
+    ```
+
+3.  Run the experiments from the singularity container, like so:
+    
+    ``` shell
+    singularity run --bind results:/Project/results container.sif <script>
+    ```
+    
+    where `<script>` should be a name of a script in the <experiments/>
+    folder, such as `simulateddata.R`.
+
+You can also just download the singularity container using the link in
+the badge above and jump to step 3 directly.
+
+## R Package
+
+This project is constructed as an R package with version control enabled
+by [renv](https://rstudio.github.io/renv). You can build it as usual by
+calling
+
+``` shell
+ R CMD INSTALL  .
+```
+
+provided you have `cd`ed to the root folder of this repository.
+
+## Data
+
+The datasets used in these simulations are stored in the <data/> folder.
+THey
