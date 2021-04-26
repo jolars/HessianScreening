@@ -11,9 +11,9 @@
 ## Results
 
 The results from the simulations, which were run on a dedicated HPC
-cluster, are stored in <results/>. The figures and tables in the paper,
-generated from these results, are stored in </figures> and </tables>
-respectively.
+cluster, are stored in the [results folder](results/). The figures and
+tables in the paper, generated from these results, are stored in
+[`figures/`](figures/) and [`tables/`](tables/) respectively.
 
 ## Reproducing the Results
 
@@ -37,11 +37,21 @@ steps:
     singularity run --bind results:/Project/results container.sif <script>
     ```
     
-    where `<script>` should be a name of a script in the <experiments/>
-    folder, such as `simulateddata.R`.
+    where `<script>` should be a name of a script in the [experiments
+    folder](experiments/), such as `simulateddata.R`.
 
 You can also just download the singularity container using the link in
 the badge above and jump to step 3 directly.
+
+Alternatively, you may also reproduce the results by cloning this
+repository, either opening the `HessianScreening.Rproj` file in R Studio
+or starting R in root of this folder (which will activate the renv
+repository), and then building the R package (see below) and running the
+simulations directly by running the scripts in the experiments folder.
+This is **not recommended**, however, since it does not reproduce the
+environment used when these simulations where originally run and may
+result in discrepancies due to differences in, for instance, operating
+systems, compilers, and BLAS/LAPACK implementations.
 
 ## R Package
 
@@ -57,5 +67,6 @@ provided you have `cd`ed to the root folder of this repository.
 
 ## Data
 
-The datasets used in these simulations are stored in the <data/> folder.
-THey
+The datasets used in these simulations are stored in the [data
+folder](data/). Scripts to retrieve these datasets from their original
+sources can be found in [`data-raw/`](data-raw/).
