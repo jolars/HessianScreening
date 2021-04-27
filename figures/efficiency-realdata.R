@@ -8,7 +8,7 @@ library(knitr)
 source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
-j
+
 options(
   tikzDocumentDeclaration =
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
