@@ -69,7 +69,7 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
-      gamma = 0.02,
+      gamma = 0.01,
       tol_gap = 1e-6,
       tol_infeas = 1e-5,
       line_search = 3
