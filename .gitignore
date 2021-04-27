@@ -45,3 +45,5 @@ vignettes/*.pdf
 .vscode
 
 /_research/
+
+README.html
