@@ -15,7 +15,7 @@ theme_set(theme_minimal(base_size = 9))
 fw <- 5.6
 
 d_raw <- readRDS("results/simulateddata.rds") %>%
-  filter(screening_type != "strong", scenario != 2) %>%
+  filter(screening_type != "strong") %>%
   mutate(
     screening_type = recode(
       screening_type,
