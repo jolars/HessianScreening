@@ -83,14 +83,14 @@ for (i in seq_len(nrow(g))) {
     screened[j, 1:n_lambda] <- fit$screened
     active[j, 1:n_lambda] <- fit$active
 
-    # # stop if standard error is within 2.5% of mean
-    # if (j > 19) {
-    #   time_se <- sd(time[1:j]) / sqrt(j)
+    # stop if standard error is within 2.5% of mean
+    if (j > 19) {
+      time_se <- sd(time[1:j]) / sqrt(j)
 
-    #   if (time_se / mean(time[1:j]) < 0.025) {
-    #     break
-    #   }
-    # }
+      if (time_se / mean(time[1:j]) < 0.025) {
+        break
+      }
+    }
   }
 
   time <- time[1:j]
