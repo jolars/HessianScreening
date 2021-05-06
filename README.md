@@ -75,25 +75,32 @@ to run the experiments.
 Alternatively, you may also reproduce the results by cloning this
 repository, then either opening the `HessianScreening.Rproj` file in R
 Studio or starting R in the root directory of this folder (which will
-activate the renv repository), and then building the R package (see
-below) and running the simulations directly by running the scripts in
-the experiments folder. This is **not recommended**, however, since it
-does not reproduce the environment used when these simulations where
-originally run and may result in discrepancies due to differences in,
-for instance, operating systems, compilers, and BLAS/LAPACK
-implementations.
+activate the renv repository) and then run
+
+``` r
+renv::restore()
+```
+
+to restore the project library. Then build the R package (see below) and
+run the simulations directly by running the scripts in the experiments
+folder. This is **not recommended**, however, since it, unlike the
+Singularity container approach, does not exactly reproduce the software
+environment used when these simulations where originally run and may
+result in discrepancies due to differences in for instance operating
+systems, compilers, and BLAS/LAPACK implementations.
 
 ## R Package
 
-This project is constructed as an R package with version control enabled
-by [renv](https://rstudio.github.io/renv). If you want to build and
-experiment with the package, you can do so by calling
+If you want to build and experiment with the package, you can do so by
+calling
 
 ``` shell
  R CMD INSTALL  .
 ```
 
-provided you have `cd`ed to the root folder of this repository.
+provided you have `cd`ed to the root folder of this repository. First
+ensure, however, that you have enabled the renv project library by
+calling `renv::restore()` (see the section above).
 
 ## Data
 
