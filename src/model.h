@@ -201,7 +201,7 @@ public:
   {
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe" && (!first_run || !gap_safe_active_start))
+    if (screening_type == "gap_safe" && !first_run && !gap_safe_active_start)
       screened.fill(true);
 
     uvec screened_set = find(screened);
@@ -234,7 +234,8 @@ public:
           Rprintf("    iter: %i\n", it);
         }
 
-        if (screening_type == "gap_safe" && (it - 1) % screen_interval == 0) {
+        if (screening_type == "gap_safe" && (it - 1) % screen_interval == 0 &&
+            !(first_run && gap_safe_active_start)) {
           if (it > 1) {
             updateLinearPredictor(X, screened_set);
             updateResidual();
