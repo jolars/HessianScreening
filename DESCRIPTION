@@ -2,11 +2,12 @@ Package: HessianScreening
 Title: Hessian-Based Screening Rules for the Lasso
 Version: 0.1.0
 Authors@R:
-    c(person(given = "Anonymous",
-             family = "Anonymous",
+    c(person(given = "John",
+             family = "Doe",
+             email = "john.doe@email.com",
              role = c("aut", "cre")),
-      person(given = "Anonymous",
-             family = "Anonymous",
+      person(given = "John",
+             family = "Doe",
              role = "aut"))
 Description: Procedures to fit the lasso using Hessian-based screening
     rules in addition to several other screening rules.
