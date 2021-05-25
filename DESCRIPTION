@@ -2,16 +2,12 @@ Package: HessianScreening
 Title: Hessian-Based Screening Rules for the Lasso
 Version: 0.1.0
 Authors@R:
-    c(person(given = "Johan",
-             family = "Larsson",
-             role = c("aut", "cre"),
-             email = "johan.larsson@stat.lu.se",
-             comment = c(ORCID = "0000-0002-4029-5945")),
-      person(given = "Jonas",
-             family = "Wallin",
-             role = "aut",
-             email = "jonas.wallin@stat.lu.se",
-             comment = c(ORCID = "0000-0003-0381-6593")))
+    c(person(given = "Anonymous",
+             family = "Anonymous",
+             role = c("aut", "cre")),
+      person(given = "Anonymous",
+             family = "Anonymous",
+             role = "aut"))
 Description: Procedures to fit the lasso using Hessian-based screening
     rules in addition to several other screening rules.
 License: GPL (>= 3)
