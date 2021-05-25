@@ -13,11 +13,6 @@ knitr::opts_chunk$set(
 
 # Code for the Hessian Screening Rule
 
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/jolars/HessianScreening/workflows/R-CMD-check/badge.svg)](https://github.com/jolars/HessianScreening/actions)
-[![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg)](https://arxiv.org/abs/2104.13026)
-<!-- badges: end -->
-
 ## Results
 
 The results from the simulations, which were run
@@ -28,8 +23,9 @@ in [`figures/`](figures/) and [`tables/`](tables/) respectively.
 
 ## Reproducing the Results
 
-The results from our paper were run through a singularity container. Check
-the releases for pre-built singularity containers that you can download and use.
+The results from our paper were run through a singularity container. The
+singularity container will be published alongside the paper upon acceptance but
+couldn't be included in the submission due to size constraints.
 
 To reproduce the results, **always** use the
 singularity container. To run an experiment from the
@@ -42,41 +38,25 @@ singularity run --bind results:/Project/results container.sif <script>
 where `<script>` should be a name of a script in the
 [experiments folder](experiments/), such as `simulateddata.R`.
 
+
+### Getting the datasets
+
+The datasets used in this project could also not be submitted due to
+space constraints. They can, however, be downloaded by running the
+scripts in the [data-raw folder](data-raw/).
+
 ### Re-building the Singularity Container
 
-If you want to re-build the singularity container from scratch (or
-simply want to clone the repo to your local drive), you can
-do so via the following steps.
+If you want to re-build the singularity container from scratch, you can do so by
+navigating to the root of the repo and build the singularity container by
+calling
 
-1. Make sure you have installed and enabled
-   [Git-LFS](https://git-lfs.github.com/). On ubuntu, for instance, you
-   can install Git-LFS by calling
+```shell
+cd HessianScreening
+sudo singularity build container.sif Singularity
+```
 
-   ```shell
-   sudo apt update
-   sudo apt install git-lfs
-   ```
-
-   Then activate git-lfs by calling
-
-   ```shell
-   git lfs install
-   ```
-
-2. Clone the repository to your local hard drive. On linux, using
-   SSH authentication, run
-
-   ```shell
-   git clone git@github.com:jolars/HessianScreening.git
-   ```
-
-3. Navigate to the root of the repo and
-   build the singularity container by calling
-
-   ```shell
-   cd HessianScreening
-   sudo singularity build container.sif Singularity
-   ```
+Please do, however, first make sure that you've downloaded all of the datasets.
 
 Then proceed as in [Reproducing the Results](#reproducing-the-results)
 to run the experiments.
@@ -86,7 +66,7 @@ to run the experiments.
 Alternatively, you may also reproduce the results by cloning this repository,
 then either opening the `HessianScreening.Rproj` file in R Studio or starting
 R in the root directory of this folder (which will activate the renv
-repository) and then run
+repository) and then running
 
 ```r
 renv::restore()
@@ -119,10 +99,3 @@ ensure, however, that you have enabled the renv project library by calling
 The datasets used in these simulations are stored in the [data folder](data/).
 Scripts to retrieve these datasets from their original
 sources can be found in [`data-raw/`](data-raw/).
-
-## Forking and Git-LFS
-
-Note that pushing large files using Git-LFS against forks of this repo
-[counts against the bandwidth limits of this repo](https://docs.github.com/en/github/managing-large-files/collaboration-with-git-large-file-storage),
-and so may fail if these limits are exceeded. If you for some reason need
-to do this and it fails, please file as issue here.
