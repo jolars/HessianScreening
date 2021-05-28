@@ -401,7 +401,7 @@ lassoPath(T& X,
         Hinv_s = Hinv * s(active_perm);
         Hinv_s = Hinv_s(sort_index(active_perm)); // reset permutation
       } else {
-        // for logistic regression and no approxiation, simply recompute the
+        // for logistic regression and no approximation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
         H = model->hessian(X, active_set);
