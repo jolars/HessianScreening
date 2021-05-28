@@ -10,11 +10,11 @@ Procedures to fit the lasso using Hessian-based screening
     rules in addition to several other screening rules.
 }
 \author{
-\strong{Maintainer}: Anonymous Anonymous \email{john.doe@gmail.com}
+\strong{Maintainer}: John Doe \email{john.doe@email.com}
 
 Authors:
 \itemize{
-  \item Anonymous Anonymous
+  \item John Doe
 }
 
 }
