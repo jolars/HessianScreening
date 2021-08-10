@@ -33,7 +33,7 @@ public:
 
   double dual() { return dot(residual, y) - 0.5 * std::pow(norm(residual), 2); }
 
-  double scaledDual(const double lambda)
+  double scaledDual(const double lambda, const double dual_scale)
   {
     if (dual_scale == 0) {
       return 0;
@@ -43,6 +43,10 @@ public:
       return alpha * dot(residual, y) -
              0.5 * std::pow(alpha * norm(residual), 2);
     }
+  }
+  double dual(const double lambda, const vec & theta){
+    return lambda * dot(theta, y) -
+      0.5 * std::pow(lambda * norm(theta), 2);
   }
 
   double deviance() { return std::pow(norm(residual), 2); }

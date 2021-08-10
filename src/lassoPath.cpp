@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-
+#include <algorithm>
 #include "setupModel.h"
 #include "model.h"
 #include "getNextLambda.h"
@@ -31,7 +31,7 @@ lassoPath(T& X,
           const uword path_length,
           const uword maxit,
           const double tol_infeas,
-          const double tol_gap,
+          double tol_gap,
           const double gamma,
           const bool verify_hessian,
           const bool force_kkt_check,
@@ -40,6 +40,7 @@ lassoPath(T& X,
 {
   const uword n = X.n_rows;
   const uword p = X.n_cols;
+  std::string stopping_criteria = "celer";
 
   if (family == "binomial") {
     vec y_unique = sort(unique(y));
@@ -78,7 +79,6 @@ lassoPath(T& X,
   if (standardize) {
     standardizeX(X_mean, X_sd, X);
   }
-
   const vec X_mean_scaled = X_mean / X_sd;
   const double y_center = mean(y);
 
@@ -166,6 +166,7 @@ lassoPath(T& X,
   uvec strong = active;
   uvec strong_set = find(strong);
 
+  uvec local_screeen(p, fill::zeros);
   uvec violations(p, fill::zeros);
 
   uvec active_perm = find(active);
@@ -178,6 +179,7 @@ lassoPath(T& X,
 
   vec s(p, fill::zeros);
   s(active_perm) = sign(c(active_perm));
+
 
   vec Hinv_s = Hinv * s(active_perm);
 
@@ -194,22 +196,35 @@ lassoPath(T& X,
   std::vector<double> duplicates_times;
 
   const double null_primal = model->primal(lambda_max, active_set);
+  double primal_prev = null_primal;
+  // new for dual
+  model->updateCorrelation(X, active_set);
+  model->updateLinearPredictor(X, active_set);
+  model->updateResidual();
+  double dual_scale = lambda_max;
 
+  double dual_in = 0;
   wall_clock timer;
   timer.tic();
 
   double full_time = timer.toc();
-
+  double primal_old = null_primal;
+  double tol_gap_global = tol_gap;
   uword i = 0;
-
   while (true) {
     i++;
+
+    //if( i==3 ){
+    //  throw(Rcpp::exception("debug","deubg.cpp",4));
+    //}
 
     double it_time = timer.toc();
 
     if (verbosity >= 1) {
       Rprintf("step: %i, lambda: %.2f\n", i, lambda);
+      Rprintf("******************************\n ITER = %d\n ****************",i);
     }
+
 
     vec beta_prev = beta;
     double dev_prev = dev;
@@ -221,7 +236,26 @@ lassoPath(T& X,
     double cd_time = 0;
     double hess_time = 0;
     double kkt_time = 0;
+    if(screening_type == "celer"){
+      local_screeen.fill(false);
+      uvec beta_non_zero = find(beta != 0);
+      primal_prev = model->primal(lambda, beta_non_zero);
+      dual_in = model->scaledDual(lambda, dual_scale);
+      double dual_gap = primal_prev - dual_in;
+      double radius = model->safeScreeningRadius(dual_gap, lambda);
 
+        uvec unscreened_set = find(duplicated == false);
+
+      for (auto&& jj : unscreened_set){
+        double d_local =(1 - abs(model->c(jj))/dual_scale)/std::sqrt(X_norms_squared(jj));
+        if(d_local > std::sqrt(2)*radius)
+          local_screeen(jj) = true;
+      }
+
+
+      tol_gap = 0.3*(primal_prev - dual_in);
+      tol_gap= std::max(tol_gap, tol_gap_global);
+    }
     while (true) {
       if (verbosity >= 1) {
         Rprintf("  running coordinate descent\n");
@@ -233,7 +267,7 @@ lassoPath(T& X,
         n_screened.emplace_back(sum(screened));
       }
 
-      auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
+      auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened, use_latest_theta, theta_in] =
         model->fit(screened,
                    X,
                    X_norms_squared,
@@ -249,10 +283,10 @@ lassoPath(T& X,
                    tol_gap,
                    tol_infeas,
                    line_search,
+                   stopping_criteria,
                    verbosity);
 
       cd_time += timer.toc() - t0;
-
       n_passes_i_sum += n_passes_i;
 
       if (screening_type == "gap_safe" &&
@@ -261,8 +295,119 @@ lassoPath(T& X,
       }
 
       t0 = timer.toc();
+      int passed_tests = 0;
+      if(screening_type == "celer"){
+        uvec unscreened_set = find(screened == false && duplicated == false && local_screeen==false);
+        model->updateCorrelation(X, unscreened_set);
 
-      if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
+        violations.fill(false);
+        dual_scale = kktCheck(violations, model->c, unscreened_set, lambda);
+
+        dual_scale = std::max(lambda, dual_scale);
+        double inner_scale = std::max(lambda, max(abs(model->c(find(screened)))));
+        dual_scale = std::max(dual_scale, inner_scale);
+        if(verbosity>=1)
+          Rcpp::Rcout << "dual_scale/inner_scale=  " << dual_scale/inner_scale << "\n";
+        double dual_r = model->scaledDual(lambda, dual_scale);
+
+        vec d_in;
+        if(use_latest_theta==0){
+          uvec beta_set =  find(beta == 0 && local_screeen==false);
+          d_in = model->updateScaleTheta(X, beta_set, theta_in);
+          dual_in = model->dual(lambda, theta_in);
+          if(verbosity>=1)
+            Rcpp::Rcout << "dual_in = " << dual_in << "\n";
+          if(dual_in < dual_r)
+          {
+            dual_in  =dual_r;
+            theta_in = model->residual /dual_scale;
+
+            for (auto&& jj : unscreened_set){
+              d_in(jj) =(1 - abs(model->c(jj))/dual_scale)/std::sqrt(X_norms_squared(jj));
+            }
+          }
+          double dual_gap = primal_value - dual_in;
+          double radius = model->safeScreeningRadius(dual_gap, lambda);
+          for (auto&& jj : unscreened_set){
+            if(d_in(jj)  > std::sqrt(2)*radius){
+              local_screeen(jj) = true;
+            }
+          }
+
+        }else{
+          dual_in  = dual_r;
+          d_in.ones(model->p);
+          d_in = d_in * (-1);
+          uvec beta_set =  find(beta == 0 && local_screeen==false);
+          double dual_gap = primal_value - dual_in;
+          double radius = model->safeScreeningRadius(dual_gap, lambda);
+          for (auto&& jj : beta_set){
+            d_in(jj) =(1 - abs(model->c(jj))/dual_scale)/std::sqrt(X_norms_squared(jj));
+            if(d_in(jj)  > std::sqrt(2)*radius){
+              local_screeen(jj) = true;
+            }
+          }
+        }
+
+
+        passed_tests = primal_value - dual_in < tol_gap_global * null_primal;
+
+        if(verbosity)
+          Rprintf(" Global %d: primal: %.2f, dual: %.2f, duality gap: %.2e\n passed : %d, null_primal: %.2f, tol_gap_global %.2e, lambda %.2f\n",
+                  i,
+                  primal_value,
+                  dual_in,
+                  (primal_value - dual_in),
+                  passed_tests,
+                  null_primal,
+                  tol_gap_global,
+                  lambda);
+
+        if(passed_tests == 0){
+          tol_gap = std::max(0.5*(primal_value - dual_in)/null_primal,tol_gap_global);
+          uvec local_screen_set_double = find(duplicated == true  || local_screeen==true);
+          if(verbosity>=1){
+            Rcpp::Rcout << "active = " << accu(beta!=0) << " of left = " << p -  accu(duplicated == true  || local_screeen==true) << " of total " << p <<"\n";
+          }
+
+          for (auto&& jj : local_screen_set_double)
+            d_in(jj) =1;
+          int working_set_size = 2 * accu( beta != 0);
+          if(verbosity>=1)
+            Rcpp::Rcout << "working_set_size = " << working_set_size << "\n";
+          if( working_set_size == 0)
+            working_set_size=1;
+          uvec possible_set = duplicated == false && local_screeen==false;
+          int index_size= accu(possible_set);
+
+          if( working_set_size >= index_size)
+            working_set_size = index_size;
+
+          std::vector<int> index(index_size, 0);
+          int counter = 0;
+          for (int jj = 0 ; jj != p ; jj++) {
+            if(possible_set(jj)){
+              index[counter] = jj;
+              counter++;
+            }
+          }
+          std::sort(index.begin(),  index.end(),
+               [&](const int& a, const int& b) {
+                 return (d_in(a) < d_in(b));});
+
+          screened.zeros();
+          for(int jj = 0; jj < working_set_size ; jj++){
+            if(d_in(index[jj]) < 1)
+              screened(index[jj]) = true;
+          }
+
+
+        }else{
+          primal_prev = primal_value;
+        }
+
+
+      }else if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
         uvec unscreened_set = find(screened == false && duplicated == false);
 
         violations.fill(false);
@@ -282,13 +427,13 @@ lassoPath(T& X,
             kktCheck(violations, screened, c, check_set, lambda);
           }
         }
+        passed_tests = !any(violations);
       }
 
       kkt_time += timer.toc() - t0;
 
       n_violations_i += sum(violations);
-
-      if (!any(violations) && !(screening_type == "gap_safe" &&
+      if ( passed_tests && !(screening_type == "gap_safe" &&
                                 gap_safe_active_start && first_run)) {
         duals.emplace_back(dual_value);
         primals.emplace_back(primal_value);
@@ -357,7 +502,6 @@ lassoPath(T& X,
     ever_active(active_set).fill(true);
     n_active.emplace_back(active_set.n_elem);
     n_new_active.emplace_back(new_active);
-
     betas.insert_cols(betas.n_cols, beta);
 
     if (verbosity >= 1) {
@@ -480,7 +624,6 @@ lassoPath(T& X,
     strong = abs(c) >= 2 * lambda_next - lambda;
     strong_set = find(strong);
     n_strong.emplace_back(sum(strong));
-
     screened = screenPredictors(screening_type,
                                 strong,
                                 ever_active,
@@ -513,6 +656,7 @@ lassoPath(T& X,
     Rcpp::checkUserInterrupt();
   }
 
+  active_set = find(beta!=0);
   rescaleCoefficients(betas, X_mean, X_sd, y_center);
 
   full_time = timer.toc() - full_time;

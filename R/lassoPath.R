@@ -35,7 +35,8 @@ lassoPath <- function(X,
                         "hessian_adaptive",
                         "edpp",
                         "gap_safe",
-                        "strong"
+                        "strong",
+                        "celer"
                       ),
                       hessian_warm_starts = TRUE,
                       gap_safe_active_start = TRUE,

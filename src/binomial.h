@@ -52,7 +52,7 @@ public:
 
   double dual() { return -sum(pr % log(pr) + (1 - pr) % log(1 - pr)); }
 
-  double scaledDual(const double lambda)
+  double scaledDual(const double lambda, const double dual_scale)
   {
     if (dual_scale == 0) {
       return 0;
@@ -63,6 +63,13 @@ public:
 
       return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
     }
+  }
+
+  double dual(const double lambda, const vec & theta)
+  {
+    vec prx = clamp(y - lambda * theta, p_min, p_max);
+    return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
+
   }
 
   double deviance() { return -2 * sum(y % Xbeta - log1p(expXbeta)); }
@@ -260,4 +267,4 @@ public:
     return std::sqrt(2 * duality_gap) / (2 * lambda);
   }
 };
-;
+
