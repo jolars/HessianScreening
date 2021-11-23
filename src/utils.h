@@ -152,13 +152,13 @@ matTransposeMultiply(const sp_mat& A,
   return Atb;
 }
 
-double
+inline double
 getSparsity(const mat& X)
 {
   return 0;
 }
 
-double
+inline double
 getSparsity(const sp_mat& X)
 {
   return 1 - X.n_nonzero / X.n_elem;
