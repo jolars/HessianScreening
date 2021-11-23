@@ -3,36 +3,34 @@
 #include "prox.h"
 #include <RcppArmadillo.h>
 
-using namespace arma;
-
 class Model
 {
 public:
   const std::string family;
 
-  vec& y;
-  vec& beta;
-  vec& residual;
-  vec& Xbeta;
-  vec& c;
+  arma::vec& y;
+  arma::vec& beta;
+  arma::vec& residual;
+  arma::vec& Xbeta;
+  arma::vec& c;
 
-  const vec& X_mean_scaled;
-  const vec& X_norms_squared;
+  const arma::vec& X_mean_scaled;
+  const arma::vec& X_norms_squared;
 
-  const uword n;
-  const uword p;
+  const arma::uword n;
+  const arma::uword p;
   const bool standardize;
 
   Model(const std::string family,
-        vec& y,
-        vec& beta,
-        vec& residual,
-        vec& Xbeta,
-        vec& c,
-        const vec& X_mean_scaled,
-        const vec& X_norms_squared,
-        const uword n,
-        const uword p,
+        arma::vec& y,
+        arma::vec& beta,
+        arma::vec& residual,
+        arma::vec& Xbeta,
+        arma::vec& c,
+        const arma::vec& X_mean_scaled,
+        const arma::vec& X_norms_squared,
+        const arma::uword n,
+        const arma::uword p,
         const bool standardize)
     : family(family)
     , y(y)
@@ -51,42 +49,43 @@ public:
 
   void setLogHessianUpdateType(const std::string new_log_hessian_update_type){};
 
-  virtual double primal(const double lambda, const uvec& screened_set) = 0;
+  virtual double primal(const double lambda,
+                        const arma::uvec& screened_set) = 0;
 
   virtual double dual() = 0;
-  virtual double dual(const double lambda, const vec& theta) = 0;
+  virtual double dual(const double lambda, const arma::vec& theta) = 0;
 
   virtual double scaledDual(const double lambda, const double dual_scale) = 0;
 
   virtual double deviance() = 0;
 
-  virtual mat hessian(const mat& X, const uvec& ind) = 0;
+  virtual arma::mat hessian(const arma::mat& X, const arma::uvec& ind) = 0;
 
-  virtual mat hessian(const sp_mat& X, const uvec& ind) = 0;
+  virtual arma::mat hessian(const arma::sp_mat& X, const arma::uvec& ind) = 0;
 
-  virtual mat hessianUpperRight(const mat& X,
-                                const uvec& ind_a,
-                                const uvec& ind_b) = 0;
+  virtual arma::mat hessianUpperRight(const arma::mat& X,
+                                      const arma::uvec& ind_a,
+                                      const arma::uvec& ind_b) = 0;
 
-  virtual mat hessianUpperRight(const sp_mat& X,
-                                const uvec& ind_a,
-                                const uvec& ind_b) = 0;
+  virtual arma::mat hessianUpperRight(const arma::sp_mat& X,
+                                      const arma::uvec& ind_a,
+                                      const arma::uvec& ind_b) = 0;
 
-  virtual double hessianTerm(const mat& X, const uword j) = 0;
+  virtual double hessianTerm(const arma::mat& X, const arma::uword j) = 0;
 
-  virtual double hessianTerm(const sp_mat& X, const uword j) = 0;
+  virtual double hessianTerm(const arma::sp_mat& X, const arma::uword j) = 0;
 
   virtual void updateResidual() = 0;
 
-  virtual void adjustResidual(const mat& X,
-                              const uword j,
+  virtual void adjustResidual(const arma::mat& X,
+                              const arma::uword j,
                               const double beta_diff) = 0;
 
-  virtual void adjustResidual(const sp_mat& X,
-                              const uword j,
+  virtual void adjustResidual(const arma::sp_mat& X,
+                              const arma::uword j,
                               const double beta_diff) = 0;
 
-  void updateLinearPredictor(const mat& X, const uvec& ind)
+  void updateLinearPredictor(const arma::mat& X, const arma::uvec& ind)
   {
     Xbeta = X.cols(ind) * beta(ind);
   }
@@ -96,11 +95,15 @@ public:
     Xbeta = X.cols(ind) * beta(ind);
 
     if (standardize)
-      Xbeta -= dot(beta(ind), X_mean_scaled(ind));
+      Xbeta -= arma::dot(beta(ind), X_mean_scaled(ind));
   }
 
-  vec updateScaleTheta(const mat& X, const uvec& ind, vec& theta)
+  arma::vec updateScaleTheta(const arma::mat& X,
+                             const arma::uvec& ind,
+                             arma::vec& theta)
   {
+    using namespace arma;
+
     double scale = 1.;
     vec d(p, fill::ones);
     d = d * (-1);
@@ -118,8 +121,13 @@ public:
     }
     return (d);
   }
-  vec updateScaleTheta(const sp_mat& X, const uvec& ind, vec& theta)
+
+  arma::vec updateScaleTheta(const arma::sp_mat& X,
+                             const arma::uvec& ind,
+                             arma::vec& theta)
   {
+    using namespace arma;
+
     // pair
     double scale = 1.;
     double sum_theta = sum(theta);
@@ -141,51 +149,54 @@ public:
     }
     return (d);
   }
-  void updateCorrelation(const mat& X, const uvec& ind)
+
+  void updateCorrelation(const arma::mat& X, const arma::uvec& ind)
   {
     for (auto&& j : ind) {
-      c(j) = dot(X.unsafe_col(j), residual);
+      c(j) = arma::dot(X.unsafe_col(j), residual);
     }
   }
 
-  void updateCorrelation(const sp_mat& X, const uvec& ind)
+  void updateCorrelation(const arma::sp_mat& X, const arma::uvec& ind)
   {
     for (auto&& j : ind) {
-      c(j) = dot(X.col(j), residual);
+      c(j) = arma::dot(X.col(j), residual);
     }
 
     if (standardize) {
-      c(ind) -= X_mean_scaled(ind) * sum(residual);
+      c(ind) -= X_mean_scaled(ind) * arma::sum(residual);
     }
   }
 
-  inline void updateCorrelation(const mat& X, const uword& j)
+  inline void updateCorrelation(const arma::mat& X, const arma::uword& j)
   {
-    c(j) = dot(X.unsafe_col(j), residual);
+    c(j) = arma::dot(X.unsafe_col(j), residual);
   }
 
-  inline void updateCorrelation(const sp_mat& X, const uword& j)
+  inline void updateCorrelation(const arma::sp_mat& X, const arma::uword& j)
   {
-    c(j) = dot(X.col(j), residual);
+    c(j) = arma::dot(X.col(j), residual);
 
     if (standardize) {
-      c(j) -= X_mean_scaled(j) * accu(residual);
+      c(j) -= X_mean_scaled(j) * arma::accu(residual);
     }
   }
 
-  virtual void updateGradientOfCorrelation(vec& c_grad,
-                                           const mat& X,
-                                           const vec& Hinv_s,
-                                           const vec& s,
-                                           const uvec& active_set,
-                                           const uvec& restricted_set) = 0;
+  virtual void updateGradientOfCorrelation(
+    arma::vec& c_grad,
+    const arma::mat& X,
+    const arma::vec& Hinv_s,
+    const arma::vec& s,
+    const arma::uvec& active_set,
+    const arma::uvec& restricted_set) = 0;
 
-  virtual void updateGradientOfCorrelation(vec& c_grad,
-                                           const sp_mat& X,
-                                           const vec& Hinv_s,
-                                           const vec& s,
-                                           const uvec& active_set,
-                                           const uvec& restricted_set) = 0;
+  virtual void updateGradientOfCorrelation(
+    arma::vec& c_grad,
+    const arma::sp_mat& X,
+    const arma::vec& Hinv_s,
+    const arma::vec& s,
+    const arma::uvec& active_set,
+    const arma::uvec& restricted_set) = 0;
 
   virtual void standardizeY() = 0;
 
@@ -193,10 +204,10 @@ public:
                                      const double lambda) = 0;
 
   template<typename T>
-  void safeScreening(uvec& screened,
-                     uvec& screened_set,
+  void safeScreening(arma::uvec& screened,
+                     arma::uvec& screened_set,
                      const T& X,
-                     const vec& XTcenter,
+                     const arma::vec& XTcenter,
                      const double r_screen)
   {
     for (auto&& j : screened_set) {
@@ -217,15 +228,15 @@ public:
       }
     }
 
-    screened_set = find(screened);
+    screened_set = arma::find(screened);
   }
 
   // adopted from https://github.com/tbjohns/BlitzL1/blob/master/src/solver.cpp
-  void updatePhi(vec& phi,
-                 vec& theta,
-                 const uvec& prioritized_features,
-                 vec& XTphi,
-                 const vec& XTtheta,
+  void updatePhi(arma::vec& phi,
+                 arma::vec& theta,
+                 const arma::uvec& prioritized_features,
+                 arma::vec& XTphi,
+                 const arma::vec& XTtheta,
                  const double alpha,
                  const double theta_scale)
   {
@@ -237,17 +248,17 @@ public:
       XTphi(j) = (1 - alpha) * XTphi(j) + alpha * theta_scale * XTtheta(j);
     }
 
-    for (uword i = 0; i < phi.n_elem; ++i)
+    for (arma::uword i = 0; i < phi.n_elem; ++i)
       phi[i] = (1 - alpha) * phi(i) + alpha * theta_scale * theta(i);
   }
 
   // adopted from https://github.com/tbjohns/BlitzL1/blob/master/src/solver.cpp
-  double computeAlpha(const uvec& prioritized_features,
-                      const vec& XTphi,
-                      const vec& XTtheta,
+  double computeAlpha(const arma::uvec& prioritized_features,
+                      const arma::vec& XTphi,
+                      const arma::vec& XTtheta,
                       const double lambda,
                       const double theta_scale,
-                      const vec& X_norms_squared)
+                      const arma::vec& X_norms_squared)
   {
     double best_alpha = 1.0;
 
@@ -277,11 +288,11 @@ public:
     return best_alpha;
   }
 
-  void prioritizeFeatures(uvec& prioritized_features,
-                          vec& feature_priorities,
-                          const vec& XTphi,
-                          const vec& beta,
-                          const vec& X_norms_squared,
+  void prioritizeFeatures(arma::uvec& prioritized_features,
+                          arma::vec& feature_priorities,
+                          const arma::vec& XTphi,
+                          const arma::vec& beta,
+                          const arma::vec& X_norms_squared,
                           double lambda)
   {
     // Reorders prioritized_features so that first max_size_C wefk
@@ -309,14 +320,14 @@ public:
 
     // TODO(jolars): make this more efficient (as above)
     prioritized_features =
-      prioritized_features(sort_index(feature_priorities, "ascend"));
+      prioritized_features(arma::sort_index(feature_priorities, "ascend"));
   }
 
   template<typename T>
-  std::tuple<double, double, double, uword, double, int, vec> fit(
-    uvec& screened,
+  std::tuple<double, double, double, arma::uword, double, int, arma::vec> fit(
+    arma::uvec& screened,
     const T& X,
-    const vec& X_norms_squared,
+    const arma::vec& X_norms_squared,
     const double lambda,
     const double lambda_prev,
     const double lambda_max,
@@ -324,14 +335,16 @@ public:
     const std::string screening_type,
     const bool gap_safe_active_start,
     const bool first_run,
-    const uword step,
-    const uword maxit,
+    const arma::uword step,
+    const arma::uword maxit,
     const double tol_gap,
     const double tol_infeas,
     const int line_search,
     const std::string stopping_criteria,
-    const uword verbosity)
+    const arma::uword verbosity)
   {
+    using namespace arma;
+
     const uword p = X.n_cols;
     double dual_scale;
     const int f = 10; // celer modulo
