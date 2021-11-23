@@ -25,7 +25,7 @@
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
 #' @export
-lassoPath <- function(X,
+lassoPath <- function(x,
                       y,
                       family = c("gaussian", "binomial"),
                       standardize = TRUE,
@@ -55,16 +55,13 @@ lassoPath <- function(X,
   screening_type <- match.arg(screening_type)
   log_hessian_update_type <- match.arg(log_hessian_update_type)
 
-  sparse <- inherits(X, "sparseMatrix")
-
-  n <- nrow(X)
-  p <- ncol(X)
+  sparse <- inherits(x, "sparseMatrix")
 
   if (sparse) {
-    X <- as(X, "dgCMatrix")
+    x <- as(x, "dgCMatrix")
 
     lassoPathSparse(
-      X,
+      x,
       y,
       family,
       standardize,
@@ -85,7 +82,7 @@ lassoPath <- function(X,
     )
   } else {
     lassoPathDense(
-      X,
+      x,
       y,
       family,
       standardize,

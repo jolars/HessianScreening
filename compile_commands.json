@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/home/gerd-jln/research/HessianScreening/src/",
+    "command": "/usr/bin/clang++ -m64 -std=gnu++17 -I/usr/include/R -I'/home/gerd-jln/research/HessianScreening/renv/library/R-4.0/x86_64-redhat-linux-gnu/Rcpp/include' -I'/home/gerd-jln/research/HessianScreening/renv/library/R-4.0/x86_64-redhat-linux-gnu/RcppArmadillo/include' -I/usr/local/include  -fopenmp -DARMA_64BIT_WORD -Wall  -fpic  -O2 -c lassoPath.cpp -o lassoPath.o",
+    "file": "lassoPath.cpp"
+  }
+]
