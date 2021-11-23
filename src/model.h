@@ -1,8 +1,7 @@
 #pragma once
 
-#include <RcppArmadillo.h>
-
 #include "prox.h"
+#include <RcppArmadillo.h>
 
 using namespace arma;
 
