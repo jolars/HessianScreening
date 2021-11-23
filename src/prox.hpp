@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.h"
+#include "utils.hpp"
 
 inline double
 prox(const double x, const double lambda)

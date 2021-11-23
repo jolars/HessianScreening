@@ -1,5 +1,5 @@
 #include "model.h"
-#include "prox.h"
+#include "prox.hpp"
 #include <RcppArmadillo.h>
 
 Model::Model(const std::string family,
@@ -33,7 +33,7 @@ Model::updateLinearPredictor(const arma::mat& X, const arma::uvec& ind)
 }
 
 void
-Model::updateLinearPredictor(const sp_mat& X, const uvec& ind)
+Model::updateLinearPredictor(const arma::sp_mat& X, const arma::uvec& ind)
 {
   Xbeta = X.cols(ind) * beta(ind);
 

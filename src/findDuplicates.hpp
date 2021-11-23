@@ -1,7 +1,7 @@
 #pragma once
 
 #include "model.h"
-#include "utils.h"
+#include "utils.hpp"
 #include <RcppArmadillo.h>
 
 template<typename T>

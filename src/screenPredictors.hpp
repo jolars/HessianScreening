@@ -2,25 +2,25 @@
 
 #include <RcppArmadillo.h>
 
-using namespace arma;
-
 template<typename T>
-uvec
+arma::uvec
 screenPredictors(const std::string screening_type,
-                 const uvec& strong,
-                 const uvec& ever_active,
-                 const vec& residual,
-                 const vec& c,
-                 const vec& c_grad,
+                 const arma::uvec& strong,
+                 const arma::uvec& ever_active,
+                 const arma::vec& residual,
+                 const arma::vec& c,
+                 const arma::vec& c_grad,
                  const T& X,
-                 const vec& X_norms_squared,
-                 const vec& X_mean_scaled,
-                 const vec& y,
+                 const arma::vec& X_norms_squared,
+                 const arma::vec& X_mean_scaled,
+                 const arma::vec& y,
                  const double lambda,
                  const double lambda_next,
                  const double gamma,
                  const bool standardize)
 {
+  using namespace arma;
+
   uvec screened(X.n_cols);
 
   if (screening_type == "working" || screening_type == "celer") {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "prox.h"
+#include "prox.hpp"
 #include <RcppArmadillo.h>
 
 class Model
@@ -75,7 +75,7 @@ public:
 
   void updateLinearPredictor(const arma::mat& X, const arma::uvec& ind);
 
-  void updateLinearPredictor(const sp_mat& X, const uvec& ind);
+  void updateLinearPredictor(const arma::sp_mat& X, const arma::uvec& ind);
 
   arma::vec updateScaleTheta(const arma::mat& X,
                              const arma::uvec& ind,
@@ -128,7 +128,7 @@ public:
         continue;
       }
 
-      if (std::abs(XTcenter(j)) + r_normX_j + std::sqrt(datum::eps) < 1) {
+      if (std::abs(XTcenter(j)) + r_normX_j + std::sqrt(arma::datum::eps) < 1) {
         // predictor must be zero; update residual and remove from screened set
         if (beta(j) != 0) {
           adjustResidual(X, j, -beta(j));
@@ -213,7 +213,7 @@ public:
     vec phi(p, fill::zeros);
     vec XTphi(n, fill::zeros);
     vec XTtheta(n, fill::zeros);
-    double theta_scale = 1;
+    // double theta_scale = 1;
     uvec prioritized_features(p);
     vec feature_priorities(p);
     uword working_set_size = 0;
