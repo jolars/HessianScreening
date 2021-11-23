@@ -24,7 +24,6 @@ public:
   const uword p;
   const bool standardize;
 
-
   Model(const std::string family,
         vec& y,
         vec& beta,
@@ -56,7 +55,7 @@ public:
   virtual double primal(const double lambda, const uvec& screened_set) = 0;
 
   virtual double dual() = 0;
-  virtual double dual(const double lambda, const vec & theta) = 0;
+  virtual double dual(const double lambda, const vec& theta) = 0;
 
   virtual double scaledDual(const double lambda, const double dual_scale) = 0;
 
@@ -101,46 +100,47 @@ public:
       Xbeta -= dot(beta(ind), X_mean_scaled(ind));
   }
 
-
-  vec updateScaleTheta(const mat& X, const uvec& ind, vec & theta)
+  vec updateScaleTheta(const mat& X, const uvec& ind, vec& theta)
   {
     double scale = 1.;
-    vec d(p,  fill::ones);
+    vec d(p, fill::ones);
     d = d * (-1);
     for (auto&& j : ind) {
       d(j) = abs(dot(X.unsafe_col(j), theta));
-      if(d(j) > 1)
+      if (d(j) > 1)
         scale = d(j);
     }
-    if(scale> 1){}
-      theta = theta / scale;
+    if (scale > 1) {
+    }
+    theta = theta / scale;
 
     for (auto&& j : ind) {
-      d(j) = (1- d(j)/scale)/std::sqrt(X_norms_squared(j));
+      d(j) = (1 - d(j) / scale) / std::sqrt(X_norms_squared(j));
     }
-    return(d);
+    return (d);
   }
-  vec updateScaleTheta(const sp_mat& X, const uvec& ind, vec & theta)
+  vec updateScaleTheta(const sp_mat& X, const uvec& ind, vec& theta)
   {
-    //pair
+    // pair
     double scale = 1.;
     double sum_theta = sum(theta);
-    vec d(p,  fill::ones);
+    vec d(p, fill::ones);
     d = d * (-1);
+
     for (auto&& j : ind) {
       d(j) = dot(X.col(j), theta);
-      if(standardize)
+      if (standardize)
         d(j) -= X_mean_scaled(j) * sum_theta;
       d(j) = abs(d(j));
-      if(d(j) > 1)
+      if (d(j) > 1)
         scale = d(j);
     }
-    if(scale> 1)
+    if (scale > 1)
       theta = theta / scale;
     for (auto&& j : ind) {
-      d(j) = 1- d(j)/scale;
+      d(j) = 1 - d(j) / scale;
     }
-    return(d);
+    return (d);
   }
   void updateCorrelation(const mat& X, const uvec& ind)
   {
@@ -330,13 +330,13 @@ public:
     const double tol_gap,
     const double tol_infeas,
     const int line_search,
-    const std::string  stopping_criteria,
+    const std::string stopping_criteria,
     const uword verbosity)
   {
     const uword p = X.n_cols;
     double dual_scale;
-    const int f = 10; //celer modulo
-    const int K = 5; // celer constant
+    const int f = 10; // celer modulo
+    const int K = 5;  // celer constant
     int use_latest = 0;
     vec theta(n);
 
@@ -344,7 +344,6 @@ public:
       screened.fill(true);
 
     uvec screened_set = find(screened);
-
 
     // line search parameters
     const double a = 0.1;
@@ -372,31 +371,28 @@ public:
     updateResidual();
 
     double primal_value = primal(lambda, screened_set);
-    double dual_value ;
+    double dual_value;
     updateCorrelation(X, screened_set);
     dual_scale = std::max(lambda, max(abs(c(screened_set))));
     dual_value = scaledDual(lambda, dual_scale);
-    theta = residual/dual_scale;
+    theta = residual / dual_scale;
 
     double duality_gap = primal_value - dual_value;
-    if(first_run && duality_gap <= tol_gap * null_primal){
-      if (verbosity >= 2){
-      Rprintf(" 0:     primal: %.2e, dual: %.2e, duality gap: %.2e\n",
-              primal_value,
-              dual_value,
-              duality_gap / null_primal);
+    if (first_run && duality_gap <= tol_gap * null_primal) {
+      if (verbosity >= 2) {
+        Rprintf(" 0:     primal: %.2e, dual: %.2e, duality gap: %.2e\n",
+                primal_value,
+                dual_value,
+                duality_gap / null_primal);
       }
       return { primal_value, dual_value, duality_gap, 0, 0, 1, theta };
     }
-
 
     double dual_value_higest = dual_value;
 
     if (!screened_set.is_empty()) {
       updateLinearPredictor(X, screened_set);
       updateResidual();
-
-
 
       while (it < maxit) {
         it++;
@@ -579,38 +575,39 @@ public:
             }
           }
         }
-        if(stopping_criteria == "celer"){
+        if (stopping_criteria == "celer") {
           primal_value = primal(lambda, screened_set);
           double duality_gap_approx = primal_value - dual_value_higest;
-          if( it % f == 0 ){
+          if (it % f == 0) {
             updateCorrelation(X, screened_set);
             dual_scale = std::max(lambda, max(abs(c(screened_set))));
             dual_value = scaledDual(lambda, dual_scale);
-            if(dual_value > dual_value_higest){
-              theta = residual/dual_scale;
+            if (dual_value > dual_value_higest) {
+              theta = residual / dual_scale;
               dual_value_higest = dual_value;
               use_latest = 1;
-            }else{
+            } else {
               use_latest = 0;
             }
 
             duality_gap = primal_value - dual_value_higest;
 
             if (verbosity >= 2)
-              Rprintf("      primal: %.2e, dual: %.2e, duality gap: %.2e, duality_gap_approx :%.2e, tol_gap: %.2e\n",
+              Rprintf("      primal: %.2e, dual: %.2e, duality gap: %.2e, "
+                      "duality_gap_approx :%.2e, tol_gap: %.2e\n",
                       primal_value,
                       dual_value_higest,
                       duality_gap / null_primal,
-                      duality_gap_approx/null_primal,
+                      duality_gap_approx / null_primal,
                       tol_gap);
 
-            if(duality_gap <= tol_gap * null_primal){
+            if (duality_gap <= tol_gap * null_primal) {
               break;
             }
 
             Rcpp::checkUserInterrupt();
           }
-        }else{
+        } else {
           primal_value = primal(lambda, screened_set);
           dual_value = dual();
 
@@ -642,6 +639,7 @@ public:
 
     double avg_screened = n_screened / it;
 
-    return { primal_value, dual_value, duality_gap, it, avg_screened,use_latest, theta };
+    return { primal_value, dual_value, duality_gap, it,
+             avg_screened, use_latest, theta };
   }
 };

@@ -10,8 +10,9 @@ y <- d$y
 
 fit_warm1 <- lassoPath(X, y,
   hessian_warm_starts = TRUE,
-  screening_type = "hessian"
+  screening_type = "hessian" 
 )
+
 fit_std1 <- lassoPath(X, y,
   hessian_warm_starts = FALSE,
   screening_type = "hessian"

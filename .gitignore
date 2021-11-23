@@ -49,3 +49,6 @@ vignettes/*.pdf
 README.html
 
 .cache
+
+experiments/__pycache__
+

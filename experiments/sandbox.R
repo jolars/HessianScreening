@@ -1,14 +1,14 @@
 library(HessianScreening)
 
-family <- "binomial"
+family <- "gaussian"
 
-d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
-# d <- generateDesign(200, 20000, family = family, rho = 0.0, snr = 0.1)
+d <- readRDS(file.path("data", paste0("e2006-tfidf", ".rds")))
+#d <- generateDesign(200, 20000, family = family, rho = 0.5, snr = 1)
 X <- d$X
 y <- d$y
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 1
+verbosity <- 0
 line_search <- 2
 tol_gap <- 1e-5
 tol_infeas <- 1e-4
@@ -17,12 +17,23 @@ tol_infeas <- 1e-4
 # sparsity * min(n, p) / max(n, p)
 
 # n / max(n, p) * sparsity
+fit_celer <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "celer",
+    verbosity = verbosity,
+    tol_gap = tol_gap,
+    tol_infeas = tol_infeas,
+    line_search = line_search,
+    log_hessian_update_type = "full"
+)
 
 fit_hessian <- lassoPath(
     X,
     y,
     family = family,
-    screening_type = "working",
+    screening_type = "hessian",
     verbosity = verbosity,
     tol_gap = tol_gap,
     tol_infeas = tol_infeas,
@@ -41,47 +52,11 @@ fit_working <- lassoPath(
     line_search = line_search
 )
 
-if (family != "binomial") {
-    fit_edpp <- lassoPath(
-        X,
-        y,
-        family = family,
-        screening_type = "edpp",
-        verbosity = verbosity,
-        tol_gap = tol_gap,
-        tol_infeas = tol_infeas,
-        line_search = line_search
-    )
-}
+fit_celer$full_time
+fit_hessian$full_time
+fit_working$full_time
 
-fit_gapsafe <- lassoPath(
-    X,
-    y,
-    family = family,
-    screening_type = "gap_safe",
-    verbosity = verbosity,
-    tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
-    line_search = line_search
-)
-
-# # cat("***************\n")
-cat("hessian:\n")
-cat("full = ", fit_hessian$full_time, "\n")
-cat("passes = ", sum(fit_hessian$passes), "\n")
-# cat("cd_time = ", sum(fit$cd_time), "\n")
-# cat("kkt_time = ", sum(fit$kkt_time), "\n")
-# cat("hess_time = ", sum(fit$hess_time), "\n")
-# cat("gradcorr_time", sum(fit$gradcorr_time), "\n")
-# cat("***************\n")
-cat("working:\n")
-cat("full = ", fit_working$full_time, "\n")
-cat("passes = ", sum(fit_working$passes), "\n")
-# cat("cd_time = ", sum(fit.w$cd_time), "\n")
-# cat("kkt_time = ", sum(fit.w$kkt_time), "\n")
-cat("gapsafe:\n")
-cat("full = ", fit_gapsafe$full_time, "\n")
-cat("passes = ", sum(fit_gapsafe$passes), "\n")
-
-# plot(fit$passes, type = "l")
-# lines(fit.w$passes, col = "red")
+# X <- scale(X, scale=apply(X,2, function(x) sqrt((length(x)-1)/length(x))*sd(x)))
+# y = y-mean(y)
+# sim_dat = list(X=X, y=y)
+# save(sim_dat,  file = "data/simpleXy.rda")

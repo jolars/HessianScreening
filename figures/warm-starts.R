@@ -13,13 +13,17 @@ options(
 
 dat <- readRDS("results/warm-starts.rds")
 
+pl <- 
+  ggplot(dat, aes(Step, Passes, col = WarmStart)) +
+    geom_step() +
+    facet_wrap(~dataset, scales = "free") +
+    labs(col = "Warm Start", linetype = "Warm Start") +
+    scale_color_manual(values = c("dark orange", "black"))
+
 file <- "figures/hessian-warm-starts.tex"
 tikz(file, width = 5.6, height = 2, standAlone = TRUE)
-ggplot(dat, aes(Step, Passes, col = WarmStart)) +
-  geom_step() +
-  facet_wrap(~dataset, scales = "free") +
-  labs(col = "Warm Start", linetype = "Warm Start") +
-  scale_color_manual(values = c("dark orange", "black"))
+print(pl)
 dev.off()
 
 renderPdf(file)
+
