@@ -391,14 +391,14 @@ lassoPath(T& X,
           if (working_set_size == 0)
             working_set_size = 1;
           uvec possible_set = duplicated == false && local_screeen == false;
-          int index_size = accu(possible_set);
+          uword index_size = accu(possible_set);
 
           if (working_set_size >= index_size)
             working_set_size = index_size;
 
-          std::vector<int> index(index_size, 0);
-          int counter = 0;
-          for (int jj = 0; jj != p; jj++) {
+          std::vector<uword> index(index_size, 0);
+          uword counter = 0;
+          for (uword jj = 0; jj != p; jj++) {
             if (possible_set(jj)) {
               index[counter] = jj;
               counter++;
