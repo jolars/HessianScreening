@@ -6,6 +6,11 @@
 
 using namespace Rcpp;
 
+#ifdef RCPP_USE_GLOBAL_ROSTREAM
+Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
+Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
+#endif
+
 // lassoPathDense
 Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_infeas, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPathDense(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_infeasSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
