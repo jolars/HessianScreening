@@ -194,7 +194,7 @@ public:
     const bool first_run,
     const uword step,
     const uword maxit,
-    const double tol_gap,
+    const double tol_gap_rel,
     const double tol_infeas,
     const int line_search,
     const uword verbosity)
@@ -247,6 +247,12 @@ public:
           primal_value = primal(lambda, screened_set);
           dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value;
+
+          if (verbosity >= 2)
+            Rprintf("      duality gap: %f\n", duality_gap);
+
+          if (duality_gap <= tol_gap_rel)
+            break;
 
           double r_screen{ 0 };
 
@@ -386,26 +392,17 @@ public:
           }
         }
 
-        primal_value = primal(lambda, screened_set);
-        dual_value = dual();
-
-        duality_gap = primal_value - dual_value;
-
-        if (verbosity >= 2)
-          Rprintf("      primal: %f, dual: %f, duality gap: %f\n",
-                  primal_value,
-                  dual_value,
-                  duality_gap / null_primal);
-
-        if (std::abs(duality_gap) <= tol_gap * null_primal) {
+        if (screening_type != "gap_safe") {
+          primal_value = primal(lambda, screened_set);
           updateCorrelation(X, screened_set);
-
-          double infeas = lambda > 0 ? max(abs(c(screened_set)) - lambda) : 0;
+          dual_scale = std::max(lambda, max(abs(c(screened_set))));
+          dual_value = scaledDual(lambda);
+          duality_gap = primal_value - dual_value;
 
           if (verbosity >= 2)
-            Rprintf("      infeasibility: %f\n", infeas / lambda_max);
+            Rprintf("      duality gap: %f\n", duality_gap);
 
-          if (infeas <= lambda_max * tol_infeas)
+          if (duality_gap <= tol_gap_rel)
             break;
         }
 

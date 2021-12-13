@@ -63,6 +63,8 @@ lassoPath(T& X,
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
+  double tol_gap_rel = tol_gap * std::pow(norm(y), 2) / y.n_elem;
+
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
   vec Xbeta(n, fill::zeros);
@@ -246,7 +248,7 @@ lassoPath(T& X,
                    first_run,
                    i,
                    maxit,
-                   tol_gap,
+                   tol_gap_rel,
                    tol_infeas,
                    line_search,
                    verbosity);
