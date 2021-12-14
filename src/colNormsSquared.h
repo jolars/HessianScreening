@@ -2,16 +2,27 @@
 
 #include <RcppArmadillo.h>
 
-using namespace arma;
-
 template<typename T>
-vec
+arma::vec
 colNormsSquared(const T& X)
 {
-  vec out(X.n_cols);
+  arma::vec out(X.n_cols);
 
-  for (uword j = 0; j < X.n_cols; ++j) {
+  for (arma::uword j = 0; j < X.n_cols; ++j) {
     out(j) = std::pow(norm(X.col(j)), 2);
+  }
+
+  return out;
+}
+
+template<typename T>
+arma::vec
+colNorms(const T& X)
+{
+  arma::vec out(X.n_cols);
+
+  for (arma::uword j = 0; j < X.n_cols; ++j) {
+    out(j) = norm(X.col(j));
   }
 
   return out;

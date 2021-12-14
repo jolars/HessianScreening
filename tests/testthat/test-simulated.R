@@ -5,7 +5,7 @@ test_that("gaussian and logistic models for simulated data", {
   grid <- expand.grid(
     np = list(c(100, 5), c(50, 200)),
     density = c(0.5, 1),
-    screening_type = c("working", "hessian"),
+    screening_type = c("working", "hessian", "gap_safe", "celer"),
     family = c("gaussian", "binomial"),
     standardize = c(FALSE),
     stringsAsFactors = FALSE
@@ -42,7 +42,8 @@ test_that("gaussian and logistic models for simulated data", {
       y,
       family = family,
       intercept = FALSE,
-      standardize = standardize
+      standardize = standardize,
+      thresh = 1e-9
     )
 
     fit_ours <- lassoPath(
@@ -66,9 +67,7 @@ test_that("gaussian and logistic models for simulated data", {
     glmnet_devratio <- fit_glmnet$dev.ratio[1:n_lambda]
     ours_devratio <- fit_ours$dev_ratio[1:n_lambda]
 
-    dev_diff <- pmax(glmnet_devratio - ours_devratio, 0)
-
-    expect_equal(dev_diff, rep(0, n_lambda), tolerance = 1e-3)
+    expect_equal(glmnet_devratio, ours_devratio, tolerance = 1e-3)
 
     if (n > p) {
       expect_equal(ours_beta, glmnet_beta, ignore_attr = TRUE, tolerance = 1e-2)

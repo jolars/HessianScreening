@@ -1,42 +1,41 @@
-#include <RcppArmadillo.h>
-
-#include "setupModel.h"
-#include "model.h"
-#include "getNextLambda.h"
-#include "colNormsSquared.h"
 #include "binomial.h"
-#include "gaussian.h"
 #include "checkStoppingConditions.h"
+#include "colNormsSquared.h"
 #include "findDuplicates.h"
+#include "gaussian.h"
+#include "getNextLambda.h"
 #include "kktCheck.h"
+#include "model.h"
 #include "rescaleCoefficients.h"
 #include "screenPredictors.h"
+#include "setupModel.h"
 #include "standardize.h"
 #include "updateHessian.h"
-
-using namespace arma;
-using namespace Rcpp;
+#include <RcppArmadillo.h>
 
 template<typename T>
 Rcpp::List
 lassoPath(T& X,
-          vec& y,
+          arma::vec& y,
           const std::string family,
           const bool standardize,
           const std::string screening_type,
           const bool hessian_warm_starts,
           const bool gap_safe_active_start,
           std::string log_hessian_update_type,
-          const uword log_hessian_auto_update_freq,
-          const uword path_length,
-          const uword maxit,
+          const arma::uword log_hessian_auto_update_freq,
+          const arma::uword path_length,
+          const arma::uword maxit,
           const double tol_gap,
           const double gamma,
           const bool verify_hessian,
           const bool force_kkt_check,
           const int line_search,
-          const uword verbosity)
+          const arma::uword verbosity)
 {
+  using namespace arma;
+  using namespace Rcpp;
+
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
@@ -86,13 +85,16 @@ lassoPath(T& X,
 
   vec X_norms_squared(p);
 
-  if (family == "gaussian" || screening_type == "gap_safe") {
+  if (family == "gaussian" || screening_type == "gap_safe" ||
+      screening_type == "celer") {
     if (!standardize) {
       X_norms_squared = colNormsSquared(X);
     } else {
       X_norms_squared.fill(static_cast<double>(n));
     }
   }
+
+  const uword celer_p0 = 100;
 
   auto model = setupModel(family,
                           y,
@@ -186,7 +188,9 @@ lassoPath(T& X,
   const double null_dev = model->deviance();
   double dev = null_dev;
 
-  bool check_kkt = (screening_type != "gap_safe") || force_kkt_check;
+  bool check_kkt =
+    (screening_type != "gap_safe" && screening_type != "celer") ||
+    force_kkt_check;
 
   std::string screening_type_temp = screening_type;
 
@@ -235,9 +239,8 @@ lassoPath(T& X,
 
       if (first_run && screening_type != "gap_safe") {
         n_screened.emplace_back(sum(screened));
-      } else if (first_run
-                 && screening_type == "gap_safe" 
-                 && gap_safe_active_start){
+      } else if (first_run && screening_type == "gap_safe" &&
+                 gap_safe_active_start) {
         screening_type_temp = "working";
       } else {
         screening_type_temp = screening_type;
@@ -245,12 +248,14 @@ lassoPath(T& X,
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
+                   active_set_prev,
                    X,
                    X_norms_squared,
                    lambda,
                    lambda_prev,
                    lambda_max,
                    null_primal,
+                   active_set.n_elem,
                    screening_type_temp,
                    gap_safe_active_start,
                    first_run,
@@ -258,6 +263,7 @@ lassoPath(T& X,
                    maxit,
                    tol_gap_rel,
                    line_search,
+                   celer_p0,
                    verbosity);
 
       cd_time += timer.toc() - t0;

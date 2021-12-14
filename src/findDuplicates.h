@@ -1,19 +1,18 @@
 #pragma once
 
-#include <RcppArmadillo.h>
-
 #include "model.h"
 #include "utils.h"
-
-using namespace arma;
+#include <RcppArmadillo.h>
 
 template<typename T>
-std::tuple<uvec, uvec>
-findDuplicates(uvec& active_set,
-               uvec& active_set_prev,
+std::tuple<arma::uvec, arma::uvec>
+findDuplicates(arma::uvec& active_set,
+               arma::uvec& active_set_prev,
                const T& X,
                const std::unique_ptr<Model>& model)
 {
+  using namespace arma;
+
   const uvec activate = setDiff(active_set, active_set_prev);
 
   std::vector<uword> originals, duplicates;

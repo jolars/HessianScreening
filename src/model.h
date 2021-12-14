@@ -1,60 +1,48 @@
 #pragma once
 
-#include <RcppArmadillo.h>
-
 #include "prox.h"
-
-using namespace arma;
+#include <RcppArmadillo.h>
 
 class Model
 {
 public:
   const std::string family;
 
-  vec& y;
-  vec& beta;
-  vec& residual;
-  vec& Xbeta;
-  vec& c;
+  arma::vec& y;
+  arma::vec& beta;
+  arma::vec& residual;
+  arma::vec& Xbeta;
+  arma::vec& c;
 
-  const vec& X_mean_scaled;
-  const vec& X_norms_squared;
+  const arma::vec& X_mean_scaled;
+  const arma::vec& X_norms_squared;
 
-  const uword n;
-  const uword p;
+  const arma::uword n;
+  const arma::uword p;
   const bool standardize;
 
   double dual_scale{ 0 };
 
   Model(const std::string family,
-        vec& y,
-        vec& beta,
-        vec& residual,
-        vec& Xbeta,
-        vec& c,
-        const vec& X_mean_scaled,
-        const vec& X_norms_squared,
-        const uword n,
-        const uword p,
-        const bool standardize)
-    : family(family)
-    , y(y)
-    , beta(beta)
-    , residual(residual)
-    , Xbeta(Xbeta)
-    , c(c)
-    , X_mean_scaled(X_mean_scaled)
-    , X_norms_squared(X_norms_squared)
-    , n(n)
-    , p(p)
-    , standardize(standardize)
-  {}
+        arma::vec& y,
+        arma::vec& beta,
+        arma::vec& residual,
+        arma::vec& Xbeta,
+        arma::vec& c,
+        const arma::vec& X_mean_scaled,
+        const arma::vec& X_norms_squared,
+        const arma::uword n,
+        const arma::uword p,
+        const bool standardize);
 
-  virtual ~Model() = default;
+  virtual ~Model();
 
-  void setLogHessianUpdateType(const std::string new_log_hessian_update_type){};
+  void setLogHessianUpdateType(const std::string new_log_hessian_update_type);
 
-  virtual double primal(const double lambda, const uvec& screened_set) = 0;
+  virtual double primal(const double lambda) = 0;
+
+  virtual double primal(const double lambda,
+                        const arma::uvec& screened_set) = 0;
 
   virtual double dual() = 0;
 
@@ -62,103 +50,82 @@ public:
 
   virtual double deviance() = 0;
 
-  virtual mat hessian(const mat& X, const uvec& ind) = 0;
+  virtual arma::mat hessian(const arma::mat& X, const arma::uvec& ind) = 0;
 
-  virtual mat hessian(const sp_mat& X, const uvec& ind) = 0;
+  virtual arma::mat hessian(const arma::sp_mat& X, const arma::uvec& ind) = 0;
 
-  virtual mat hessianUpperRight(const mat& X,
-                                const uvec& ind_a,
-                                const uvec& ind_b) = 0;
+  virtual arma::mat hessianUpperRight(const arma::mat& X,
+                                      const arma::uvec& ind_a,
+                                      const arma::uvec& ind_b) = 0;
 
-  virtual mat hessianUpperRight(const sp_mat& X,
-                                const uvec& ind_a,
-                                const uvec& ind_b) = 0;
+  virtual arma::mat hessianUpperRight(const arma::sp_mat& X,
+                                      const arma::uvec& ind_a,
+                                      const arma::uvec& ind_b) = 0;
 
-  virtual double hessianTerm(const mat& X, const uword j) = 0;
+  virtual double hessianTerm(const arma::mat& X, const arma::uword j) = 0;
 
-  virtual double hessianTerm(const sp_mat& X, const uword j) = 0;
+  virtual double hessianTerm(const arma::sp_mat& X, const arma::uword j) = 0;
 
   virtual void updateResidual() = 0;
 
-  virtual void adjustResidual(const mat& X,
-                              const uword j,
+  virtual void adjustResidual(const arma::mat& X,
+                              const arma::uword j,
                               const double beta_diff) = 0;
 
-  virtual void adjustResidual(const sp_mat& X,
-                              const uword j,
+  virtual void adjustResidual(const arma::sp_mat& X,
+                              const arma::uword j,
                               const double beta_diff) = 0;
 
-  void updateLinearPredictor(const mat& X, const uvec& ind)
-  {
-    Xbeta = X.cols(ind) * beta(ind);
-  }
+  virtual void updateGradientOfCorrelation(
+    arma::vec& c_grad,
+    const arma::mat& X,
+    const arma::vec& Hinv_s,
+    const arma::vec& s,
+    const arma::uvec& active_set,
+    const arma::uvec& restricted_set) = 0;
 
-  void updateLinearPredictor(const sp_mat& X, const uvec& ind)
-  {
-    Xbeta = X.cols(ind) * beta(ind);
-
-    if (standardize)
-      Xbeta -= dot(beta(ind), X_mean_scaled(ind));
-  }
-
-  void updateCorrelation(const mat& X, const uvec& ind)
-  {
-    for (auto&& j : ind) {
-      c(j) = dot(X.unsafe_col(j), residual);
-    }
-  }
-
-  void updateCorrelation(const sp_mat& X, const uvec& ind)
-  {
-    for (auto&& j : ind) {
-      c(j) = dot(X.col(j), residual);
-    }
-
-    if (standardize) {
-      c(ind) -= X_mean_scaled(ind) * sum(residual);
-    }
-  }
-
-  inline void updateCorrelation(const mat& X, const uword& j)
-  {
-    c(j) = dot(X.unsafe_col(j), residual);
-  }
-
-  inline void updateCorrelation(const sp_mat& X, const uword& j)
-  {
-    c(j) = dot(X.col(j), residual);
-
-    if (standardize) {
-      c(j) -= X_mean_scaled(j) * accu(residual);
-    }
-  }
-
-  virtual void updateGradientOfCorrelation(vec& c_grad,
-                                           const mat& X,
-                                           const vec& Hinv_s,
-                                           const vec& s,
-                                           const uvec& active_set,
-                                           const uvec& restricted_set) = 0;
-
-  virtual void updateGradientOfCorrelation(vec& c_grad,
-                                           const sp_mat& X,
-                                           const vec& Hinv_s,
-                                           const vec& s,
-                                           const uvec& active_set,
-                                           const uvec& restricted_set) = 0;
+  virtual void updateGradientOfCorrelation(
+    arma::vec& c_grad,
+    const arma::sp_mat& X,
+    const arma::vec& Hinv_s,
+    const arma::vec& s,
+    const arma::uvec& active_set,
+    const arma::uvec& restricted_set) = 0;
 
   virtual void standardizeY() = 0;
 
   virtual double safeScreeningRadius(const double duality_gap,
                                      const double lambda) = 0;
 
+  void updateLinearPredictor(const arma::mat& X);
+
+  void updateLinearPredictor(const arma::sp_mat& X);
+
+  void updateLinearPredictor(const arma::mat& X, const arma::uvec& ind);
+
+  void updateLinearPredictor(const arma::sp_mat& X, const arma::uvec& ind);
+
+  void updateCorrelation(const arma::mat& X);
+
+  void updateCorrelation(const arma::sp_mat& X);
+
+  void updateCorrelation(const arma::mat& X, const arma::uvec& ind);
+
+  void updateCorrelation(const arma::sp_mat& X, const arma::uvec& ind);
+
+  void updateCorrelation(const arma::mat& X, const arma::uword& j);
+
+  void updateCorrelation(const arma::sp_mat& X, const arma::uword& j);
+
   template<typename T>
-  void safeScreening(uvec& screened,
-                     uvec& screened_set,
+  void safeScreening(arma::uvec& screened,
+                     arma::uvec& screened_set,
                      const T& X,
-                     const vec& XTcenter,
+                     const arma::vec& XTcenter,
                      const double r_screen)
   {
+    using namespace arma;
+
     for (auto&& j : screened_set) {
       double r_normX_j = r_screen * std::sqrt(X_norms_squared(j));
 
@@ -181,34 +148,57 @@ public:
   }
 
   template<typename T>
-  std::tuple<double, double, double, uword, double> fit(
-    uvec& screened,
+  std::tuple<double, double, double, arma::uword, double> fit(
+    arma::uvec& screened,
+    const arma::uvec& active_set,
     const T& X,
-    const vec& X_norms_squared,
+    const arma::vec& X_norms_squared,
     const double lambda,
     const double lambda_prev,
     const double lambda_max,
     const double null_primal,
+    const arma::uword n_active_prev,
     const std::string screening_type,
     const bool gap_safe_active_start,
     const bool first_run,
-    const uword step,
-    const uword maxit,
+    const arma::uword step,
+    const arma::uword maxit,
     const double tol_gap_rel,
     const int line_search,
-    const uword verbosity)
+    const arma::uword ws_size_init,
+    const arma::uword verbosity)
   {
+    using namespace arma;
+
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe" && !(first_run && gap_safe_active_start))
+    if (screening_type == "celer" || screening_type == "gap_safe")
       screened.fill(true);
 
     uvec screened_set = find(screened);
+    uvec working_set = screened_set;
 
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
     double duality_gap = primal_value - dual_value;
-    double duality_gap_rel  = duality_gap / std::max(1.0, primal_value);
+    double duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+
+    dual_scale = std::max(lambda, max(abs(c)));
+
+    // celer parameters
+    double duality_gap_inner = duality_gap;
+    double dual_value_inner = duality_gap;
+    double dual_value_old = duality_gap;
+    double dual_value_res = duality_gap;
+    uword ws_size = n_active_prev == 0 ? ws_size_init : n_active_prev;
+    bool inner_solver_converged = false;
+    vec c_inner(p);
+    vec c_old(p);
+
+    // dual variables
+    vec theta(p);
+    vec theta_inner(p);
+    vec theta_old(p);
 
     // line search parameters
     const double a = 0.1;
@@ -252,20 +242,103 @@ public:
           if (duality_gap_rel <= tol_gap_rel)
             break;
 
-          double r_screen{ 0 };
-
-          if (screening_type == "gap_safe") {
-            XTcenter = c / dual_scale;
-            r_screen = safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
-          }
+          // screening
+          XTcenter = c / dual_scale;
+          double r_screen =
+            safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
 
           safeScreening(screened, screened_set, X, XTcenter, r_screen);
+        }
+
+        if (screening_type == "celer") {
+          if (inner_solver_converged || it == 0) {
+            theta_inner = residual / dual_scale;
+            c_inner = c;
+            dual_value_inner = dual_value;
+
+            if (it > 0) {
+              updateLinearPredictor(X, screened_set);
+              updateResidual();
+            }
+            updateCorrelation(X, screened_set);
+
+            primal_value = primal(lambda);
+
+            dual_scale = std::max(lambda, max(abs(c(screened_set))));
+            theta = residual / dual_scale;
+            dual_value = scaledDual(lambda);
+
+            // if (it > 0) {
+            //   if (dual_value_inner > dual_value &&
+            //       dual_value_inner > dual_value_old) {
+            //     dual_value = dual_value_inner;
+            //     theta = theta_inner;
+            //     c = c_inner;
+            //   } else if (dual_value_old > dual_value &&
+            //              dual_value_old > dual_value_inner) {
+            //     dual_value = dual_value_old;
+            //     theta = theta_old;
+            //     c = c_old;
+            //   }
+            // }
+
+            theta_old = theta;
+            c_old = c;
+            dual_value_old = dual_value;
+
+            duality_gap = primal_value - dual_value;
+            duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+
+            if (verbosity >= 2)
+              Rprintf("      duality gap: %f\n", duality_gap_rel);
+
+            if (duality_gap_rel <= tol_gap_rel)
+              break;
+
+            vec d = (1.0 - c(screened_set) / dual_scale) /
+                    sqrt(X_norms_squared(screened_set));
+
+            if (it == 0) {
+              working_set = active_set;
+            }
+
+            d(working_set).fill(-1);
+
+            d.print();
+
+            if (it > 0) {
+              ws_size *= 2;
+            }
+
+            Rcpp::Rcout << "ws_size: " << ws_size << std::endl;
+
+            ws_size = std::min(ws_size, screened_set.n_elem);
+
+            Rcpp::Rcout << "ws_size: " << ws_size << std::endl;
+
+            //             XTcenter = c / dual_scale;
+            //             double r_screen =
+            //               safeScreeningRadius(std::max(duality_gap, 0.0),
+            //               lambda);
+
+            //             safeScreening(screened, screened_set, X, XTcenter,
+            //             r_screen);
+
+            uvec ind = sort_index(d, "ascend");
+            working_set = screened_set(ind.head(ws_size));
+            // screened.zeros();
+            // screened(screened_set).ones();
+
+            working_set.print();
+
+            inner_solver_converged = false;
+          }
         }
 
         n_screened += screened_set.n_elem;
 
         if (line_search == 3) {
-          for (auto&& j : screened_set) {
+          for (auto&& j : working_set) {
             updateCorrelation(X, j);
             double hess_j = hessianTerm(X, j);
 
@@ -281,7 +354,7 @@ public:
                 // Accessed: Jan. 12, 2020. [Online]. Available:
                 // http://arxiv.org/abs/1206.1623)
 
-                double primal_value_old = primal(lambda, screened_set);
+                double primal_value_old = primal(lambda, working_set);
 
                 while (true) {
                   double beta_j_prev = beta(j);
@@ -289,7 +362,7 @@ public:
                   beta(j) = beta_j_old + t(j) * v;
                   adjustResidual(X, j, beta(j) - beta_j_prev);
 
-                  primal_value = primal(lambda, screened_set);
+                  primal_value = primal(lambda, working_set);
 
                   double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
                                                      std::abs(beta_j_old));
@@ -311,7 +384,7 @@ public:
           }
 
         } else {
-          for (auto&& j : screened_set) {
+          for (auto&& j : working_set) {
 
             updateCorrelation(X, j);
             double hess_j = hessianTerm(X, j);
@@ -327,7 +400,7 @@ public:
                 double primal_value_old;
 
                 if (line_search == 1) {
-                  primal_value_old = primal(lambda, screened_set);
+                  primal_value_old = primal(lambda, working_set);
                   do_line_search = true;
                 }
 
@@ -357,14 +430,14 @@ public:
                     do_line_search = true;
                     adjustResidual(X, j, beta_j_old - beta(j));
                     beta(j) = beta_j_old;
-                    primal_value_old = primal(lambda, screened_set);
+                    primal_value_old = primal(lambda, working_set);
                     beta(j) = beta_j_old + t(j) * v;
                     adjustResidual(X, j, beta(j) - beta_j_old);
                   }
                 }
 
                 while (do_line_search) {
-                  primal_value = primal(lambda, screened_set);
+                  primal_value = primal(lambda, working_set);
 
                   if (primal_value * (1 - std::sqrt(datum::eps)) <=
                       primal_value_old + a * t(j) * eta) {
@@ -393,9 +466,9 @@ public:
         it++;
 
         if (screening_type != "gap_safe") {
-          primal_value = primal(lambda, screened_set);
-          updateCorrelation(X, screened_set);
-          dual_scale = std::max(lambda, max(abs(c(screened_set))));
+          primal_value = primal(lambda, working_set);
+          updateCorrelation(X, working_set);
+          dual_scale = std::max(lambda, max(abs(c(working_set))));
           dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value;
           duality_gap_rel = duality_gap / std::max(1.0, primal_value);
@@ -403,8 +476,13 @@ public:
           if (verbosity >= 2)
             Rprintf("      duality gap: %f\n", duality_gap_rel);
 
-          if (duality_gap_rel <= tol_gap_rel)
+          if (duality_gap_rel <= tol_gap_rel) {
+            inner_solver_converged = true;
+          }
+
+          if (inner_solver_converged && screening_type != "celer") {
             break;
+          }
         }
 
         Rcpp::checkUserInterrupt();
