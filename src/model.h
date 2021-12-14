@@ -200,7 +200,7 @@ public:
   {
     const uword p = X.n_cols;
 
-    if (screening_type == "gap_safe" && !first_run && !gap_safe_active_start)
+    if (screening_type == "gap_safe" && !(first_run && gap_safe_active_start))
       screened.fill(true);
 
     uvec screened_set = find(screened);
@@ -260,8 +260,6 @@ public:
           }
 
           safeScreening(screened, screened_set, X, XTcenter, r_screen);
-
-          screened_set.print();
         }
 
         n_screened += screened_set.n_elem;

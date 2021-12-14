@@ -239,6 +239,8 @@ lassoPath(T& X,
                  && screening_type == "gap_safe" 
                  && gap_safe_active_start){
         screening_type_temp = "working";
+      } else {
+        screening_type_temp = screening_type;
       }
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
@@ -263,7 +265,7 @@ lassoPath(T& X,
       n_passes_i_sum += n_passes_i;
 
       if (screening_type == "gap_safe" &&
-          (!first_run || !gap_safe_active_start)) {
+          !(first_run && gap_safe_active_start)) {
         n_screened.push_back(avg_screened);
       }
 

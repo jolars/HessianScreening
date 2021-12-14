@@ -8,12 +8,12 @@ using namespace arma;
 
 template<typename T>
 void
-updateHessian(mat& H,
-              mat& Hinv,
-              uvec& active_set,
-              uvec& active_set_prev,
-              uvec& active_perm,
-              uvec& active_perm_prev,
+updateHessian(arma::mat& H,
+              arma::mat& Hinv,
+              arma::uvec& active_set,
+              arma::uvec& active_set_prev,
+              arma::uvec& active_perm,
+              arma::uvec& active_perm_prev,
               const std::unique_ptr<Model>& model,
               const T& X,
               const bool verify_hessian,
