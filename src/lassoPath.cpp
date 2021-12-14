@@ -30,7 +30,6 @@ lassoPath(T& X,
           const uword log_hessian_auto_update_freq,
           const uword path_length,
           const uword maxit,
-          const double tol_infeas,
           const double tol_gap,
           const double gamma,
           const bool verify_hessian,
@@ -63,7 +62,8 @@ lassoPath(T& X,
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
-  double tol_gap_rel = tol_gap * std::pow(norm(y), 2) / y.n_elem;
+  // double tol_gap_rel = tol_gap * std::pow(norm(y), 2) / y.n_elem;
+  double tol_gap_rel = tol_gap;
 
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
@@ -188,6 +188,8 @@ lassoPath(T& X,
 
   bool check_kkt = (screening_type != "gap_safe") || force_kkt_check;
 
+  std::string screening_type_temp = screening_type;
+
   std::vector<double> it_times;
   std::vector<double> cd_times;
   std::vector<double> kkt_times;
@@ -233,6 +235,10 @@ lassoPath(T& X,
 
       if (first_run && screening_type != "gap_safe") {
         n_screened.emplace_back(sum(screened));
+      } else if (first_run
+                 && screening_type == "gap_safe" 
+                 && gap_safe_active_start){
+        screening_type_temp = "working";
       }
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
@@ -243,13 +249,12 @@ lassoPath(T& X,
                    lambda_prev,
                    lambda_max,
                    null_primal,
-                   screening_type,
+                   screening_type_temp,
                    gap_safe_active_start,
                    first_run,
                    i,
                    maxit,
                    tol_gap_rel,
-                   tol_infeas,
                    line_search,
                    verbosity);
 
@@ -556,7 +561,6 @@ lassoPathDense(arma::mat X,
                const arma::uword log_hessian_auto_update_freq,
                const arma::uword path_length,
                const arma::uword maxit,
-               const double tol_infeas,
                const double tol_gap,
                const double gamma,
                const bool verify_hessian,
@@ -575,7 +579,6 @@ lassoPathDense(arma::mat X,
                    log_hessian_auto_update_freq,
                    path_length,
                    maxit,
-                   tol_infeas,
                    tol_gap,
                    gamma,
                    verify_hessian,
@@ -597,7 +600,6 @@ lassoPathSparse(arma::sp_mat X,
                 const arma::uword log_hessian_auto_update_freq,
                 const arma::uword path_length,
                 const arma::uword maxit,
-                const double tol_infeas,
                 const double tol_gap,
                 const double gamma,
                 const bool verify_hessian,
@@ -616,7 +618,6 @@ lassoPathSparse(arma::sp_mat X,
                    log_hessian_auto_update_freq,
                    path_length,
                    maxit,
-                   tol_infeas,
                    tol_gap,
                    gamma,
                    verify_hessian,

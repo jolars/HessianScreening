@@ -1,17 +1,16 @@
 library(HessianScreening)
 
-family <- "binomial"
+family <- "gaussian"
 
-d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
-# d <- generateDesign(200, 20000, family = family, rho = 0.0, snr = 0.1)
+#d <- readRDS(file.path("data", paste0("gisette-train", ".rds")))
+d <- generateDesign(200, 20, family = family, rho = 0.0, snr = 0.1)
 X <- d$X
 y <- d$y
 n <- nrow(X)
 p <- ncol(X)
 verbosity <- 1
 line_search <- 2
-tol_gap <- 1e-5
-tol_infeas <- 1e-4
+tol_gap <- 1e-4
 
 # sparsity <- 1 - Matrix::nnzero(X) / length(X)
 # sparsity * min(n, p) / max(n, p)
@@ -22,12 +21,12 @@ fit_hessian <- lassoPath(
     X,
     y,
     family = family,
-    screening_type = "working",
+    screening_type = "gap_safe",
     verbosity = verbosity,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
     line_search = line_search,
-    log_hessian_update_type = "full"
+    log_hessian_update_type = "full",
+    gap_safe_active_start = TRUE
 )
 
 fit_working <- lassoPath(
@@ -37,7 +36,6 @@ fit_working <- lassoPath(
     screening_type = "working",
     verbosity = verbosity,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
     line_search = line_search
 )
 
@@ -49,7 +47,6 @@ if (family != "binomial") {
         screening_type = "edpp",
         verbosity = verbosity,
         tol_gap = tol_gap,
-        tol_infeas = tol_infeas,
         line_search = line_search
     )
 }
@@ -61,7 +58,6 @@ fit_gapsafe <- lassoPath(
     screening_type = "gap_safe",
     verbosity = verbosity,
     tol_gap = tol_gap,
-    tol_infeas = tol_infeas,
     line_search = line_search
 )
 

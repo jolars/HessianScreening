@@ -195,7 +195,6 @@ public:
     const uword step,
     const uword maxit,
     const double tol_gap_rel,
-    const double tol_infeas,
     const int line_search,
     const uword verbosity)
   {
@@ -209,6 +208,7 @@ public:
     double primal_value = primal(lambda, screened_set);
     double dual_value = dual();
     double duality_gap = primal_value - dual_value;
+    double duality_gap_rel  = duality_gap / std::max(1.0, primal_value);
 
     // line search parameters
     const double a = 0.1;
@@ -228,15 +228,12 @@ public:
       updateResidual();
 
       while (it < maxit) {
-        it++;
-
         if (verbosity >= 2) {
-          Rprintf("    iter: %i\n", it);
+          Rprintf("    iter: %i\n", it + 1);
         }
 
-        if (screening_type == "gap_safe" && (it - 1) % screen_interval == 0 &&
-            !(first_run && gap_safe_active_start)) {
-          if (it > 1) {
+        if (screening_type == "gap_safe" && it % screen_interval == 0) {
+          if (it > 0) {
             updateLinearPredictor(X, screened_set);
             updateResidual();
           }
@@ -247,11 +244,12 @@ public:
           primal_value = primal(lambda, screened_set);
           dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value;
+          duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
           if (verbosity >= 2)
-            Rprintf("      duality gap: %f\n", duality_gap);
+            Rprintf("      duality gap: %f\n", duality_gap_rel);
 
-          if (duality_gap <= tol_gap_rel)
+          if (duality_gap_rel <= tol_gap_rel)
             break;
 
           double r_screen{ 0 };
@@ -262,6 +260,8 @@ public:
           }
 
           safeScreening(screened, screened_set, X, XTcenter, r_screen);
+
+          screened_set.print();
         }
 
         n_screened += screened_set.n_elem;
@@ -352,7 +352,7 @@ public:
                     if (verbosity >= 2) {
                       Rprintf(
                         "    linesearch type 2 at iter: %i, index: %i t: %e\n",
-                        it,
+                        it + 1,
                         j,
                         t(j));
                     }
@@ -392,17 +392,20 @@ public:
           }
         }
 
+        it++;
+
         if (screening_type != "gap_safe") {
           primal_value = primal(lambda, screened_set);
           updateCorrelation(X, screened_set);
           dual_scale = std::max(lambda, max(abs(c(screened_set))));
           dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value;
+          duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
           if (verbosity >= 2)
-            Rprintf("      duality gap: %f\n", duality_gap);
+            Rprintf("      duality gap: %f\n", duality_gap_rel);
 
-          if (duality_gap <= tol_gap_rel)
+          if (duality_gap_rel <= tol_gap_rel)
             break;
         }
 
@@ -412,8 +415,8 @@ public:
       beta.zeros();
     }
 
-    double avg_screened = n_screened / it;
+    double avg_screened = n_screened / (it + 1);
 
-    return { primal_value, dual_value, duality_gap, it, avg_screened };
+    return { primal_value, dual_value, duality_gap, it + 1, avg_screened };
   }
 };

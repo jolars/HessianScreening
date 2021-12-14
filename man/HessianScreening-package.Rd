@@ -6,8 +6,7 @@
 \alias{HessianScreening-package}
 \title{HessianScreening: Hessian-Based Screening Rules for the Lasso}
 \description{
-Procedures to fit the lasso using Hessian-based screening
-    rules in addition to several other screening rules.
+Procedures to fit the lasso using Hessian-based screening rules in addition to several other screening rules.
 }
 \author{
 \strong{Maintainer}: Johan Larsson \email{johan.larsson@stat.lu.se} (\href{https://orcid.org/0000-0002-4029-5945}{ORCID})

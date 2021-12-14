@@ -14,7 +14,6 @@
 #'   `log_hessian_update_type = "auto"`
 #' @param path_length The (desired) length of the lasso path
 #' @param maxit Maximum number of iterations for Coordinate Descent loop
-#' @param tol_infeas Tolerance threshold for maximum infeasibility
 #' @param tol_gap Tolerance threshold for duality gap
 #' @param gamma Percent of strong approximation to add to Hessian approximation
 #' @param verify_hessian Whether to not to verify that Hessian updates are
@@ -43,8 +42,7 @@ lassoPath <- function(X,
                       log_hessian_auto_update_freq = 10,
                       path_length = 100L,
                       maxit = 1e5,
-                      tol_infeas = 1e-5,
-                      tol_gap = 1e-6,
+                      tol_gap = 1e-4,
                       gamma = 0.01,
                       verify_hessian = FALSE,
                       force_kkt_check = FALSE,
@@ -74,7 +72,6 @@ lassoPath <- function(X,
       log_hessian_auto_update_freq,
       path_length,
       maxit,
-      tol_infeas,
       tol_gap,
       gamma,
       verify_hessian,
@@ -95,7 +92,6 @@ lassoPath <- function(X,
       log_hessian_auto_update_freq,
       path_length,
       maxit,
-      tol_infeas,
       tol_gap,
       gamma,
       verify_hessian,
