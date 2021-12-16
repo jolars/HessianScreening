@@ -99,7 +99,6 @@ lassoPath(T& X,
   auto model = setupModel(family,
                           y,
                           beta,
-                          residual,
                           Xbeta,
                           X_mean_scaled,
                           X_norms_squared,
@@ -110,7 +109,7 @@ lassoPath(T& X,
 
   model->standardizeY();
 
-  model->updateResidual();
+  model->updateResidual(residual);
   updateCorrelation(c, residual, X, X_mean_scaled, standardize);
 
   const double lambda_min_ratio = n < p ? 0.01 : 1e-4;
@@ -184,7 +183,7 @@ lassoPath(T& X,
 
   vec Hinv_s = Hinv * s(active_perm);
 
-  const double null_dev = model->deviance();
+  const double null_dev = model->deviance(residual);
   double dev = null_dev;
 
   bool check_kkt =
@@ -200,7 +199,7 @@ lassoPath(T& X,
   std::vector<double> hess_times;
   std::vector<double> duplicates_times;
 
-  const double null_primal = model->primal(lambda_max, active_set);
+  const double null_primal = model->primal(residual, lambda_max, active_set);
 
   wall_clock timer;
   timer.tic();
@@ -247,6 +246,7 @@ lassoPath(T& X,
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
+                   residual,
                    c,
                    active_set_prev,
                    X,
@@ -337,7 +337,7 @@ lassoPath(T& X,
     active_perm = join_vert(safeSetIntersect(active_perm_prev, active_set),
                             setDiff(active_set, active_set_prev));
 
-    dev = model->deviance();
+    dev = model->deviance(residual);
     devs.emplace_back(dev);
     dev_ratios.emplace_back(1.0 - dev / null_dev);
 

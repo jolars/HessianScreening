@@ -9,7 +9,6 @@ public:
   Gaussian(const std::string family,
            arma::vec& y,
            arma::vec& beta,
-           arma::vec& residual,
            arma::vec& Xbeta,
            const arma::vec& X_mean_scaled,
            const arma::vec& X_norms_squared,
@@ -17,29 +16,15 @@ public:
            const arma::uword p,
            const bool standardize);
 
-  double primal(const double lambda);
+  double primal(const arma::vec& residual, const double lambda);
 
-  double primal(const double lambda, const arma::uvec& screened_set);
+  double primal(const arma::vec& residual,
+                const double lambda,
+                const arma::uvec& screened_set);
 
-  double dual();
+  double dual(const arma::vec& theta, const arma::vec& y, const double lambda);
 
-  double scaledDual(const double lambda);
-
-  double deviance();
-
-  double hessianTerm(const arma::mat& X, const arma::uword j);
-
-  double hessianTerm(const arma::sp_mat& X, const arma::uword j);
-
-  void updateResidual();
-
-  void adjustResidual(const arma::mat& X,
-                      const arma::uword j,
-                      const double beta_diff);
-
-  void adjustResidual(const arma::sp_mat& X,
-                      const arma::uword j,
-                      const double beta_diff);
+  double deviance(const arma::vec& residual);
 
   arma::mat hessian(const arma::mat& X, const arma::uvec& ind);
 
@@ -52,6 +37,22 @@ public:
   arma::mat hessianUpperRight(const arma::sp_mat& X,
                               const arma::uvec& ind_a,
                               const arma::uvec& ind_b);
+
+  double hessianTerm(const arma::mat& X, const arma::uword j);
+
+  double hessianTerm(const arma::sp_mat& X, const arma::uword j);
+
+  void updateResidual(arma::vec& residual);
+
+  void adjustResidual(arma::vec& residual,
+                      const arma::mat& X,
+                      const arma::uword j,
+                      const double beta_diff);
+
+  void adjustResidual(arma::vec& residual,
+                      const arma::sp_mat& X,
+                      const arma::uword j,
+                      const double beta_diff);
 
   void updateGradientOfCorrelation(arma::vec& c_grad,
                                    const arma::mat& X,

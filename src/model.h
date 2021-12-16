@@ -11,7 +11,6 @@ public:
 
   arma::vec& y;
   arma::vec& beta;
-  arma::vec& residual;
   arma::vec& Xbeta;
 
   const arma::vec& X_mean_scaled;
@@ -26,7 +25,6 @@ public:
   Model(const std::string family,
         arma::vec& y,
         arma::vec& beta,
-        arma::vec& residual,
         arma::vec& Xbeta,
         const arma::vec& X_mean_scaled,
         const arma::vec& X_norms_squared,
@@ -34,20 +32,33 @@ public:
         const arma::uword p,
         const bool standardize);
 
-  virtual ~Model();
+  ~Model();
 
   void setLogHessianUpdateType(const std::string new_log_hessian_update_type);
 
-  virtual double primal(const double lambda) = 0;
+  virtual double primal(const arma::vec& residual, const double lambda) = 0;
 
-  virtual double primal(const double lambda,
+  virtual double primal(const arma::vec& residual,
+                        const double lambda,
                         const arma::uvec& screened_set) = 0;
 
-  virtual double dual() = 0;
+  virtual double dual(const arma::vec& theta,
+                      const arma::vec& y,
+                      const double lambda) = 0;
 
-  virtual double scaledDual(const double lambda) = 0;
+  virtual double deviance(const arma::vec& residual) = 0;
 
-  virtual double deviance() = 0;
+  virtual void updateResidual(arma::vec& residual) = 0;
+
+  virtual void adjustResidual(arma::vec& residual,
+                              const arma::mat& X,
+                              const arma::uword j,
+                              const double beta_diff) = 0;
+
+  virtual void adjustResidual(arma::vec& residual,
+                              const arma::sp_mat& X,
+                              const arma::uword j,
+                              const double beta_diff) = 0;
 
   virtual arma::mat hessian(const arma::mat& X, const arma::uvec& ind) = 0;
 
@@ -64,16 +75,6 @@ public:
   virtual double hessianTerm(const arma::mat& X, const arma::uword j) = 0;
 
   virtual double hessianTerm(const arma::sp_mat& X, const arma::uword j) = 0;
-
-  virtual void updateResidual() = 0;
-
-  virtual void adjustResidual(const arma::mat& X,
-                              const arma::uword j,
-                              const double beta_diff) = 0;
-
-  virtual void adjustResidual(const arma::sp_mat& X,
-                              const arma::uword j,
-                              const double beta_diff) = 0;
 
   virtual void updateGradientOfCorrelation(
     arma::vec& c_grad,
@@ -107,6 +108,7 @@ public:
   template<typename T>
   void safeScreening(arma::uvec& screened,
                      arma::uvec& screened_set,
+                     arma::vec& residual,
                      const T& X,
                      const arma::vec& XTcenter,
                      const double r_screen)
@@ -123,7 +125,7 @@ public:
       if (std::abs(XTcenter(j)) + r_normX_j + std::sqrt(datum::eps) < 1) {
         // predictor must be zero; update residual and remove from screened set
         if (beta(j) != 0) {
-          adjustResidual(X, j, -beta(j));
+          adjustResidual(residual, X, j, -beta(j));
           beta(j) = 0;
         }
 
@@ -137,6 +139,7 @@ public:
   template<typename T>
   std::tuple<double, double, double, arma::uword, double> fit(
     arma::uvec& screened,
+    arma::vec& residual,
     arma::vec& c,
     const arma::uvec& active_set,
     const T& X,
@@ -160,33 +163,28 @@ public:
 
     const uword p = X.n_cols;
 
+    const uword check_frequency = 1;
+
     if (screening_type == "celer" || screening_type == "gap_safe")
       screened.fill(true);
 
     uvec screened_set = find(screened);
     uvec working_set = screened_set;
 
-    double primal_value = primal(lambda, screened_set);
-    double dual_value = dual();
+    double primal_value = primal(residual, lambda, screened_set);
+
+    double dual_scale = std::max(lambda, max(abs(c)));
+    vec theta = residual / dual_scale;
+    double dual_value = dual(theta, y, lambda);
+
     double duality_gap = primal_value - dual_value;
     double duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
-    dual_scale = std::max(lambda, max(abs(c)));
-
     // celer parameters
-    double duality_gap_inner = duality_gap;
-    double dual_value_inner = duality_gap;
-    double dual_value_old = duality_gap;
-    double dual_value_res = duality_gap;
     uword ws_size = n_active_prev == 0 ? ws_size_init : n_active_prev;
-    bool inner_solver_converged = false;
-    vec c_inner(p);
-    vec c_old(p);
+    bool inner_solver_converged = true;
 
     // dual variables
-    vec theta(p);
-    vec theta_inner(p);
-    vec theta_old(p);
 
     // line search parameters
     const double a = 0.1;
@@ -203,7 +201,7 @@ public:
 
     if (!screened_set.is_empty()) {
       updateLinearPredictor(X, screened_set);
-      updateResidual();
+      updateResidual(residual);
 
       while (it < maxit) {
         if (verbosity >= 2) {
@@ -213,19 +211,25 @@ public:
         if (screening_type == "gap_safe" && it % screen_interval == 0) {
           if (it > 0) {
             updateLinearPredictor(X, screened_set);
-            updateResidual();
+            updateResidual(residual);
           }
-          updateCorrelation(c, residual, X, screened_set, X_mean_scaled, standardize);
+          updateCorrelation(
+            c, residual, X, screened_set, X_mean_scaled, standardize);
 
-          dual_scale = std::max(lambda, max(abs(c)));
+          primal_value = primal(residual, lambda, screened_set);
 
-          primal_value = primal(lambda, screened_set);
-          dual_value = scaledDual(lambda);
+          dual_scale = std::max(lambda, max(abs(c(screened_set))));
+          theta = residual / dual_scale; // feasible dual point
+          dual_value = dual(theta, y, lambda);
+
           duality_gap = primal_value - dual_value;
           duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
           if (verbosity >= 2)
-            Rprintf("      duality gap: %f\n", duality_gap_rel);
+            Rprintf("      primal: %f, dual: %f, gap: %f\n",
+                    primal_value,
+                    dual_value,
+                    duality_gap_rel);
 
           if (duality_gap_rel <= tol_gap_rel)
             break;
@@ -235,50 +239,60 @@ public:
           double r_screen =
             safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
 
-          safeScreening(screened, screened_set, X, XTcenter, r_screen);
+          safeScreening(
+            screened, screened_set, residual, X, XTcenter, r_screen);
         }
 
         if (screening_type == "celer") {
-          if (inner_solver_converged || it == 0) {
-            vec residual_inner = residual / dual_scale;
-            c_inner = c;
-            dual_value_inner = dual_value;
-
+          if (inner_solver_converged) {
             if (it > 0) {
+              // dual value for inner dual variable
+              vec residual_inner = residual;
+              vec c_inner(p, fill::zeros);
+
+              updateCorrelation(c_inner,
+                                residual_inner,
+                                X,
+                                screened_set,
+                                X_mean_scaled,
+                                standardize);
+
+              double dual_scale_inner =
+                std::max(lambda, max(abs(c_inner(screened_set))));
+              vec theta_inner =
+                residual_inner / dual_scale_inner; // feasible dual point
+              double dual_value_inner = dual(theta_inner, y, lambda);
+
+              // dual value for global dual variable
               updateLinearPredictor(X, screened_set);
-              updateResidual();
+              updateResidual(residual);
+              updateCorrelation(
+                c, residual, X, screened_set, X_mean_scaled, standardize);
+
+              primal_value = primal(residual, lambda);
+
+              dual_scale = std::max(lambda, max(abs(c(screened_set))));
+              theta = residual / dual_scale; // feasible dual point
+              dual_value = dual(theta, y, lambda);
+
+              if (dual_value_inner > dual_value) {
+                dual_value = dual_value_inner;
+                c = c_inner;
+                theta = theta_inner;
+              }
+
+            } else {
+              dual_value = dual(theta, y, lambda);
             }
-            updateCorrelation(c, residual, X, screened_set, X_mean_scaled, standardize);
-
-            primal_value = primal(lambda);
-
-            dual_scale = std::max(lambda, max(abs(c(screened_set))));
-            theta = residual / dual_scale;
-            dual_value = scaledDual(lambda);
-
-            // if (it > 0) {
-            //   if (dual_value_inner > dual_value &&
-            //       dual_value_inner > dual_value_old) {
-            //     dual_value = dual_value_inner;
-            //     theta = theta_inner;
-            //     c = c_inner;
-            //   } else if (dual_value_old > dual_value &&
-            //              dual_value_old > dual_value_inner) {
-            //     dual_value = dual_value_old;
-            //     theta = theta_old;
-            //     c = c_old;
-            //   }
-            // }
-
-            theta_old = theta;
-            c_old = c;
-            dual_value_old = dual_value;
 
             duality_gap = primal_value - dual_value;
             duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
             if (verbosity >= 2)
-              Rprintf("      duality gap: %f\n", duality_gap_rel);
+              Rprintf("      primal: %f, dual: %f, gap: %f\n",
+                      primal_value,
+                      dual_value,
+                      duality_gap_rel);
 
             if (duality_gap_rel <= tol_gap_rel)
               break;
@@ -309,8 +323,8 @@ public:
             //               safeScreeningRadius(std::max(duality_gap, 0.0),
             //               lambda);
 
-            //             safeScreening(screened, screened_set, X, XTcenter,
-            //             r_screen);
+            //             safeScreening(screened, screened_set, residual X,
+            //             XTcenter, r_screen);
 
             uvec ind = sort_index(d, "ascend");
             working_set = screened_set(ind.head(ws_size));
@@ -342,15 +356,15 @@ public:
                 // Accessed: Jan. 12, 2020. [Online]. Available:
                 // http://arxiv.org/abs/1206.1623)
 
-                double primal_value_old = primal(lambda, working_set);
+                double primal_value_old = primal(residual, lambda, working_set);
 
                 while (true) {
                   double beta_j_prev = beta(j);
 
                   beta(j) = beta_j_old + t(j) * v;
-                  adjustResidual(X, j, beta(j) - beta_j_prev);
+                  adjustResidual(residual, X, j, beta(j) - beta_j_prev);
 
-                  primal_value = primal(lambda, working_set);
+                  primal_value = primal(residual, lambda, working_set);
 
                   double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
                                                      std::abs(beta_j_old));
@@ -366,7 +380,7 @@ public:
                 }
               } else {
                 beta(j) = beta_j_old + v;
-                adjustResidual(X, j, beta(j) - beta_j_old);
+                adjustResidual(residual, X, j, beta(j) - beta_j_old);
               }
             }
           }
@@ -388,7 +402,7 @@ public:
                 double primal_value_old;
 
                 if (line_search == 1) {
-                  primal_value_old = primal(lambda, working_set);
+                  primal_value_old = primal(residual, lambda, working_set);
                   do_line_search = true;
                 }
 
@@ -401,11 +415,12 @@ public:
                 double c_j_old = c(j);
                 double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
                                                    std::abs(beta_j_old));
-                adjustResidual(X, j, beta(j) - beta_j_old);
+                adjustResidual(residual, X, j, beta(j) - beta_j_old);
                 double beta_j_prev = beta(j);
 
                 if (line_search == 2) {
-                  updateCorrelation(c, residual, X, j, X_mean_scaled, standardize);
+                  updateCorrelation(
+                    c, residual, X, j, X_mean_scaled, standardize);
                   if (std::max(c_j_old, c(j)) - std::min(c_j_old, c(j)) >
                       lambda_prev - lambda) {
                     if (verbosity >= 2) {
@@ -416,16 +431,16 @@ public:
                         t(j));
                     }
                     do_line_search = true;
-                    adjustResidual(X, j, beta_j_old - beta(j));
+                    adjustResidual(residual, X, j, beta_j_old - beta(j));
                     beta(j) = beta_j_old;
-                    primal_value_old = primal(lambda, working_set);
+                    primal_value_old = primal(residual, lambda, working_set);
                     beta(j) = beta_j_old + t(j) * v;
-                    adjustResidual(X, j, beta(j) - beta_j_old);
+                    adjustResidual(residual, X, j, beta(j) - beta_j_old);
                   }
                 }
 
                 while (do_line_search) {
-                  primal_value = primal(lambda, working_set);
+                  primal_value = primal(residual, lambda, working_set);
 
                   if (primal_value * (1 - std::sqrt(datum::eps)) <=
                       primal_value_old + a * t(j) * eta) {
@@ -434,7 +449,7 @@ public:
                     t(j) *= b;
                   }
                   beta(j) = beta_j_old + t(j) * v;
-                  adjustResidual(X, j, beta(j) - beta_j_prev);
+                  adjustResidual(residual, X, j, beta(j) - beta_j_prev);
                   beta_j_prev = beta(j);
                   Rcpp::checkUserInterrupt();
                 }
@@ -445,7 +460,7 @@ public:
 
               } else {
                 beta(j) = beta_j_old + v;
-                adjustResidual(X, j, beta(j) - beta_j_old);
+                adjustResidual(residual, X, j, beta(j) - beta_j_old);
               }
             }
           }
@@ -453,20 +468,26 @@ public:
 
         it++;
 
-        if (screening_type != "gap_safe") {
-          primal_value = primal(lambda, working_set);
-          updateCorrelation(c, residual, X, working_set, X_mean_scaled, standardize);
+        if (screening_type != "gap_safe" && it % check_frequency == 0) {
+          primal_value = primal(residual, lambda, working_set);
+
+          updateCorrelation(
+            c, residual, X, working_set, X_mean_scaled, standardize);
+
           dual_scale = std::max(lambda, max(abs(c(working_set))));
-          dual_value = scaledDual(lambda);
+          theta = residual / dual_scale;
+          dual_value = dual(theta, y, lambda);
+
           duality_gap = primal_value - dual_value;
           duality_gap_rel = duality_gap / std::max(1.0, primal_value);
 
           if (verbosity >= 2)
-            Rprintf("      duality gap: %f\n", duality_gap_rel);
+            Rprintf("      primal: %f, dual: %f, rel_gap: %f\n",
+                    primal_value,
+                    dual_value,
+                    duality_gap_rel);
 
-          if (duality_gap_rel <= tol_gap_rel) {
-            inner_solver_converged = true;
-          }
+          inner_solver_converged = duality_gap_rel <= tol_gap_rel;
 
           if (inner_solver_converged && screening_type != "celer") {
             break;

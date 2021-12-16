@@ -3,7 +3,6 @@
 Model::Model(const std::string family,
              arma::vec& y,
              arma::vec& beta,
-             arma::vec& residual,
              arma::vec& Xbeta,
              const arma::vec& X_mean_scaled,
              const arma::vec& X_norms_squared,
@@ -13,7 +12,6 @@ Model::Model(const std::string family,
   : family(family)
   , y(y)
   , beta(beta)
-  , residual(residual)
   , Xbeta(Xbeta)
   , X_mean_scaled(X_mean_scaled)
   , X_norms_squared(X_norms_squared)

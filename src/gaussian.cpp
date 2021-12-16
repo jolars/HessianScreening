@@ -5,51 +5,42 @@
 Gaussian::Gaussian(const std::string family,
                    arma::vec& y,
                    arma::vec& beta,
-                   arma::vec& residual,
                    arma::vec& Xbeta,
                    const arma::vec& X_mean_scaled,
                    const arma::vec& X_norms_squared,
                    const arma::uword n,
                    const arma::uword p,
                    const bool standardize)
-  : Model{ family,          y, beta, residual,   Xbeta, X_mean_scaled,
+  : Model{ family,          y, beta, Xbeta,      X_mean_scaled,
            X_norms_squared, n, p,    standardize }
 {}
 
 double
-Gaussian::primal(const double lambda)
+Gaussian::primal(const arma::vec& residual, const double lambda)
 {
   return 0.5 * std::pow(norm(residual), 2) + lambda * norm(beta, 1);
 }
 
 double
-Gaussian::primal(const double lambda, const arma::uvec& screened_set)
+Gaussian::primal(const arma::vec& residual,
+                 const double lambda,
+                 const arma::uvec& screened_set)
 {
   return 0.5 * std::pow(arma::norm(residual), 2) +
          lambda * arma::norm(beta(screened_set), 1);
 }
 
 double
-Gaussian::dual()
+Gaussian::dual(const arma::vec& theta, const arma::vec& y, const double lambda)
 {
-  return arma::dot(residual, y) - 0.5 * std::pow(arma::norm(residual), 2);
+  // return 0.5 * std::pow(arma::norm(y), 2) -
+  //        0.5 * lambda * lambda * std::pow(arma::norm(theta - y / lambda), 2);
+  return lambda * arma::dot(theta, y) -
+         0.5 * std::pow(lambda * arma::norm(theta), 2);
 }
 
 double
-Gaussian::scaledDual(const double lambda)
-{
-  if (dual_scale == 0) {
-    return 0;
-  } else {
-    double alpha = lambda / dual_scale;
-
-    return alpha * arma::dot(residual, y) -
-           0.5 * std::pow(alpha * arma::norm(residual), 2);
-  }
-}
-
-double
-Gaussian::deviance()
+Gaussian::deviance(const arma::vec& residual)
 {
   return std::pow(arma::norm(residual), 2);
 }
@@ -67,13 +58,14 @@ Gaussian::hessianTerm(const arma::sp_mat& X, const arma::uword j)
 }
 
 void
-Gaussian::updateResidual()
+Gaussian::updateResidual(arma::vec& residual)
 {
   residual = y - Xbeta;
 }
 
 void
-Gaussian::adjustResidual(const arma::mat& X,
+Gaussian::adjustResidual(arma::vec& residual,
+                         const arma::mat& X,
                          const arma::uword j,
                          const double beta_diff)
 {
@@ -81,7 +73,8 @@ Gaussian::adjustResidual(const arma::mat& X,
 }
 
 void
-Gaussian::adjustResidual(const arma::sp_mat& X,
+Gaussian::adjustResidual(arma::vec& residual,
+                         const arma::sp_mat& X,
                          const arma::uword j,
                          const double beta_diff)
 {

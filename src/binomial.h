@@ -18,7 +18,6 @@ public:
   Binomial(const std::string family,
            arma::vec& y,
            arma::vec& beta,
-           arma::vec& residual,
            arma::vec& Xbeta,
            const arma::vec& X_mean_scaled,
            const arma::vec& X_norms_squared,
@@ -29,27 +28,25 @@ public:
 
   void setLogHessianUpdateType(const std::string new_log_hessian_update_type);
 
-  double primal(const double lambda);
+  double primal(const arma::vec& residual, const double lambda);
 
-  double primal(const double lambda, const arma::uvec& screened_set);
+  double primal(const arma::vec& residual,
+                const double lambda,
+                const arma::uvec& screened_set);
 
-  double dual();
+  double dual(const arma::vec& theta, const arma::vec& y, const double lambda);
 
-  double scaledDual(const double lambda);
-  
-  double deviance();
+  double deviance(const arma::vec& residual);
 
-  double hessianTerm(const arma::mat& X, const arma::uword j);
+  void updateResidual(arma::vec& residual);
 
-  double hessianTerm(const arma::sp_mat& X, const arma::uword j);
-
-  void updateResidual();
-
-  void adjustResidual(const arma::mat& X,
+  void adjustResidual(arma::vec& residual,
+                      const arma::mat& X,
                       const arma::uword j,
                       const double beta_diff);
 
-  void adjustResidual(const arma::sp_mat& X,
+  void adjustResidual(arma::vec& residual,
+                      const arma::sp_mat& X,
                       const arma::uword j,
                       const double beta_diff);
 
@@ -64,6 +61,11 @@ public:
   arma::mat hessianUpperRight(const arma::sp_mat& X,
                               const arma::uvec& ind_a,
                               const arma::uvec& ind_b);
+
+  double hessianTerm(const arma::mat& X, const arma::uword j);
+
+  double hessianTerm(const arma::sp_mat& X, const arma::uword j);
+
 
   void updateGradientOfCorrelation(arma::vec& c_grad,
                                    const arma::mat& X,

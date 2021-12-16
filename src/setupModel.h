@@ -7,7 +7,6 @@ std::unique_ptr<Model>
 setupModel(const std::string family,
            arma::vec& y,
            arma::vec& beta,
-           arma::vec& residual,
            arma::vec& Xbeta,
            const arma::vec& X_mean_scaled,
            const arma::vec& X_norms_squared,

@@ -5,7 +5,6 @@
 Binomial::Binomial(const std::string family,
                    arma::vec& y,
                    arma::vec& beta,
-                   arma::vec& residual,
                    arma::vec& Xbeta,
                    const arma::vec& X_mean_scaled,
                    const arma::vec& X_norms_squared,
@@ -13,7 +12,7 @@ Binomial::Binomial(const std::string family,
                    const arma::uword p,
                    const bool standardize,
                    const std::string log_hessian_update_type)
-  : Model{ family,          y, beta, residual,   Xbeta, X_mean_scaled,
+  : Model{ family,          y, beta, Xbeta,      X_mean_scaled,
            X_norms_squared, n, p,    standardize }
   , expXbeta(y.n_elem, arma::fill::zeros)
   , pr(y.n_elem, arma::fill::zeros)
@@ -28,7 +27,7 @@ Binomial::setLogHessianUpdateType(const std::string new_log_hessian_update_type)
 };
 
 double
-Binomial::primal(const double lambda)
+Binomial::primal(const arma::vec& residual, const double lambda)
 {
   using namespace arma;
 
@@ -36,7 +35,9 @@ Binomial::primal(const double lambda)
 }
 
 double
-Binomial::primal(const double lambda, const arma::uvec& screened_set)
+Binomial::primal(const arma::vec& residual,
+                 const double lambda,
+                 const arma::uvec& screened_set)
 {
   using namespace arma;
 
@@ -45,29 +46,17 @@ Binomial::primal(const double lambda, const arma::uvec& screened_set)
 }
 
 double
-Binomial::dual()
-{
-  return -arma::sum(pr % arma::log(pr) + (1.0 - pr) % arma::log(1.0 - pr));
-}
-
-double
-Binomial::scaledDual(const double lambda)
+Binomial::dual(const arma::vec& theta, const arma::vec& y, const double lambda)
 {
   using namespace arma;
 
-  if (dual_scale == 0) {
-    return 0;
-  } else {
-    double alpha = lambda / dual_scale;
+  vec prx = clamp(y - theta, p_min, p_max);
 
-    vec prx = clamp(y - alpha * residual, p_min, p_max);
-
-    return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
-  }
+  return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
 }
 
 double
-Binomial::deviance()
+Binomial::deviance(const arma::vec& residual)
 {
   return -2 * arma::sum(y % Xbeta - arma::log1p(expXbeta));
 }
@@ -93,7 +82,7 @@ Binomial::hessianTerm(const arma::sp_mat& X, const arma::uword j)
 }
 
 void
-Binomial::updateResidual()
+Binomial::updateResidual(arma::vec& residual)
 {
   expXbeta = arma::exp(Xbeta);
   pr = arma::clamp(expXbeta / (1 + expXbeta), p_min, p_max);
@@ -102,16 +91,18 @@ Binomial::updateResidual()
 }
 
 void
-Binomial::adjustResidual(const arma::mat& X,
+Binomial::adjustResidual(arma::vec& residual,
+                         const arma::mat& X,
                          const arma::uword j,
                          const double beta_diff)
 {
   Xbeta += X.col(j) * beta_diff;
-  updateResidual();
+  updateResidual(residual);
 }
 
 void
-Binomial::adjustResidual(const arma::sp_mat& X,
+Binomial::adjustResidual(arma::vec& residual,
+                         const arma::sp_mat& X,
                          const arma::uword j,
                          const double beta_diff)
 {
@@ -120,7 +111,7 @@ Binomial::adjustResidual(const arma::sp_mat& X,
   if (standardize)
     Xbeta -= X_mean_scaled(j) * beta_diff;
 
-  updateResidual();
+  updateResidual(residual);
 }
 
 arma::mat
