@@ -20,7 +20,6 @@ public:
            arma::vec& beta,
            arma::vec& residual,
            arma::vec& Xbeta,
-           arma::vec& c,
            const arma::vec& X_mean_scaled,
            const arma::vec& X_norms_squared,
            const arma::uword n,

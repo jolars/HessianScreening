@@ -7,14 +7,13 @@ Binomial::Binomial(const std::string family,
                    arma::vec& beta,
                    arma::vec& residual,
                    arma::vec& Xbeta,
-                   arma::vec& c,
                    const arma::vec& X_mean_scaled,
                    const arma::vec& X_norms_squared,
                    const arma::uword n,
                    const arma::uword p,
                    const bool standardize,
                    const std::string log_hessian_update_type)
-  : Model{ family,          y, beta, residual,   Xbeta, c, X_mean_scaled,
+  : Model{ family,          y, beta, residual,   Xbeta, X_mean_scaled,
            X_norms_squared, n, p,    standardize }
   , expXbeta(y.n_elem, arma::fill::zeros)
   , pr(y.n_elem, arma::fill::zeros)

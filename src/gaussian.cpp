@@ -7,13 +7,12 @@ Gaussian::Gaussian(const std::string family,
                    arma::vec& beta,
                    arma::vec& residual,
                    arma::vec& Xbeta,
-                   arma::vec& c,
                    const arma::vec& X_mean_scaled,
                    const arma::vec& X_norms_squared,
                    const arma::uword n,
                    const arma::uword p,
                    const bool standardize)
-  : Model{ family,          y, beta, residual,   Xbeta, c, X_mean_scaled,
+  : Model{ family,          y, beta, residual,   Xbeta, X_mean_scaled,
            X_norms_squared, n, p,    standardize }
 {}
 

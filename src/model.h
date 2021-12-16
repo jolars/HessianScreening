@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prox.h"
+#include "updateCorrelation.h"
 #include <RcppArmadillo.h>
 
 class Model
@@ -12,7 +13,6 @@ public:
   arma::vec& beta;
   arma::vec& residual;
   arma::vec& Xbeta;
-  arma::vec& c;
 
   const arma::vec& X_mean_scaled;
   const arma::vec& X_norms_squared;
@@ -28,7 +28,6 @@ public:
         arma::vec& beta,
         arma::vec& residual,
         arma::vec& Xbeta,
-        arma::vec& c,
         const arma::vec& X_mean_scaled,
         const arma::vec& X_norms_squared,
         const arma::uword n,
@@ -105,18 +104,6 @@ public:
 
   void updateLinearPredictor(const arma::sp_mat& X, const arma::uvec& ind);
 
-  void updateCorrelation(const arma::mat& X);
-
-  void updateCorrelation(const arma::sp_mat& X);
-
-  void updateCorrelation(const arma::mat& X, const arma::uvec& ind);
-
-  void updateCorrelation(const arma::sp_mat& X, const arma::uvec& ind);
-
-  void updateCorrelation(const arma::mat& X, const arma::uword& j);
-
-  void updateCorrelation(const arma::sp_mat& X, const arma::uword& j);
-
   template<typename T>
   void safeScreening(arma::uvec& screened,
                      arma::uvec& screened_set,
@@ -150,6 +137,7 @@ public:
   template<typename T>
   std::tuple<double, double, double, arma::uword, double> fit(
     arma::uvec& screened,
+    arma::vec& c,
     const arma::uvec& active_set,
     const T& X,
     const arma::vec& X_norms_squared,
@@ -227,7 +215,7 @@ public:
             updateLinearPredictor(X, screened_set);
             updateResidual();
           }
-          updateCorrelation(X, screened_set);
+          updateCorrelation(c, residual, X, screened_set, X_mean_scaled, standardize);
 
           dual_scale = std::max(lambda, max(abs(c)));
 
@@ -252,7 +240,7 @@ public:
 
         if (screening_type == "celer") {
           if (inner_solver_converged || it == 0) {
-            theta_inner = residual / dual_scale;
+            vec residual_inner = residual / dual_scale;
             c_inner = c;
             dual_value_inner = dual_value;
 
@@ -260,7 +248,7 @@ public:
               updateLinearPredictor(X, screened_set);
               updateResidual();
             }
-            updateCorrelation(X, screened_set);
+            updateCorrelation(c, residual, X, screened_set, X_mean_scaled, standardize);
 
             primal_value = primal(lambda);
 
@@ -339,7 +327,7 @@ public:
 
         if (line_search == 3) {
           for (auto&& j : working_set) {
-            updateCorrelation(X, j);
+            updateCorrelation(c, residual, X, j, X_mean_scaled, standardize);
             double hess_j = hessianTerm(X, j);
 
             double beta_j_old = beta(j);
@@ -386,7 +374,7 @@ public:
         } else {
           for (auto&& j : working_set) {
 
-            updateCorrelation(X, j);
+            updateCorrelation(c, residual, X, j, X_mean_scaled, standardize);
             double hess_j = hessianTerm(X, j);
 
             double beta_j_old = beta(j);
@@ -417,7 +405,7 @@ public:
                 double beta_j_prev = beta(j);
 
                 if (line_search == 2) {
-                  updateCorrelation(X, j);
+                  updateCorrelation(c, residual, X, j, X_mean_scaled, standardize);
                   if (std::max(c_j_old, c(j)) - std::min(c_j_old, c(j)) >
                       lambda_prev - lambda) {
                     if (verbosity >= 2) {
@@ -467,7 +455,7 @@ public:
 
         if (screening_type != "gap_safe") {
           primal_value = primal(lambda, working_set);
-          updateCorrelation(X, working_set);
+          updateCorrelation(c, residual, X, working_set, X_mean_scaled, standardize);
           dual_scale = std::max(lambda, max(abs(c(working_set))));
           dual_value = scaledDual(lambda);
           duality_gap = primal_value - dual_value;

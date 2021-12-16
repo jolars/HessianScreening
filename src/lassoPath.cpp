@@ -101,7 +101,6 @@ lassoPath(T& X,
                           beta,
                           residual,
                           Xbeta,
-                          c,
                           X_mean_scaled,
                           X_norms_squared,
                           n,
@@ -112,7 +111,7 @@ lassoPath(T& X,
   model->standardizeY();
 
   model->updateResidual();
-  model->updateCorrelation(X, regspace<uvec>(0, p - 1));
+  updateCorrelation(c, residual, X, X_mean_scaled, standardize);
 
   const double lambda_min_ratio = n < p ? 0.01 : 1e-4;
   const double lambda_max = max(abs(c));
@@ -248,6 +247,7 @@ lassoPath(T& X,
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
         model->fit(screened,
+                   c,
                    active_set_prev,
                    X,
                    X_norms_squared,
@@ -283,17 +283,20 @@ lassoPath(T& X,
         violations.fill(false);
 
         if (screening_type == "strong" || screening_type == "edpp") {
-          model->updateCorrelation(X, unscreened_set);
+          updateCorrelation(
+            c, residual, X, unscreened_set, X_mean_scaled, standardize);
           kktCheck(violations, screened, c, unscreened_set, lambda);
 
         } else {
           uvec check_set = setIntersect(unscreened_set, strong_set);
-          model->updateCorrelation(X, check_set);
+          updateCorrelation(
+            c, residual, X, check_set, X_mean_scaled, standardize);
           kktCheck(violations, screened, c, check_set, lambda);
 
           if (!any(violations)) {
             uvec check_set = setDiff(unscreened_set, strong_set);
-            model->updateCorrelation(X, check_set);
+            updateCorrelation(
+              c, residual, X, check_set, X_mean_scaled, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
           }
         }
