@@ -12,8 +12,8 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lassoPathDense
-Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
-RcppExport SEXP _HessianScreening_lassoPathDense(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
+Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
+RcppExport SEXP _HessianScreening_lassoPathDense(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP celer_pruneSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,6 +25,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type hessian_warm_starts(hessian_warm_startsSEXP);
     Rcpp::traits::input_parameter< const bool >::type celer_use_old_dual(celer_use_old_dualSEXP);
     Rcpp::traits::input_parameter< const bool >::type celer_use_accel(celer_use_accelSEXP);
+    Rcpp::traits::input_parameter< const bool >::type celer_prune(celer_pruneSEXP);
     Rcpp::traits::input_parameter< const bool >::type gap_safe_active_start(gap_safe_active_startSEXP);
     Rcpp::traits::input_parameter< std::string >::type log_hessian_update_type(log_hessian_update_typeSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type log_hessian_auto_update_freq(log_hessian_auto_update_freqSEXP);
@@ -36,13 +37,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type force_kkt_check(force_kkt_checkSEXP);
     Rcpp::traits::input_parameter< const int >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
-    rcpp_result_gen = Rcpp::wrap(lassoPathDense(X, y, family, standardize, screening_type, hessian_warm_starts, celer_use_old_dual, celer_use_accel, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
+    rcpp_result_gen = Rcpp::wrap(lassoPathDense(X, y, family, standardize, screening_type, hessian_warm_starts, celer_use_old_dual, celer_use_accel, celer_prune, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
     return rcpp_result_gen;
 END_RCPP
 }
 // lassoPathSparse
-Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
-RcppExport SEXP _HessianScreening_lassoPathSparse(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
+Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, const bool standardize, const std::string screening_type, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool verify_hessian, const bool force_kkt_check, const int line_search, const arma::uword verbosity);
+RcppExport SEXP _HessianScreening_lassoPathSparse(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP celer_pruneSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP verify_hessianSEXP, SEXP force_kkt_checkSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -54,6 +55,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type hessian_warm_starts(hessian_warm_startsSEXP);
     Rcpp::traits::input_parameter< const bool >::type celer_use_old_dual(celer_use_old_dualSEXP);
     Rcpp::traits::input_parameter< const bool >::type celer_use_accel(celer_use_accelSEXP);
+    Rcpp::traits::input_parameter< const bool >::type celer_prune(celer_pruneSEXP);
     Rcpp::traits::input_parameter< const bool >::type gap_safe_active_start(gap_safe_active_startSEXP);
     Rcpp::traits::input_parameter< std::string >::type log_hessian_update_type(log_hessian_update_typeSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type log_hessian_auto_update_freq(log_hessian_auto_update_freqSEXP);
@@ -65,14 +67,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type force_kkt_check(force_kkt_checkSEXP);
     Rcpp::traits::input_parameter< const int >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
-    rcpp_result_gen = Rcpp::wrap(lassoPathSparse(X, y, family, standardize, screening_type, hessian_warm_starts, celer_use_old_dual, celer_use_accel, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
+    rcpp_result_gen = Rcpp::wrap(lassoPathSparse(X, y, family, standardize, screening_type, hessian_warm_starts, celer_use_old_dual, celer_use_accel, celer_prune, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, verify_hessian, force_kkt_check, line_search, verbosity));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_HessianScreening_lassoPathDense", (DL_FUNC) &_HessianScreening_lassoPathDense, 19},
-    {"_HessianScreening_lassoPathSparse", (DL_FUNC) &_HessianScreening_lassoPathSparse, 19},
+    {"_HessianScreening_lassoPathDense", (DL_FUNC) &_HessianScreening_lassoPathDense, 20},
+    {"_HessianScreening_lassoPathSparse", (DL_FUNC) &_HessianScreening_lassoPathSparse, 20},
     {NULL, NULL, 0}
 };
 

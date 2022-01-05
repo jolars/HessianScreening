@@ -67,10 +67,6 @@ binomial_dual <- function(x, y, beta, lambda) {
 #' @return primals, duals, and relative duality gaps
 #' @export
 duality_gaps <- function(fit, family, standardize, x, y) {
-  # if (standardize) {
-  #   x <- scale(x)
-  # }
-
   beta <- fit$beta
   lambda <- fit$lambda
 

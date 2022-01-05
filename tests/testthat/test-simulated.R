@@ -48,7 +48,8 @@ test_that("gaussian and logistic models for simulated data", {
       standardize = standardize,
       tol_gap = tol_gap,
       celer_use_old_dual = FALSE,
-      celer_use_accel = TRUE
+      celer_use_accel = TRUE,
+      celer_prune = FALSE
     )
 
     gaps <- duality_gaps(fit, family, standardize, X, y)$gaps

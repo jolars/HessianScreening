@@ -28,6 +28,7 @@ fit(arma::uvec& screened,
     const std::string screening_type,
     const bool celer_use_old_dual,
     const bool celer_use_accel,
+    const bool celer_prune,
     const bool gap_safe_active_start,
     const bool first_run,
     const arma::uword step,
@@ -43,6 +44,8 @@ fit(arma::uvec& screened,
   const uword p = X.n_cols;
 
   const uword check_frequency = 10;
+
+  double tol_gap_rel_inner = tol_gap_rel;
 
   if (screening_type == "celer" || screening_type == "gap_safe")
     screened.fill(true);
@@ -187,7 +190,7 @@ fit(arma::uvec& screened,
               theta = theta_old;
               dual_scale = dual_scale_old;
             }
-          } 
+          }
 
           duality_gap = primal_value - dual_value;
           duality_gap_rel = duality_gap / std::max(1.0, primal_value);
@@ -210,16 +213,26 @@ fit(arma::uvec& screened,
           d(screened_set) = (1.0 - c(screened_set) / dual_scale) /
                             sqrt(X_norms_squared(screened_set));
 
-          if (it == 0) {
-            working_set = active_set;
+          if (celer_prune) {
+            tol_gap_rel_inner = duality_gap * 0.3;
+
+            uvec active_set = find(beta != 0);
+
+            d(active_set).fill(-1);
+
+            if (it > 0) {
+              ws_size = std::min(2 * active_set.n_elem, p);
+            }
+          } else {
+            d(working_set).fill(-1);
+
+            if (it > 0) {
+              ws_size = std::min(2 * ws_size, p);
+            }
           }
 
-          d(working_set).fill(-1);
-
-          // d.print();
-
-          if (it > 0) {
-            ws_size *= 2;
+          if (verbosity >= 2) {
+            Rprintf("      working set size: %i\n", ws_size);
           }
 
           XTcenter = c / dual_scale;
@@ -477,15 +490,13 @@ fit(arma::uvec& screened,
               c_accel, residual_accel, X, working_set, X_offset, standardize);
 
             double dual_scale_accel =
-              std::max(1.0, std::max(lambda, max(abs(c_accel(working_set)))));
+              std::max(lambda, max(abs(c_accel(working_set))));
             vec theta_accel = residual_accel / dual_scale_accel;
             double dual_value_accel = model->dual(theta_accel, y, lambda);
 
             if (dual_value_accel > dual_value) {
               dual_value = dual_value_accel;
-              c = c_accel;
               theta = theta_accel;
-              residual = residual_accel;
             }
           }
         }
@@ -496,7 +507,7 @@ fit(arma::uvec& screened,
                   dual_value,
                   duality_gap_rel);
 
-        inner_solver_converged = duality_gap_rel <= tol_gap_rel;
+        inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
         if (inner_solver_converged && screening_type != "celer") {
           break;
