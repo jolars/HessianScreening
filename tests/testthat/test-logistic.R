@@ -7,9 +7,9 @@ test_that("test logistic regression on real data", {
   standardize <- FALSE
 
   for (dataset in datalist) {
+
     data(list = list(dataset))
     d <- get(dataset)
-
     x <- d$X
     y <- d$y
 
