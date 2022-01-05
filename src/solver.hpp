@@ -253,8 +253,6 @@ fit(arma::uvec& screened,
 
       n_screened += screened_set.n_elem;
 
-      working_set = shuffle(working_set);
-
       if (line_search == 3) {
         for (auto&& j : working_set) {
           updateCorrelation(c, residual, X, j, X_offset, standardize);
