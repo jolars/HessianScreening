@@ -9,7 +9,9 @@ std::tuple<arma::uvec, arma::uvec>
 findDuplicates(arma::uvec& active_set,
                arma::uvec& active_set_prev,
                const T& X,
-               const std::unique_ptr<Model>& model)
+               const std::unique_ptr<Model>& model,
+               const arma::vec& X_offset,
+               const bool standardize)
 {
   using namespace arma;
 
@@ -18,7 +20,7 @@ findDuplicates(arma::uvec& active_set,
   std::vector<uword> originals, duplicates;
 
   if (!activate.is_empty()) {
-    const mat D = model->hessian(X, activate);
+    const mat D = model->hessian(X, activate, X_offset, standardize);
 
     for (uword i = 0; i < D.n_rows - 1; ++i) {
       if (!contains(duplicates, activate(i))) {

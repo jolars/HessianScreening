@@ -4,6 +4,10 @@ test_that("screening methods work", {
   n <- 50
   p <- 200
 
+  tol_gap <- 1e-4
+
+  screening_types <- c("hessian", "working", "strong", "gap_safe")
+
   for (density in c(1, 0.5)) {
     for (family in c("gaussian", "binomial")) {
       d <- generateDesign(n, p, family = family)
@@ -11,9 +15,7 @@ test_that("screening methods work", {
       X <- d$X
       y <- d$y
 
-      fit_work <- lassoPath(X, y, family = family, screening_type = "working")
-
-      for (screening_type in c("hessian", "working", "strong", "gap_safe")) {
+      for (screening_type in screening_types) {
         if (family == "binomial" && screening_type == "edpp") {
           next
         }
@@ -23,13 +25,8 @@ test_that("screening methods work", {
           y,
           family = family,
           screening_type = screening_type,
-          verbosity = 0,
-          force_kkt_check = TRUE
-        )
-
-        steps <- 1:min(length(fit$lambda), length(fit_work$lambda))
-        expect_equal(fit_work$dev[steps], fit$dev[steps],
-          tolerance = 1e-3
+          force_kkt_check = TRUE,
+          tol_gap = tol_gap,
         )
 
         if (screening_type %in% c("gap_safe")) {

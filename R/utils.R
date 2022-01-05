@@ -19,3 +19,76 @@ renderPdf <- function(x) {
   knitr:::plot_crop(pdf_file)
   file.copy(pdf_file, file.path(path, pdf_file), overwrite = TRUE)
 }
+
+gaussian_primal <- function(x, y, beta, lambda) {
+  0.5 * norm(y - x %*% beta, "2")^2 + lambda * sum(abs(beta))
+}
+
+gaussian_dual <- function(x, y, beta, lambda) {
+  residual <- y - x %*% beta
+  correlation <- Matrix::crossprod(x, residual)
+
+  theta <- residual / max(lambda, max(abs(correlation)))
+
+  0.5 * norm(y, "2")^2 - 0.5 * lambda^2 * norm(theta - y / lambda, "2")^2
+}
+
+binomial_primal <- function(x, y, beta, lambda) {
+  xbeta <- x %*% beta
+  -sum(y * xbeta - log1p(exp(xbeta))) + lambda * sum(abs(beta))
+}
+
+binomial_dual <- function(x, y, beta, lambda) {
+  exp_xbeta <- exp(x %*% beta)
+  pr <- exp_xbeta / (1 + exp_xbeta)
+  pr <- ifelse(pr < 1e-5, 1e-5, pr)
+  pr <- ifelse(pr > 1 - 1e-5, 1 - 1e-5, pr)
+
+  residual <- y - pr
+
+  correlation <- Matrix::crossprod(x, residual)
+
+  theta <- residual / max(lambda, max(abs(correlation)))
+
+  prx <- y - lambda * theta
+  prx <- ifelse(prx < 1e-5, 1e-5, prx)
+  prx <- ifelse(prx > 1 - 1e-5, 1 - 1e-5, prx)
+
+  -sum(prx * log(prx) + (1 - prx) * log(1 - prx))
+}
+
+#' Get Duality Gaps
+#'
+#' @param fit the resulting fit
+#' @param family the loss function
+#' @param x design matrix
+#' @param y response vector
+#'
+#' @return primals, duals, and relative duality gaps
+#' @export
+duality_gaps <- function(fit, family, standardize, x, y) {
+  # if (standardize) {
+  #   x <- scale(x)
+  # }
+
+  beta <- fit$beta
+  lambda <- fit$lambda
+
+  duals <- primals <- double(length(lambda))
+
+  for (i in seq_along(duals)) {
+    if (family == "gaussian") {
+      primals[i] <- gaussian_primal(x, y, beta[, i], lambda[i])
+      duals[i] <- gaussian_dual(x, y, beta[, i], lambda[i])
+    } else if (family == "binomial") {
+      primals[i] <- binomial_primal(x, y, beta[, i], lambda[i])
+      duals[i] <- binomial_dual(x, y, beta[, i], lambda[i])
+    }
+  }
+
+  list(
+    primals = primals,
+    duals = duals,
+    gaps = (primals - duals) / pmax(1, primals)
+  )
+}

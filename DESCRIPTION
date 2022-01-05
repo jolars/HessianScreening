@@ -30,7 +30,7 @@ Imports:
     rcmdcheck
 Suggests:
     testthat (>= 3.0.0)
-Config/testthat/edition: 3
+Config/testthat/edition: 2
 Depends:
     R (>= 3.5),
     Matrix (>= 1.3-2)

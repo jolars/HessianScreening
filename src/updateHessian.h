@@ -13,6 +13,8 @@ updateHessian(arma::mat& H,
               arma::uvec& active_perm_prev,
               const std::unique_ptr<Model>& model,
               const T& X,
+              const arma::vec& X_offset,
+              const bool standardize,
               const bool verify_hessian,
               const arma::uword verbosity)
 {
@@ -59,8 +61,9 @@ updateHessian(arma::mat& H,
               activate.n_elem);
     }
 
-    mat D = model->hessian(X, activate);
-    mat B = model->hessianUpperRight(X, active_perm_prev, activate);
+    mat D = model->hessian(X, activate, X_offset, standardize);
+    mat B = model->hessianUpperRight(
+      X, active_perm_prev, activate, X_offset, standardize);
     const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;

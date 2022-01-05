@@ -7,12 +7,12 @@ library(tidyr)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
-  family = c("binomial", "gaussian"),
+  family = c("gaussian", "binomial"),
   scenario = c(1, 2),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
-  screening_type = c("hessian", "strong", "working", "gap_safe", "edpp"),
+  screening_type = c("hessian", "working", "celer", "edpp", "gap_safe"),
   path_length = 100,
   avg_screened = NA,
   avg_violations = NA,
@@ -22,7 +22,9 @@ g <- expand_grid(
   step = list(NA)
 )
 
-n_it <- 20
+n_it <- 2
+
+tol_gap <- 1e-4
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -41,8 +43,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 40000
+    n <- 200
+    p <- 20000
     snr <- 2
     s <- 20
   }
@@ -69,10 +71,10 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
+      verbosity = 0,
       gamma = 0.01,
-      tol_gap = 1e-6,
-      tol_infeas = 1e-5,
-      line_search = 3
+      line_search = 3,
+      tol_gap = tol_gap
     )
 
     n_lambda <- length(fit$lambda)
