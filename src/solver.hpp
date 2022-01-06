@@ -68,24 +68,25 @@ fit(arma::uvec& screened,
   double duality_gap_rel_prev = duality_gap_rel;
 
   // celer parameters
-  uword ws_size = ws_size_init;
   bool inner_solver_converged = true;
+  double dual_scale_old = dual_scale;
+  double dual_value_old = dual_value;
+  uword ws_size = ws_size_init;
+  vec c_old(p);
   vec d(p);
   vec residual_old;
 
   // celer acceleration
   const uword K = 5;
-  vec residual_prev;
-  vec residual_accel;
-  vec z(K);
-  vec celer_c(K);
-  mat residual_storage(n, K);
   mat U(n, K);
+  mat residual_storage(n, K);
+  vec celer_c(K);
+  vec residual_prev;
+  vec z(K);
 
   if (screening_type == "celer") {
     residual_old = residual;
     residual_prev = residual;
-    residual_accel = residual;
   }
 
   // line search parameters
@@ -107,26 +108,28 @@ fit(arma::uvec& screened,
 
     while (it < maxit) {
       if (verbosity >= 2) {
-        Rprintf("    iter: %i\n", it + 1);
+        Rprintf("    iter: %i\n", it + 2);
       }
 
       if (screening_type == "gap_safe" && it % screen_frequency == 0) {
         updateCorrelation(c, residual, X, screened_set, X_offset, standardize);
 
-        double primal_value =
+        primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, screened_set);
 
         dual_scale = std::max(lambda, max(abs(c(screened_set))));
-        theta = residual / dual_scale; // feasible dual point
+        theta = residual / dual_scale;
         dual_value = model->dual(theta, y, lambda);
+        duality_gap = primal_value - dual_value;
 
         duality_gap_rel = duality_gap / std::max(gap_eps, primal_value);
 
-        if (verbosity >= 2)
+        if (verbosity >= 2) {
           Rprintf("      global primal: %f, global dual: %f, global gap: %f\n",
                   primal_value,
                   dual_value,
                   duality_gap_rel);
+        }
 
         if (duality_gap_rel <= tol_gap_rel)
           break;
@@ -164,28 +167,21 @@ fit(arma::uvec& screened,
           theta = residual / dual_scale;
           dual_value = model->dual(theta, y, lambda);
 
-          if (it > 0 && celer_use_old_dual) {
+          if (celer_use_old_dual) {
             // check if dual point from previous check performs better
-            vec c_old(p, fill::zeros);
-
-            updateCorrelation(
-              c_old, residual_old, X, screened_set, X_offset, standardize);
-
-            double dual_scale_old =
-              std::max(lambda, max(abs(c_old(screened_set))));
-            vec theta_old = residual_old / dual_scale_old;
-            double dual_value_old = model->dual(theta_old, y, lambda);
-
-            if (dual_value_old > dual_value) {
-              if (verbosity >= 2) {
-                Rprintf("      old dual point performs better, use it\n");
-              }
+            if (it > 0 && dual_value_old > dual_value) {
+              if (verbosity >= 2)
+                Rprintf("      using previous dual point\n");
 
               dual_value = dual_value_old;
-              c = c_old;
-              theta = theta_old;
               dual_scale = dual_scale_old;
+              c = c_old;
             }
+
+            // save dual objects for next iteration
+            dual_value_old = dual_value;
+            dual_scale_old = dual_scale;
+            c_old = c;
           }
 
           duality_gap = primal_value - dual_value;
@@ -254,8 +250,6 @@ fit(arma::uvec& screened,
           uvec ind = sort_index(d(screened_set), "ascend");
 
           working_set = screened_set(ind.head(ws_size));
-
-          residual_old = residual;
         }
       }
 
@@ -473,7 +467,8 @@ fit(arma::uvec& screened,
             // if solver succeeds (well-conditioned problem), use acceleration
             celer_c = z / accu(z);
 
-            residual_accel.zeros();
+            vec residual_accel(n, fill::zeros);
+
             for (uword i = 0; i < K; ++i) {
               residual_accel += celer_c(i) * residual_storage.col(K - i - 1);
             }
