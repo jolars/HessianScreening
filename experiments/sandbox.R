@@ -1,12 +1,9 @@
 library(HessianScreening)
-library(glmnet)
-library(testthat)
 
 set.seed(3)
 
 family <- "binomial"
 
-# d <- readRDS(file.path("data", paste0("arcene", ".rds")))
 set.seed(14)
 d <- generateDesign(1000, 100, family = family)
 X <- d$X
@@ -28,14 +25,14 @@ fit_celer <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "working",
+  screening_type = "celer",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,
   line_search = line_search,
-  # log_hessian_update_type = "full",
   gap_safe_active_start = TRUE,
   celer_use_accel = FALSE,
+  celer_prune = TRUE,
   maxit = maxit
 )
 
