@@ -1,42 +1,48 @@
-#include <RcppArmadillo.h>
-
-#include "setupModel.h"
-#include "model.h"
-#include "getNextLambda.h"
-#include "colNormsSquared.h"
 #include "binomial.h"
-#include "gaussian.h"
 #include "checkStoppingConditions.h"
+#include "colNormsSquared.h"
 #include "findDuplicates.h"
+#include "gaussian.h"
+#include "getNextLambda.h"
 #include "kktCheck.h"
+#include "model.h"
 #include "rescaleCoefficients.h"
+#include "safeScreening.h"
 #include "screenPredictors.h"
+#include "setupModel.h"
+#include "solver.hpp"
 #include "standardize.h"
+#include "updateCorrelation.h"
 #include "updateHessian.h"
-
-using namespace arma;
-using namespace Rcpp;
+#include "updateLinearPredictor.h"
+#include <RcppArmadillo.h>
 
 template<typename T>
 Rcpp::List
 lassoPath(T& X,
-          vec& y,
+          arma::vec& y,
           const std::string family,
           const bool standardize,
           const std::string screening_type,
           const bool hessian_warm_starts,
+          const bool celer_use_old_dual,
+          const bool celer_use_accel,
+          const bool celer_prune,
           const bool gap_safe_active_start,
           std::string log_hessian_update_type,
-          const uword log_hessian_auto_update_freq,
-          const uword path_length,
-          const uword maxit,
+          const arma::uword log_hessian_auto_update_freq,
+          const arma::uword path_length,
+          const arma::uword maxit,
           const double tol_gap,
           const double gamma,
           const bool verify_hessian,
           const bool force_kkt_check,
           const int line_search,
-          const uword verbosity)
+          const arma::uword verbosity)
 {
+  using namespace arma;
+  using namespace Rcpp;
+
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
@@ -81,12 +87,13 @@ lassoPath(T& X,
     standardizeX(X_mean, X_sd, X);
   }
 
-  const vec X_mean_scaled = X_mean / X_sd;
+  const vec X_offset = X_mean / X_sd;
   const double y_center = mean(y);
 
   vec X_norms_squared(p);
 
-  if (family == "gaussian" || screening_type == "gap_safe") {
+  if (family == "gaussian" || screening_type == "gap_safe" ||
+      screening_type == "celer") {
     if (!standardize) {
       X_norms_squared = colNormsSquared(X);
     } else {
@@ -94,23 +101,15 @@ lassoPath(T& X,
     }
   }
 
-  auto model = setupModel(family,
-                          y,
-                          beta,
-                          residual,
-                          Xbeta,
-                          c,
-                          X_mean_scaled,
-                          X_norms_squared,
-                          n,
-                          p,
-                          standardize,
-                          log_hessian_update_type);
+  uword ws_size_init = 100;
+  ws_size_init = std::min(p, static_cast<uword>(100));
 
-  model->standardizeY();
+  auto model = setupModel(family, X_norms_squared, n, log_hessian_update_type);
 
-  model->updateResidual();
-  model->updateCorrelation(X, regspace<uvec>(0, p - 1));
+  model->standardizeY(y);
+
+  model->updateResidual(residual, Xbeta, y);
+  updateCorrelation(c, residual, X, X_offset, standardize);
 
   const double lambda_min_ratio = n < p ? 0.01 : 1e-4;
   const double lambda_max = max(abs(c));
@@ -144,7 +143,7 @@ lassoPath(T& X,
   std::vector<uword> n_new_active;
   std::vector<uword> n_passes;
   std::vector<uword> n_refits;
-  std::vector<double> n_screened;
+  std::vector<uword> n_screened;
   std::vector<uword> n_strong;
   std::vector<uword> n_violations;
 
@@ -175,7 +174,7 @@ lassoPath(T& X,
   uvec active_set = active_perm;
   uvec active_set_prev = active_set;
 
-  mat H = model->hessian(X, active_perm);
+  mat H = model->hessian(X, active_perm, X_offset, standardize);
   mat Hinv = inv(symmatl(H));
 
   vec s(p, fill::zeros);
@@ -183,10 +182,12 @@ lassoPath(T& X,
 
   vec Hinv_s = Hinv * s(active_perm);
 
-  const double null_dev = model->deviance();
+  const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
 
-  bool check_kkt = (screening_type != "gap_safe") || force_kkt_check;
+  bool check_kkt =
+    (screening_type != "gap_safe" && screening_type != "celer") ||
+    force_kkt_check;
 
   std::string screening_type_temp = screening_type;
 
@@ -196,8 +197,6 @@ lassoPath(T& X,
   std::vector<double> gradcorr_times;
   std::vector<double> hess_times;
   std::vector<double> duplicates_times;
-
-  const double null_primal = model->primal(lambda_max, active_set);
 
   wall_clock timer;
   timer.tic();
@@ -235,34 +234,50 @@ lassoPath(T& X,
 
       if (first_run && screening_type != "gap_safe") {
         n_screened.emplace_back(sum(screened));
-      } else if (first_run
-                 && screening_type == "gap_safe" 
-                 && gap_safe_active_start){
+      } else if (first_run && screening_type == "gap_safe" &&
+                 gap_safe_active_start) {
         screening_type_temp = "working";
       } else {
         screening_type_temp = screening_type;
       }
 
       auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
-        model->fit(screened,
-                   X,
-                   X_norms_squared,
-                   lambda,
-                   lambda_prev,
-                   lambda_max,
-                   null_primal,
-                   screening_type_temp,
-                   gap_safe_active_start,
-                   first_run,
-                   i,
-                   maxit,
-                   tol_gap_rel,
-                   line_search,
-                   verbosity);
+        fit(screened,
+            c,
+            residual,
+            Xbeta,
+            beta,
+            model,
+            X,
+            y,
+            X_norms_squared,
+            X_offset,
+            standardize,
+            active_set_prev,
+            lambda,
+            lambda_prev,
+            lambda_max,
+            active_set.n_elem,
+            screening_type_temp,
+            celer_use_old_dual,
+            celer_use_accel,
+            celer_prune,
+            gap_safe_active_start,
+            first_run,
+            i,
+            maxit,
+            tol_gap_rel,
+            line_search,
+            ws_size_init,
+            verbosity);
 
       cd_time += timer.toc() - t0;
 
       n_passes_i_sum += n_passes_i;
+
+      if (n_passes_i >= maxit) {
+        Rcpp::warning("the solver did not converge.");
+      }
 
       if (screening_type == "gap_safe" &&
           !(first_run && gap_safe_active_start)) {
@@ -277,17 +292,18 @@ lassoPath(T& X,
         violations.fill(false);
 
         if (screening_type == "strong" || screening_type == "edpp") {
-          model->updateCorrelation(X, unscreened_set);
+          updateCorrelation(
+            c, residual, X, unscreened_set, X_offset, standardize);
           kktCheck(violations, screened, c, unscreened_set, lambda);
 
         } else {
           uvec check_set = setIntersect(unscreened_set, strong_set);
-          model->updateCorrelation(X, check_set);
+          updateCorrelation(c, residual, X, check_set, X_offset, standardize);
           kktCheck(violations, screened, c, check_set, lambda);
 
           if (!any(violations)) {
             uvec check_set = setDiff(unscreened_set, strong_set);
-            model->updateCorrelation(X, check_set);
+            updateCorrelation(c, residual, X, check_set, X_offset, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
           }
         }
@@ -328,7 +344,7 @@ lassoPath(T& X,
     active_perm = join_vert(safeSetIntersect(active_perm_prev, active_set),
                             setDiff(active_set, active_set_prev));
 
-    dev = model->deviance();
+    dev = model->deviance(residual, Xbeta, y);
     devs.emplace_back(dev);
     dev_ratios.emplace_back(1.0 - dev / null_dev);
 
@@ -336,8 +352,8 @@ lassoPath(T& X,
     // adjust the coefficients accordingly
     double t0 = timer.toc();
 
-    auto [new_originals, new_duplicates] =
-      findDuplicates(active_set, active_set_prev, X, model);
+    auto [new_originals, new_duplicates] = findDuplicates(
+      active_set, active_set_prev, X, model, X_offset, standardize);
 
     if (!new_duplicates.empty()) {
       for (auto&& orig : new_originals) {
@@ -404,6 +420,8 @@ lassoPath(T& X,
                       active_perm_prev,
                       model,
                       X,
+                      X_offset,
+                      standardize,
                       verify_hessian,
                       verbosity);
 
@@ -413,7 +431,7 @@ lassoPath(T& X,
         // for logistic regression and no approxiation, simply recompute the
         // hessian and its inverse for the full set of active predictors,
         // since we cannot update the hessian efficiently anyway
-        H = model->hessian(X, active_set);
+        H = model->hessian(X, active_set, X_offset, standardize);
 
         vec eigval;
         mat eigvec;
@@ -442,8 +460,14 @@ lassoPath(T& X,
 
       t0 = timer.toc();
 
-      model->updateGradientOfCorrelation(
-        c_grad, X, Hinv_s, s, active_set, find(restricted));
+      model->updateGradientOfCorrelation(c_grad,
+                                         X,
+                                         Hinv_s,
+                                         s,
+                                         active_set,
+                                         find(restricted),
+                                         X_offset,
+                                         standardize);
 
       gradcorr_times.emplace_back(timer.toc() - t0);
     }
@@ -469,7 +493,7 @@ lassoPath(T& X,
         model->setLogHessianUpdateType("approx");
         log_hessian_auto = false;
 
-        H = model->hessian(X, active_set);
+        H = model->hessian(X, active_set, X_offset, standardize);
 
         vec eigval;
         mat eigvec;
@@ -498,7 +522,7 @@ lassoPath(T& X,
                                 c_grad,
                                 X,
                                 X_norms_squared,
-                                X_mean_scaled,
+                                X_offset,
                                 y,
                                 lambda,
                                 lambda_next,
@@ -533,7 +557,6 @@ lassoPath(T& X,
                       Named("primals") = wrap(primals),
                       Named("duals") = wrap(duals),
                       Named("dev_ratio") = wrap(dev_ratios),
-                      Named("dev") = wrap(devs),
                       Named("violations") = wrap(n_violations),
                       Named("refits") = wrap(n_refits),
                       Named("active") = wrap(n_active),
@@ -547,7 +570,8 @@ lassoPath(T& X,
                       Named("cd_time") = wrap(cd_times),
                       Named("hess_time") = wrap(hess_times),
                       Named("kkt_time") = wrap(kkt_times),
-                      Named("gradcorr_time") = wrap(gradcorr_times));
+                      Named("gradcorr_time") = wrap(gradcorr_times),
+                      Named("family") = wrap(family));
 }
 
 // [[Rcpp::export]]
@@ -558,6 +582,9 @@ lassoPathDense(arma::mat X,
                const bool standardize,
                const std::string screening_type,
                const bool hessian_warm_starts,
+               const bool celer_use_old_dual,
+               const bool celer_use_accel,
+               const bool celer_prune,
                const bool gap_safe_active_start,
                std::string log_hessian_update_type,
                const arma::uword log_hessian_auto_update_freq,
@@ -576,6 +603,9 @@ lassoPathDense(arma::mat X,
                    standardize,
                    screening_type,
                    hessian_warm_starts,
+                   celer_use_old_dual,
+                   celer_use_accel,
+                   celer_prune,
                    gap_safe_active_start,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
@@ -597,6 +627,9 @@ lassoPathSparse(arma::sp_mat X,
                 const bool standardize,
                 const std::string screening_type,
                 const bool hessian_warm_starts,
+                const bool celer_use_old_dual,
+                const bool celer_use_accel,
+                const bool celer_prune,
                 const bool gap_safe_active_start,
                 std::string log_hessian_update_type,
                 const arma::uword log_hessian_auto_update_freq,
@@ -615,6 +648,9 @@ lassoPathSparse(arma::sp_mat X,
                    standardize,
                    screening_type,
                    hessian_warm_starts,
+                   celer_use_old_dual,
+                   celer_use_accel,
+                   celer_prune,
                    gap_safe_active_start,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,

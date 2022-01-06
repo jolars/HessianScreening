@@ -1,10 +1,7 @@
 #pragma once
 
-#include <RcppArmadillo.h>
-
 #include "model.h"
-
-using namespace arma;
+#include <RcppArmadillo.h>
 
 template<typename T>
 void
@@ -16,9 +13,13 @@ updateHessian(arma::mat& H,
               arma::uvec& active_perm_prev,
               const std::unique_ptr<Model>& model,
               const T& X,
+              const arma::vec& X_offset,
+              const bool standardize,
               const bool verify_hessian,
-              const uword verbosity)
+              const arma::uword verbosity)
 {
+  using namespace arma;
+
   const uword n = X.n_rows;
 
   const uvec deactivate = setDiff(active_set_prev, active_set);
@@ -60,8 +61,9 @@ updateHessian(arma::mat& H,
               activate.n_elem);
     }
 
-    mat D = model->hessian(X, activate);
-    mat B = model->hessianUpperRight(X, active_perm_prev, activate);
+    mat D = model->hessian(X, activate, X_offset, standardize);
+    mat B = model->hessianUpperRight(
+      X, active_perm_prev, activate, X_offset, standardize);
     const mat S = symmatu(D - B.t() * Hinv * B);
 
     vec l;

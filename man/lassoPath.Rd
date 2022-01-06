@@ -10,19 +10,21 @@ lassoPath(
   family = c("gaussian", "binomial"),
   standardize = TRUE,
   screening_type = c("working", "hessian", "hessian_adaptive", "edpp", "gap_safe",
-    "strong"),
+    "strong", "celer"),
   hessian_warm_starts = TRUE,
+  celer_use_old_dual = TRUE,
+  celer_use_accel = TRUE,
+  celer_prune = FALSE,
   gap_safe_active_start = TRUE,
   log_hessian_update_type = c("full", "auto", "approx"),
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
   maxit = 1e+05,
-  tol_infeas = 1e-05,
-  tol_gap = 1e-04,
+  tol_gap = 1e-05,
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,
-  line_search = 2,
+  line_search = 3,
   verbosity = 0
 )
 }
@@ -49,8 +51,6 @@ updating the hessian for logistic regression}
 \item{path_length}{The (desired) length of the lasso path}
 
 \item{maxit}{Maximum number of iterations for Coordinate Descent loop}
-
-\item{tol_infeas}{Tolerance threshold for maximum infeasibility}
 
 \item{tol_gap}{Tolerance threshold for duality gap}
 

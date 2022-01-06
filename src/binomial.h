@@ -1,18 +1,14 @@
 #pragma once
 
+#include "model.h"
 #include <RcppArmadillo.h>
-
-#include "prox.h"
-#include "utils.h"
-
-using namespace arma;
 
 class Binomial : public Model
 {
 public:
-  vec expXbeta;
-  vec pr;
-  vec w;
+  arma::vec expXbeta;
+  arma::vec pr;
+  arma::vec w;
 
   std::string log_hessian_update_type;
 
@@ -20,244 +16,103 @@ public:
   const double p_max = 1 - p_min;
 
   Binomial(const std::string family,
-           vec& y,
-           vec& beta,
-           vec& residual,
-           vec& Xbeta,
-           vec& c,
-           const vec& X_mean_scaled,
-           const vec& X_norms_squared,
-           const uword n,
-           const uword p,
-           const bool standardize,
-           const std::string log_hessian_update_type)
-    : Model{ family,          y, beta, residual,   Xbeta, c, X_mean_scaled,
-             X_norms_squared, n, p,    standardize }
-    , expXbeta(y.n_elem, fill::zeros)
-    , pr(y.n_elem, fill::zeros)
-    , w(y.n_elem, fill::zeros)
-    , log_hessian_update_type{ log_hessian_update_type }
-  {}
+           const arma::uword n,
+           const std::string log_hessian_update_type);
 
-  void setLogHessianUpdateType(const std::string new_log_hessian_update_type)
-  {
-    log_hessian_update_type = new_log_hessian_update_type;
-  };
+  void setLogHessianUpdateType(const std::string new_log_hessian_update_type);
 
-  double primal(const double lambda, const uvec& screened_set)
-  {
-    return -sum(y % Xbeta - log1p(expXbeta)) +
-           lambda * norm(beta(screened_set), 1);
-  }
+  double primal(const arma::vec& residual,
+                const arma::vec& Xbeta,
+                const arma::vec& beta,
+                const arma::vec& y,
+                const double lambda);
 
-  double dual() { return -sum(pr % log(pr) + (1 - pr) % log(1 - pr)); }
+  double primal(const arma::vec& residual,
+                const arma::vec& Xbeta,
+                const arma::vec& beta,
+                const arma::vec& y,
+                const double lambda,
+                const arma::uvec& screened_set);
 
-  double scaledDual(const double lambda)
-  {
-    if (dual_scale == 0) {
-      return 0;
-    } else {
-      double alpha = lambda / dual_scale;
+  double dual(const arma::vec& theta, const arma::vec& y, const double lambda);
 
-      vec prx = clamp(y - alpha * residual, p_min, p_max);
+  double deviance(const arma::vec& residual,
+                  const arma::vec& Xbeta,
+                  const arma::vec& y);
 
-      return -sum(prx % log(prx) + (1 - prx) % log(1 - prx));
-    }
-  }
+  void updateResidual(arma::vec& residual,
+                      const arma::vec& Xbeta,
+                      const arma::vec& y);
 
-  double deviance() { return -2 * sum(y % Xbeta - log1p(expXbeta)); }
+  void adjustResidual(arma::vec& residual,
+                      arma::vec& Xbeta,
+                      const arma::mat& X,
+                      const arma::vec& y,
+                      const arma::uword j,
+                      const double beta_diff,
+                      const arma::vec& X_offset,
+                      const bool standardize);
 
-  double hessianTerm(const mat& X, const uword j)
-  {
-    return std::max(dot(square(X.col(j)), w), std::sqrt(datum::eps));
-  }
+  void adjustResidual(arma::vec& residual,
+                      arma::vec& Xbeta,
+                      const arma::sp_mat& X,
+                      const arma::vec& y,
+                      const arma::uword j,
+                      const double beta_diff,
+                      const arma::vec& X_offset,
+                      const bool standardize);
 
-  double hessianTerm(const sp_mat& X, const uword j)
-  {
-    double out = dot(square(X.col(j)), w);
+  arma::mat hessian(const arma::mat& X,
+                    const arma::uvec& ind,
+                    const arma::vec& X_offset,
+                    const bool standardize);
 
-    if (standardize) {
-      out += std::pow(X_mean_scaled(j), 2) * sum(w) -
-             2 * dot(X.col(j), w) * X_mean_scaled(j);
-    }
+  arma::mat hessian(const arma::sp_mat& X,
+                    const arma::uvec& ind,
+                    const arma::vec& X_offset,
+                    const bool standardize);
 
-    return std::max(out, std::sqrt(datum::eps));
-  }
+  arma::mat hessianUpperRight(const arma::mat& X,
+                              const arma::uvec& ind_a,
+                              const arma::uvec& ind_b,
+                              const arma::vec& X_offset,
+                              const bool standardize);
 
-  void updateResidual()
-  {
-    expXbeta = exp(Xbeta);
-    pr = clamp(expXbeta / (1 + expXbeta), p_min, p_max);
-    w = pr % (1 - pr);
-    residual = y - pr;
-  }
+  arma::mat hessianUpperRight(const arma::sp_mat& X,
+                              const arma::uvec& ind_a,
+                              const arma::uvec& ind_b,
+                              const arma::vec& X_offset,
+                              const bool standardize);
 
-  void adjustResidual(const mat& X, const uword j, const double beta_diff)
-  {
-    Xbeta += X.col(j) * beta_diff;
-    updateResidual();
-  }
+  double hessianTerm(const arma::mat& X,
+                     const arma::uword j,
+                     const arma::vec& X_offset,
+                     const bool standardize);
 
-  void adjustResidual(const sp_mat& X, const uword j, const double beta_diff)
-  {
-    Xbeta += X.col(j) * beta_diff;
+  double hessianTerm(const arma::sp_mat& X,
+                     const arma::uword j,
+                     const arma::vec& X_offset,
+                     const bool standardize);
 
-    if (standardize)
-      Xbeta -= X_mean_scaled(j) * beta_diff;
+  void updateGradientOfCorrelation(arma::vec& c_grad,
+                                   const arma::mat& X,
+                                   const arma::vec& Hinv_s,
+                                   const arma::vec& s,
+                                   const arma::uvec& active_set,
+                                   const arma::uvec& restricted_set,
+                                   const arma::vec& X_offset,
+                                   const bool standardize);
 
-    updateResidual();
-  }
+  void updateGradientOfCorrelation(arma::vec& c_grad,
+                                   const arma::sp_mat& X,
+                                   const arma::vec& Hinv_s,
+                                   const arma::vec& s,
+                                   const arma::uvec& active_set,
+                                   const arma::uvec& restricted_set,
+                                   const arma::vec& X_offset,
+                                   const bool standardize);
 
-  mat hessian(const mat& X, const uvec& ind)
-  {
-    if (log_hessian_update_type == "approx") {
-      return 0.25 * X.cols(ind).t() * X.cols(ind);
-    } else {
-      return X.cols(ind).t() * diagmat(w) * X.cols(ind);
-    }
-  }
+  void standardizeY(arma::vec& y);
 
-  mat hessian(const sp_mat& X, const uvec& ind)
-  {
-    if (log_hessian_update_type == "approx") {
-      mat H = conv_to<mat>::from(X.cols(ind).t() * X.cols(ind));
-
-      if (standardize)
-        H -= X.n_rows * X_mean_scaled(ind) * X_mean_scaled(ind).t();
-
-      H *= 0.25;
-
-      return H;
-    } else {
-      mat D = diagmat(w);
-      mat H = conv_to<mat>::from(X.cols(ind).t() * D * X.cols(ind));
-
-      if (standardize) {
-        mat XmDX = X_mean_scaled(ind) * sum(D * X.cols(ind), 0);
-        H += sum(w) * X_mean_scaled(ind) * X_mean_scaled(ind).t() - XmDX -
-             XmDX.t();
-      }
-
-      return H;
-    }
-  }
-
-  mat hessianUpperRight(const mat& X, const uvec& ind_a, const uvec& ind_b)
-  {
-    if (log_hessian_update_type == "approx") {
-      return 0.25 * X.cols(ind_a).t() * X.cols(ind_b);
-    } else {
-      return X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b);
-    }
-  }
-
-  mat hessianUpperRight(const sp_mat& X, const uvec& ind_a, const uvec& ind_b)
-  {
-    mat H(ind_a.n_elem, ind_b.n_elem);
-
-    if (log_hessian_update_type == "approx") {
-      if (ind_b.n_elem == 1) {
-        uword i = 0;
-        for (auto&& j : ind_a) {
-          H(i, 0) = dot(X.col(j), X.col(as_scalar(ind_b)));
-          i++;
-        }
-      } else {
-        H = X.cols(ind_a).t() * X.cols(ind_b);
-      }
-
-      if (standardize)
-        H -= X.n_rows * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t();
-
-      return 0.25 * H;
-
-    } else {
-      mat D = diagmat(w);
-
-      if (ind_b.n_elem == 1) {
-        uword i = 0;
-        sp_mat w_Xb = w % X.col(as_scalar(ind_b));
-        for (auto&& j : ind_a) {
-          H(i, 0) = dot(X.col(j), w_Xb);
-          i++;
-        }
-      } else {
-        H = X.cols(ind_a).t() * D * X.cols(ind_b);
-      }
-
-      if (standardize) {
-        mat XamDXb = X_mean_scaled(ind_a) * sum(D * X.cols(ind_b));
-        mat XbmDXa = X_mean_scaled(ind_b) * sum(D * X.cols(ind_a));
-        H += sum(w) * X_mean_scaled(ind_a) * X_mean_scaled(ind_b).t() -
-             XbmDXa.t() - XamDXb;
-      }
-    }
-
-    return H;
-  }
-
-  void updateGradientOfCorrelation(vec& c_grad,
-                                   const mat& X,
-                                   const vec& Hinv_s,
-                                   const vec& s,
-                                   const uvec& active_set,
-                                   const uvec& restricted_set)
-  {
-    uvec inactive_restricted = setDiff(restricted_set, active_set);
-
-    const vec tmp = w % (X.cols(active_set) * Hinv_s);
-
-    c_grad.zeros();
-
-    for (auto&& j : inactive_restricted) {
-      c_grad(j) = dot(X.unsafe_col(j), tmp);
-    }
-
-    c_grad(active_set) = s(active_set);
-  }
-
-  void updateGradientOfCorrelation(vec& c_grad,
-                                   const sp_mat& X,
-                                   const vec& Hinv_s,
-                                   const vec& s,
-                                   const uvec& active_set,
-                                   const uvec& restricted_set)
-  {
-    uvec inactive_restricted = setDiff(restricted_set, active_set);
-
-    const vec dsq = sqrt(w);
-
-    c_grad.zeros();
-
-    if (standardize) {
-      const mat Dsq = diagmat(dsq);
-      const mat Dsq_X = Dsq * X.cols(inactive_restricted);
-      const mat Dsq_Xa = Dsq * X.cols(active_set);
-
-      const mat dsq_mu = dsq * X_mean_scaled(inactive_restricted).t();
-      const mat dsq_mua_Hinv_s = dsq * (X_mean_scaled(active_set).t() * Hinv_s);
-      const mat Dsq_Xa_Hinv_s = Dsq_Xa * Hinv_s;
-
-      c_grad(inactive_restricted) =
-        Dsq_X.t() * (Dsq_Xa_Hinv_s - dsq_mua_Hinv_s) +
-        dsq_mu.t() * (dsq_mua_Hinv_s - Dsq_Xa_Hinv_s);
-
-    } else {
-      const vec tmp = w % (X.cols(active_set) * Hinv_s);
-
-      for (auto&& j : inactive_restricted) {
-        c_grad(j) = dot(X.col(j), tmp);
-      }
-    }
-
-    c_grad(active_set) = s(active_set);
-  }
-
-  void standardizeY() {}
-
-  double safeScreeningRadius(const double duality_gap, const double lambda)
-  {
-    return std::sqrt(2 * duality_gap) / (2 * lambda);
-  }
+  double safeScreeningRadius(const double duality_gap, const double lambda);
 };
-;

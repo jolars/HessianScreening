@@ -60,7 +60,7 @@ options(
 )
 
 file <- "figures/simulateddata-timings.tex"
-tikz(file, width = fw, height = 2.5, standAlone = TRUE)
+# tikz(file, width = fw, height = 2.5, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
   rel_time,
@@ -75,6 +75,6 @@ ggplot(d1, aes(
     y = "Time"
   ) +
   theme(legend.position = c(0.1, 0.7), legend.title = element_blank())
-dev.off()
+# dev.off()
 
-renderPdf("figures/simulateddata-timings.tex")
+# renderPdf("figures/simulateddata-timings.tex")

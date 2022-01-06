@@ -2,12 +2,10 @@
 
 #include <RcppArmadillo.h>
 
-using namespace arma;
-
 inline double
-squaredNorm(const vec& x)
+squaredNorm(const arma::vec& x)
 {
-  return std::pow(norm(x), 2);
+  return std::pow(arma::norm(x), 2);
 }
 
 template<typename T>
@@ -24,8 +22,8 @@ contains(const T& x, const S& what)
   return std::find(x.begin(), x.end(), what) != x.end();
 }
 
-inline uvec
-setUnion(const uvec& a, const uvec& b)
+inline arma::uvec
+setUnion(const arma::uvec& a, const arma::uvec& b)
 {
   std::vector<unsigned> out;
   out.reserve(a.n_elem + b.n_elem);
@@ -35,13 +33,13 @@ setUnion(const uvec& a, const uvec& b)
 
   out.shrink_to_fit();
 
-  return conv_to<uvec>::from(out);
+  return arma::conv_to<arma::uvec>::from(out);
 }
 
-inline uvec
-setDiff(const uvec& a, const uvec& b)
+inline arma::uvec
+setDiff(const arma::uvec& a, const arma::uvec& b)
 {
-  std::vector<uword> out;
+  std::vector<arma::uword> out;
   out.reserve(a.n_elem);
 
   std::set_difference(
@@ -49,13 +47,13 @@ setDiff(const uvec& a, const uvec& b)
 
   out.shrink_to_fit();
 
-  return conv_to<uvec>::from(out);
+  return arma::conv_to<arma::uvec>::from(out);
 }
 
-inline uvec
-setIntersect(const uvec& a, const uvec& b)
+inline arma::uvec
+setIntersect(const arma::uvec& a, const arma::uvec& b)
 {
-  std::vector<uword> out;
+  std::vector<arma::uword> out;
   out.reserve(std::min(a.n_elem, b.n_elem));
 
   std::set_intersection(
@@ -63,14 +61,14 @@ setIntersect(const uvec& a, const uvec& b)
 
   out.shrink_to_fit();
 
-  return conv_to<uvec>::from(out);
+  return arma::conv_to<arma::uvec>::from(out);
 }
 
 // set intersection that retains permutation in `a`
-inline uvec
-safeSetIntersect(const uvec& a, const uvec& b)
+inline arma::uvec
+safeSetIntersect(const arma::uvec& a, const arma::uvec& b)
 {
-  std::vector<uword> out;
+  std::vector<arma::uword> out;
   out.reserve(std::min(a.n_elem, b.n_elem));
 
   for (auto&& a_i : a) {
@@ -81,14 +79,14 @@ safeSetIntersect(const uvec& a, const uvec& b)
 
   out.shrink_to_fit();
 
-  return conv_to<uvec>::from(out);
+  return arma::conv_to<arma::uvec>::from(out);
 }
 
 // set difference that retains permutation in `a`
-inline uvec
-safeSetDiff(const uvec& a, const uvec& b)
+inline arma::uvec
+safeSetDiff(const arma::uvec& a, const arma::uvec& b)
 {
-  std::vector<uword> out;
+  std::vector<arma::uword> out;
   out.reserve(a.n_elem);
 
   for (auto&& a_i : a) {
@@ -99,67 +97,67 @@ safeSetDiff(const uvec& a, const uvec& b)
 
   out.shrink_to_fit();
 
-  return conv_to<uvec>::from(out);
+  return arma::conv_to<arma::uvec>::from(out);
 }
 
-inline vec
-matTransposeMultiply(const mat& A,
-                     const vec& b,
-                     const vec& offset,
+inline arma::vec
+matTransposeMultiply(const arma::mat& A,
+                     const arma::vec& b,
+                     const arma::vec& offset,
                      const bool standardize)
 {
   return A.t() * b;
 }
 
-inline vec
-matTransposeMultiply(const sp_mat& A,
-                     const vec& b,
-                     const vec& offset,
+inline arma::vec
+matTransposeMultiply(const arma::sp_mat& A,
+                     const arma::vec& b,
+                     const arma::vec& offset,
                      const bool standardize)
 {
-  vec Atb = A.t() * b;
+  arma::vec Atb = A.t() * b;
 
   if (standardize) {
-    Atb -= offset * sum(b);
+    Atb -= offset * arma::accu(b);
   }
 
   return Atb;
 }
 
-inline vec
-matTransposeMultiply(const mat& A,
-                     const vec& b,
-                     const uvec& ind,
-                     const vec& offset,
+inline arma::vec
+matTransposeMultiply(const arma::mat& A,
+                     const arma::vec& b,
+                     const arma::uvec& ind,
+                     const arma::vec& offset,
                      const bool standardize)
 {
   return A.cols(ind).t() * b;
 }
 
-inline vec
-matTransposeMultiply(const sp_mat& A,
-                     const vec& b,
-                     const uvec& ind,
-                     const vec& offset,
+inline arma::vec
+matTransposeMultiply(const arma::sp_mat& A,
+                     const arma::vec& b,
+                     const arma::uvec& ind,
+                     const arma::vec& offset,
                      const bool standardize)
 {
-  vec Atb = A.cols(ind).t() * b;
+  arma::vec Atb = A.cols(ind).t() * b;
 
   if (standardize) {
-    Atb -= offset * sum(b);
+    Atb -= offset * arma::accu(b);
   }
 
   return Atb;
 }
 
-double
-getSparsity(const mat& X)
+inline double
+getSparsity(const arma::mat& X)
 {
-  return 0;
+  return 0.0;
 }
 
-double
-getSparsity(const sp_mat& X)
+inline double
+getSparsity(const arma::sp_mat& X)
 {
-  return 1 - X.n_nonzero / X.n_elem;
+  return 1.0 - static_cast<double>(X.n_nonzero) / X.n_elem;
 }

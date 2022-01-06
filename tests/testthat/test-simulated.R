@@ -1,17 +1,18 @@
 test_that("gaussian and logistic models for simulated data", {
   library(HessianScreening)
-  library(glmnet)
 
   grid <- expand.grid(
     np = list(c(100, 5), c(50, 200)),
     density = c(0.5, 1),
-    screening_type = c("working", "hessian", "gap_safe"),
+    screening_type = c("working", "hessian", "gap_safe", "celer"),
     family = c("gaussian", "binomial"),
     standardize = c(FALSE),
     stringsAsFactors = FALSE
   )
 
-  for (i in 1:nrow(grid)) {
+  tol_gap <- 1e-4
+
+  for (i in seq_len(nrow(grid))) {
     set.seed(i)
 
     g <- grid[i, ]
@@ -22,6 +23,7 @@ test_that("gaussian and logistic models for simulated data", {
     family <- g$family
     standardize <- g$standardize
     screening_type <- g$screening_type
+    density <- g$density
 
     data <- generateDesign(
       n,
@@ -37,40 +39,22 @@ test_that("gaussian and logistic models for simulated data", {
       y <- y - mean(y)
     }
 
-    fit_glmnet <- glmnet(
-      X,
-      y,
-      family = family,
-      intercept = FALSE,
-      standardize = standardize,
-      thresh = 1e-9
-    )
-
-    fit_ours <- lassoPath(
+    fit <- lassoPath(
       X,
       y,
       family,
+      verbosity = 0,
       screening_type = screening_type,
-      standardize = standardize
+      standardize = standardize,
+      tol_gap = tol_gap,
+      celer_use_old_dual = FALSE,
+      celer_use_accel = TRUE,
+      celer_prune = FALSE
     )
 
-    n_lambda <- min(length(fit_glmnet$lambda), length(fit_ours$lambda))
+    gaps <- duality_gaps(fit, family, standardize, X, y)$gaps
 
-    glmnet_lambda <- fit_glmnet$lambda[1:n_lambda] * n
-    ours_lambda <- fit_ours$lambda[1:n_lambda]
+    expect_true(all(gaps <= tol_gap))
 
-    expect_equal(glmnet_lambda, ours_lambda)
-
-    glmnet_beta <- as.matrix(fit_glmnet$beta[, 1:n_lambda])
-    ours_beta <- fit_ours$beta[, 1:n_lambda]
-
-    glmnet_devratio <- fit_glmnet$dev.ratio[1:n_lambda]
-    ours_devratio <- fit_ours$dev_ratio[1:n_lambda]
-
-    expect_equal(glmnet_devratio, ours_devratio, tolerance = 1e-3)
-
-    if (n > p) {
-      expect_equal(ours_beta, glmnet_beta, ignore_attr = TRUE, tolerance = 1e-2)
-    }
   }
 })
