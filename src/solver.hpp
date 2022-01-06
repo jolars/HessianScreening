@@ -43,9 +43,9 @@ fit(arma::uvec& screened,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  const uword check_frequency = 10;
-
-  double tol_gap_rel_inner = tol_gap_rel;
+  // const uword check_frequency = screening_type == "hessian" ? 1 : 10;
+  const uword check_frequency = n > p ? 2 : 10;
+  const uword screen_frequency = 10;
 
   if (screening_type == "celer" || screening_type == "gap_safe")
     screened.fill(true);
@@ -60,8 +60,10 @@ fit(arma::uvec& screened,
   vec theta = residual / dual_scale;
   double dual_value = model->dual(theta, y, lambda);
 
+  double gap_eps = 1.0;
+
   double duality_gap = primal_value - dual_value;
-  double duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+  double duality_gap_rel = duality_gap / std::max(gap_eps, primal_value);
 
   double duality_gap_rel_prev = duality_gap_rel;
 
@@ -94,10 +96,10 @@ fit(arma::uvec& screened,
 
   vec t(p, fill::ones); // learning rates
 
-  const uword screen_frequency = 10;
-
   double n_screened = 0;
   uword it = 0;
+
+  double tol_gap_rel_inner = tol_gap_rel;
 
   if (!screened_set.is_empty()) {
     updateLinearPredictor(Xbeta, X, beta, X_offset, standardize, screened_set);
@@ -109,11 +111,6 @@ fit(arma::uvec& screened,
       }
 
       if (screening_type == "gap_safe" && it % screen_frequency == 0) {
-        if (it > 0) {
-          updateLinearPredictor(
-            Xbeta, X, beta, X_offset, standardize, screened_set);
-          model->updateResidual(residual, Xbeta, y);
-        }
         updateCorrelation(c, residual, X, screened_set, X_offset, standardize);
 
         double primal_value =
@@ -123,8 +120,7 @@ fit(arma::uvec& screened,
         theta = residual / dual_scale; // feasible dual point
         dual_value = model->dual(theta, y, lambda);
 
-        duality_gap = primal_value - dual_value;
-        duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+        duality_gap_rel = duality_gap / std::max(gap_eps, primal_value);
 
         if (verbosity >= 2)
           Rprintf("      global primal: %f, global dual: %f, global gap: %f\n",
@@ -193,19 +189,18 @@ fit(arma::uvec& screened,
           }
 
           duality_gap = primal_value - dual_value;
-          duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+          duality_gap_rel = duality_gap / std::max(gap_eps, primal_value);
 
           if (verbosity >= 2) {
             Rprintf(
-              "      global primal: %f, global dual: %f, global rel_gap: %f\n",
+              "      global primal: %f, global dual: %f, global gap: %f\n",
               primal_value,
               dual_value,
               duality_gap_rel);
           }
 
-          if (duality_gap_rel <= tol_gap_rel) {
+          if (duality_gap_rel <= tol_gap_rel)
             break;
-          }
 
           vec d(p);
           d.fill(datum::inf);
@@ -431,7 +426,6 @@ fit(arma::uvec& screened,
                 if (line_search < 3)
                   t(j) /= b;
               }
-
             } else {
               beta(j) = beta_j_old + v;
               model->adjustResidual(residual,
@@ -468,7 +462,7 @@ fit(arma::uvec& screened,
         dual_value = model->dual(theta, y, lambda);
 
         duality_gap = primal_value - dual_value;
-        duality_gap_rel = duality_gap / std::max(1.0, primal_value);
+        duality_gap_rel = duality_gap / std::max(gap_eps, primal_value);
 
         if (screening_type == "celer" && celer_use_accel && it >= K) {
           // use dual extrapolation
@@ -502,7 +496,7 @@ fit(arma::uvec& screened,
         }
 
         if (verbosity >= 2)
-          Rprintf("      primal: %f, dual: %f, rel_gap: %f\n",
+          Rprintf("      primal: %f, dual: %f, gap: %f\n",
                   primal_value,
                   dual_value,
                   duality_gap_rel);
@@ -523,7 +517,9 @@ fit(arma::uvec& screened,
         duality_gap_rel_prev = duality_gap_rel;
       }
 
-      Rcpp::checkUserInterrupt();
+      if (it % 10 == 0) {
+        Rcpp::checkUserInterrupt();
+      }
     }
   } else {
     beta.zeros();
