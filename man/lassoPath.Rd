@@ -20,7 +20,7 @@ lassoPath(
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
   maxit = 1e+05,
-  tol_gap = 1e-05,
+  tol_gap = 1e-04,
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,

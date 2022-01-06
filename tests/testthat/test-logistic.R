@@ -13,7 +13,7 @@ test_that("test logistic regression on real data", {
     x <- d$X
     y <- d$y
 
-    for (screening_type in c("working", "hessian", "gap_safe", "celer")) {
+    for (screening_type in c("working", "hessian", "celer", "gap_safe")) {
       fit <- lassoPath(
         x,
         y,
@@ -22,18 +22,13 @@ test_that("test logistic regression on real data", {
         standardize = standardize,
         tol_gap = tol_gap,
         celer_use_accel = FALSE,
-        celer_use_old_dual = FALSE
+        celer_use_old_dual = FALSE,
+        verbosity = 0
       )
 
-      gaps <- duality_gaps(
-        fit,
-        "binomial",
-        standardize = standardize,
-        x,
-        y
-      )$gaps
+      gaps <- check_gaps(fit, "binomial", standardize, x, y, tol_gap)
 
-      expect_true(all(gaps <= tol_gap))
+      expect_true(all(gaps$below_tol))
     }
   }
 })

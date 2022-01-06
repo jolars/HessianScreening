@@ -68,8 +68,13 @@ lassoPath(T& X,
   const bool hessian_type_screening =
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
-  // double tol_gap_rel = tol_gap * std::pow(norm(y), 2) / y.n_elem;
   double tol_gap_rel = tol_gap;
+
+  // if (family == "gaussian") {
+  //   tol_gap_rel = tol_gap * std::pow(norm(y), 2);
+  // } else if (family == "binomial") {
+  //   tol_gap_rel = tol_gap * n * std::log(2);
+  // }
 
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
@@ -111,7 +116,7 @@ lassoPath(T& X,
   model->updateResidual(residual, Xbeta, y);
   updateCorrelation(c, residual, X, X_offset, standardize);
 
-  const double lambda_min_ratio = n < p ? 0.01 : 1e-4;
+  const double lambda_min_ratio = n < p ? 1e-2 : 1e-4;
   const double lambda_max = max(abs(c));
   const double lambda_min = lambda_max * lambda_min_ratio;
 
