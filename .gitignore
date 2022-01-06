@@ -49,3 +49,4 @@ vignettes/*.pdf
 README.html
 
 src/.cache
+src/compile_commands.json
