@@ -22,7 +22,8 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
       "hessian" = "Hessian",
       "working" = "Working",
       "gap_safe" = "Gap Safe",
-      "edpp" = "EDPP"
+      "edpp" = "EDPP",
+      "celer" = "Celer"
     ),
     rho = as.factor(rho),
     np = paste0("$n=", n, "$, $p=", p, "$"),

@@ -12,7 +12,11 @@ g <- expand_grid(
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
-  screening_type = c("hessian", "working", "celer", "edpp", "gap_safe"),
+  screening_type = c(
+    "hessian",
+    "working",
+    "celer"
+  ),
   path_length = 100,
   avg_screened = NA,
   avg_violations = NA,
@@ -24,7 +28,7 @@ g <- expand_grid(
 
 n_it <- 2
 
-tol_gap <- 1e-4
+tol_gap <- 1e-5
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -73,8 +77,10 @@ for (i in seq_len(nrow(g))) {
       log_hessian_update_type = "full",
       verbosity = 0,
       gamma = 0.01,
-      line_search = 3,
-      tol_gap = tol_gap
+      line_search = 0,
+      tol_gap = tol_gap,
+      celer_use_accel = FALSE,
+      celer_use_old_dual = TRUE
     )
 
     n_lambda <- length(fit$lambda)
