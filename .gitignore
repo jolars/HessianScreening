@@ -47,3 +47,5 @@ vignettes/*.pdf
 /_research/
 
 README.html
+
+src/.cache
