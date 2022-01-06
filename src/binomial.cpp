@@ -312,5 +312,5 @@ Binomial::standardizeY(arma::vec& y)
 double
 Binomial::safeScreeningRadius(const double duality_gap, const double lambda)
 {
-  return std::sqrt(2 * duality_gap) / lambda;
+  return std::sqrt(0.5 * duality_gap) / lambda;
 }
