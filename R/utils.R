@@ -66,11 +66,13 @@ binomial_dual <- function(x, y, beta, lambda) {
 #'
 #' @return primals, duals, and relative duality gaps
 #' @export
-duality_gaps <- function(fit, family, standardize, x, y) {
+check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
   beta <- fit$beta
   lambda <- fit$lambda
 
   duals <- primals <- double(length(lambda))
+
+  n <- length(y)
 
   for (i in seq_along(duals)) {
     if (family == "gaussian") {
@@ -82,9 +84,17 @@ duality_gaps <- function(fit, family, standardize, x, y) {
     }
   }
 
+  tol_gap_rel <- if (family == "gaussian") {
+    tol_gap * norm(y, "2")^2 
+  } else if (family == "binomial") {
+    tol_gap * n * log(2)
+  }
+
   list(
     primals = primals,
     duals = duals,
-    gaps = (primals - duals) / pmax(1, primals)
+    gaps = primals - duals,
+    tol = tol_gap_rel,
+    below_tol = (primals - duals) <= tol_gap_rel
   )
 }

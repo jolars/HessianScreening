@@ -4,7 +4,7 @@ test_that("gaussian and logistic models for simulated data", {
   grid <- expand.grid(
     np = list(c(100, 5), c(50, 200)),
     density = c(0.5, 1),
-    screening_type = c("working", "hessian", "gap_safe", "celer"),
+    screening_type = c("working", "hessian", "celer"),
     family = c("gaussian", "binomial"),
     standardize = c(FALSE),
     stringsAsFactors = FALSE
@@ -52,9 +52,8 @@ test_that("gaussian and logistic models for simulated data", {
       celer_prune = FALSE
     )
 
-    gaps <- duality_gaps(fit, family, standardize, X, y)$gaps
+    gaps <- check_gaps(fit, family, standardize, X, y, tol_gap)
 
-    expect_true(all(gaps <= tol_gap))
-
+    expect_true(all(gaps$below_tol))
   }
 })
