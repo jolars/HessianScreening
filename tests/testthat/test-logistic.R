@@ -13,7 +13,7 @@ test_that("test logistic regression on real data", {
     x <- d$X
     y <- d$y
 
-    for (screening_type in c("working", "hessian", "celer")) {
+    for (screening_type in c("working", "hessian", "celer", "gap_safe")) {
       fit <- lassoPath(
         x,
         y,

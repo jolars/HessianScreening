@@ -84,17 +84,11 @@ check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
     }
   }
 
-  tol_gap_rel <- if (family == "gaussian") {
-    tol_gap * norm(y, "2")^2 
-  } else if (family == "binomial") {
-    tol_gap * n * log(2)
-  }
-
   list(
     primals = primals,
     duals = duals,
     gaps = primals - duals,
-    tol = tol_gap_rel,
-    below_tol = (primals - duals) <= tol_gap_rel
+    rel_gaps = (primals - duals) / pmax(1, primals),
+    below_tol = (primals - duals) / pmax(1, primals) <= tol_gap
   )
 }
