@@ -83,6 +83,12 @@ Gaussian::adjustResidual(arma::vec& residual,
     residual += X_offset(j) * beta_diff;
 }
 
+arma::vec
+Gaussian::weights(const arma::vec& residual, const arma::vec& y)
+{
+  return arma::ones<arma::vec>(y.n_elem);
+}
+
 arma::mat
 Gaussian::hessian(const arma::mat& X,
                   const arma::uvec& ind,

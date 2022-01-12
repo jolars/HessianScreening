@@ -98,7 +98,7 @@ lassoPath(T& X,
   vec X_norms_squared(p);
 
   if (family == "gaussian" || screening_type == "gap_safe" ||
-      screening_type == "celer") {
+      screening_type == "celer" || screening_type == "blitz") {
     if (!standardize) {
       X_norms_squared = colNormsSquared(X);
     } else {
@@ -190,9 +190,9 @@ lassoPath(T& X,
   const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
 
-  bool check_kkt =
-    (screening_type != "gap_safe" && screening_type != "celer") ||
-    force_kkt_check;
+  bool check_kkt = (screening_type != "gap_safe" && screening_type != "celer" &&
+                    screening_type != "blitz") ||
+                   force_kkt_check;
 
   std::string screening_type_temp = screening_type;
 

@@ -68,8 +68,7 @@ Binomial::hessianTerm(const arma::mat& X,
                       const arma::vec& X_offset,
                       const bool standardize)
 {
-  return std::max(arma::dot(arma::square(X.col(j)), w),
-                  std::sqrt(arma::datum::eps));
+  return arma::dot(arma::square(X.col(j)), w);
 }
 
 double
@@ -85,7 +84,7 @@ Binomial::hessianTerm(const arma::sp_mat& X,
            2 * arma::dot(X.col(j), w) * X_offset(j);
   }
 
-  return std::max(out, std::sqrt(arma::datum::eps));
+  return out;
 }
 
 void
@@ -129,6 +128,14 @@ Binomial::adjustResidual(arma::vec& residual,
     Xbeta -= X_offset(j) * beta_diff;
 
   updateResidual(residual, Xbeta, y);
+}
+
+arma::vec
+Binomial::weights(const arma::vec& residual, const arma::vec& y)
+{
+  const arma::vec pr = y - residual;
+
+  return pr % (1 - pr);
 }
 
 arma::mat

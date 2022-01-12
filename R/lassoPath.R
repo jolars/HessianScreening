@@ -35,7 +35,8 @@ lassoPath <- function(X,
                         "edpp",
                         "gap_safe",
                         "strong",
-                        "celer"
+                        "celer",
+                        "blitz"
                       ),
                       hessian_warm_starts = TRUE,
                       celer_use_old_dual = TRUE,
