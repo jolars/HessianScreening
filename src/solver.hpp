@@ -701,12 +701,6 @@ fit(arma::uvec& screened,
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        // if (screening_type == "blitz") {
-        //   updateLinearPredictor(
-        //     Xbeta, X, beta, X_offset, standardize, working_set);
-        //   model->updateResidual(residual, Xbeta, y);
-        // }
-
         if (screening_type != "blitz" && line_search != 4) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
