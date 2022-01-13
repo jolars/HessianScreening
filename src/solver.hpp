@@ -127,7 +127,6 @@ fit(arma::uvec& screened,
   wall_clock timer;
   timer.tic();
 
-  double t_start = timer.toc();
   double cd_time = 0;
   double kkt_time = 0;
 
