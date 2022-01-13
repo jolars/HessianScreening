@@ -55,8 +55,14 @@ fit(arma::uvec& screened,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  // const uword check_frequency = screening_type == "hessian" ? 1 : 10;
-  const uword CHECK_FREQUENCY = n > p ? 2 : 10;
+  uword check_frequency = 10;
+
+  if (screening_type == "hessian") {
+    check_frequency = 2;
+  } else if (screening_type == "blitz") {
+    check_frequency = 1;
+  }
+
   const uword SCREEN_FREQUENCY = 10;
 
   if (screening_type == "celer" || screening_type == "gap_safe" ||
@@ -72,6 +78,7 @@ fit(arma::uvec& screened,
 
   double primal_value =
     model->primal(residual, Xbeta, beta, y, lambda, screened_set);
+  double primal_value_prev = datum::inf;
 
   double dual_scale = std::max(lambda, max(abs(c)));
   vec theta = residual / dual_scale;
@@ -83,14 +90,13 @@ fit(arma::uvec& screened,
 
   double duality_gap = primal_value - dual_value;
   double duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
-
-  double duality_gap_rel_prev = duality_gap_rel;
+  double duality_gap_rel_prev = datum::inf;
 
   bool inner_solver_converged = true;
   bool progress = true;
   double dual_scale_old = dual_scale;
   double dual_value_old = dual_value;
-  double primal_value_prev = primal_value;
+
   uword ws_size = ws_size_init;
   vec c_old(p);
   vec d(p);
@@ -160,6 +166,9 @@ fit(arma::uvec& screened,
           kkt_time += timer.toc() - t0;
 
           if (any(violations)) {
+            if (verbosity >= 2)
+              Rprintf("    violations encountered\n");
+
             n_refits += 1;
             n_violations += sum(violations);
             screened_set = find(screened);
@@ -437,20 +446,23 @@ fit(arma::uvec& screened,
 
         for (uword it_inner = 0; it_inner < max_cd_itr; ++it_inner) {
 
-          if (shuffle || !progress) {
-            uvec perm = randperm(ws_size);
+          //           if (shuffle || !progress) {
+          //             uvec perm = randperm(ws_size);
 
-            working_set = working_set(perm);
-            delta_beta = delta_beta(perm);
-            prox_newton_grad_cache = prox_newton_grad_cache(perm);
-            hess_cache = hess_cache(perm);
-          }
+          //             working_set = working_set(perm);
+          //             delta_beta = delta_beta(perm);
+          //             prox_newton_grad_cache = prox_newton_grad_cache(perm);
+          //             hess_cache = hess_cache(perm);
+          //           }
 
           double sum_sq_hess_diff = 0;
 
           for (uword j = 0; j < ws_size; ++j) {
             uword ind = working_set(j);
             double hess_j = hess_cache(j);
+
+            if (hess_j <= 0)
+              continue;
 
             double grad = prox_newton_grad_cache(j) +
                           weightedInnerProduct(
@@ -575,7 +587,7 @@ fit(arma::uvec& screened,
 
       inner_solver_converged = false;
 
-      if (screening_type != "gap_safe" && it % CHECK_FREQUENCY == 0) {
+      if (screening_type != "gap_safe" && it % check_frequency == 0) {
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
@@ -631,28 +643,30 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
+        if (line_search) {
+          // line search should ensure progress, so if primal value increases,
+          // then the limit of machine precision must have been reached
+          if (primal_value >= primal_value_prev)
+            inner_solver_converged = true;
+        }
+
+        progress = duality_gap_rel < duality_gap_rel_prev;
+
+        if (!progress && verbosity >= 2)
+          Rprintf("      no progress; shuffling indices\n");
+
         if (inner_solver_converged) {
           if (verbosity >= 2)
             Rprintf("      inner solver converged\n");
 
           first_inner_iteration = true;
-        }
-
-        if (line_search) {
-          if (primal_value >= primal_value_prev)
-            inner_solver_converged = true;
-
+          progress = true;
+          primal_value_prev = datum::inf;
+          duality_gap_rel_prev = datum::inf;
+        } else {
+          duality_gap_rel_prev = duality_gap_rel;
           primal_value_prev = primal_value;
         }
-
-        if (!first_inner_iteration) {
-          progress = duality_gap_rel < duality_gap_rel_prev;
-
-          if (!progress && verbosity >= 2)
-            Rprintf("      no progress; shuffling indices\n");
-        }
-
-        duality_gap_rel_prev = duality_gap_rel;
       }
 
       if (it % 10 == 0) {
