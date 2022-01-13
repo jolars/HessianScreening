@@ -509,7 +509,6 @@ fit(arma::uvec& screened,
                                       X_offset,
                                       standardize);
                 beta_j_prev = beta(j);
-                Rcpp::checkUserInterrupt();
               }
               if (t(j) < 1) {
                 if (line_search < 3)
@@ -604,8 +603,6 @@ fit(arma::uvec& screened,
               it_inner + 1 >= MIN_PROX_NEWTON_CD_ITR) {
             break;
           }
-
-          Rcpp::checkUserInterrupt();
         }
 
         double t = 1;
@@ -641,8 +638,6 @@ fit(arma::uvec& screened,
             last_t = t;
             t *= 0.5;
           }
-
-          Rcpp::checkUserInterrupt();
         }
 
         // cache gradients for next iteration
@@ -664,8 +659,6 @@ fit(arma::uvec& screened,
           double diff = actual_grad - approximate_grad;
           prox_newton_grad_diff += diff * diff;
         }
-
-        Rcpp::checkUserInterrupt();
       }
 
       if (line_search == 0 && screening_type != "blitz") {
