@@ -104,9 +104,6 @@ fit(arma::uvec& screened,
     residual_prev = residual;
   }
 
-  // test objects
-  vec residual_test = residual;
-
   vec XTcenter(p);
 
   vec t(p, fill::ones); // learning rates
