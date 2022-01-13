@@ -313,6 +313,8 @@ fit(arma::uvec& screened,
           if (it > 0) {
             ws_size = std::min(2 * active_set.n_elem, p);
 
+            // TODO(jolars): This kind of hurts performance for blitz
+            // in quite a few occasions. Should it be removed?
             if (ws_size < 100)
               ws_size = 100;
           }
@@ -662,7 +664,9 @@ fit(arma::uvec& screened,
       }
 
       if (line_search == 0 && screening_type != "blitz") {
-        // no line search
+        if (shuffle || !progress)
+          working_set = arma::shuffle(working_set);
+
         for (auto&& j : working_set) {
           updateCorrelation(c, residual, X, j, X_offset, standardize);
           double hess_j = model->hessianTerm(X, j, X_offset, standardize);
@@ -698,13 +702,16 @@ fit(arma::uvec& screened,
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        if (screening_type == "blitz") {
-          updateLinearPredictor(
-            Xbeta, X, beta, X_offset, standardize, working_set);
-          model->updateResidual(residual, Xbeta, y);
-        }
+        // if (screening_type == "blitz") {
+        //   updateLinearPredictor(
+        //     Xbeta, X, beta, X_offset, standardize, working_set);
+        //   model->updateResidual(residual, Xbeta, y);
+        // }
 
-        updateCorrelation(c, residual, X, working_set, X_offset, standardize);
+        if (screening_type != "blitz" || line_search == 4) {
+          // correlation vector is always updated at end of line search
+          updateCorrelation(c, residual, X, working_set, X_offset, standardize);
+        }
 
         dual_scale = std::max(lambda, max(abs(c(working_set))));
         theta = residual / dual_scale;
@@ -762,18 +769,14 @@ fit(arma::uvec& screened,
         }
 
         if (inner_solver_converged && screening_type != "celer" &&
-            screening_type != "blitz") {
+            screening_type != "blitz")
           break;
-        }
 
-        if (duality_gap_rel >= duality_gap_rel_prev) {
-          if (verbosity >= 2) {
-            Rprintf("      no progress; shuffling indices\n");
-          }
-          progress = false;
-        } else {
-          progress = true;
-        }
+        progress = duality_gap_rel < duality_gap_rel_prev;
+        duality_gap_rel_prev = duality_gap_rel;
+
+        if (!progress && verbosity >= 2)
+          Rprintf("      no progress; shuffling indices\n");
 
         duality_gap_rel_prev = duality_gap_rel;
       }
