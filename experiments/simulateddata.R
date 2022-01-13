@@ -77,7 +77,7 @@ for (i in seq_len(nrow(g))) {
       log_hessian_update_type = "full",
       verbosity = 0,
       gamma = 0.01,
-      line_search = 0,
+      line_search = FALSE,
       tol_gap = tol_gap,
       celer_use_accel = FALSE,
       celer_use_old_dual = TRUE

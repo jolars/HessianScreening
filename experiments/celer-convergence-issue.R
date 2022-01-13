@@ -16,7 +16,7 @@ if (family != "binomial") {
 n <- nrow(X)
 p <- ncol(X)
 verbosity <- 2
-line_search <- 3
+line_search <- FALSE
 tol_gap <- 1e-4
 maxit <- 1e7
 standardize <- FALSE
@@ -25,7 +25,7 @@ fit_celer <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "celer",
+  screening_type = "blitz",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,
