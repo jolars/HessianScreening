@@ -235,5 +235,5 @@ Gaussian::standardizeY(arma::vec& y)
 double
 Gaussian::safeScreeningRadius(const double duality_gap, const double lambda)
 {
-  return std::sqrt(2 * duality_gap) / lambda;
+  return std::sqrt(2 * std::max(duality_gap, 0.0)) / lambda;
 }

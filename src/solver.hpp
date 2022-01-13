@@ -104,8 +104,6 @@ fit(arma::uvec& screened,
     residual_prev = residual;
   }
 
-  vec XTcenter(p);
-
   vec t(p, fill::ones); // learning rates
 
   double n_screened = 0;
@@ -144,9 +142,8 @@ fit(arma::uvec& screened,
         if (duality_gap_rel <= tol_gap_rel)
           break;
 
-        XTcenter = c / dual_scale;
         double r_screen =
-          model->safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
+          model->safeScreeningRadius(duality_gap, lambda);
 
         safeScreening(screened,
                       screened_set,
@@ -154,7 +151,7 @@ fit(arma::uvec& screened,
                       residual,
                       Xbeta,
                       beta,
-                      XTcenter,
+                      c / dual_scale,
                       r_screen,
                       model,
                       X,
@@ -237,9 +234,8 @@ fit(arma::uvec& screened,
                     screened_set.n_elem);
           }
 
-          XTcenter = c / dual_scale;
           double r_screen =
-            model->safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
+            model->safeScreeningRadius(duality_gap, lambda);
 
           safeScreening(screened,
                         screened_set,
@@ -247,7 +243,7 @@ fit(arma::uvec& screened,
                         residual,
                         Xbeta,
                         beta,
-                        XTcenter,
+                        c / dual_scale,
                         r_screen,
                         model,
                         X,
@@ -311,9 +307,7 @@ fit(arma::uvec& screened,
             //   ws_size = 100;
           }
 
-          XTcenter = c / dual_scale;
-          double r_screen =
-            model->safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
+          double r_screen = model->safeScreeningRadius(duality_gap, lambda);
 
           safeScreening(screened,
                         screened_set,
@@ -321,7 +315,7 @@ fit(arma::uvec& screened,
                         residual,
                         Xbeta,
                         beta,
-                        XTcenter,
+                        c / dual_scale,
                         r_screen,
                         model,
                         X,
