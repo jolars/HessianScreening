@@ -36,7 +36,7 @@ fit(arma::uvec& screened,
     const arma::uword step,
     const arma::uword maxit,
     const double tol_gap_rel,
-    const bool line_search,
+    const int line_search,
     const arma::uword ws_size_init,
     const arma::uword verbosity)
 {
@@ -103,6 +103,10 @@ fit(arma::uvec& screened,
     residual_old = residual;
     residual_prev = residual;
   }
+
+  // line search parameters
+  const double a = 0.1;
+  const double b = 0.5;
 
   // test objects
   vec residual_test = residual;
@@ -348,7 +352,185 @@ fit(arma::uvec& screened,
 
       n_screened += screened_set.n_elem;
 
-      if (line_search) {
+      if (line_search == 3 && screening_type != "blitz") {
+        for (auto&& j : working_set) {
+          updateCorrelation(c, residual, X, j, X_offset, standardize);
+          double hess_j = model->hessianTerm(X, j, X_offset, standardize);
+
+          double beta_j_old = beta(j);
+          double v =
+            prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
+
+          if (v != 0) {
+            if (model->family == "binomial" && line_search > 0) {
+              // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
+              // “Proximal Newton-type methods for minimizing composite
+              // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
+              // Accessed: Jan. 12, 2020. [Online]. Available:
+              // http://arxiv.org/abs/1206.1623)
+
+              double primal_value_old =
+                model->primal(residual, Xbeta, beta, y, lambda, working_set);
+
+              while (true) {
+                double beta_j_prev = beta(j);
+
+                beta(j) = beta_j_old + t(j) * v;
+                model->adjustResidual(residual,
+                                      Xbeta,
+                                      X,
+                                      y,
+                                      j,
+                                      beta(j) - beta_j_prev,
+                                      X_offset,
+                                      standardize);
+
+                primal_value =
+                  model->primal(residual, Xbeta, beta, y, lambda, working_set);
+
+                double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
+                                                   std::abs(beta_j_old));
+
+                if (primal_value * (1 - std::sqrt(datum::eps)) <=
+                    primal_value_old + a * t(j) * eta) {
+                  break;
+                } else {
+                  t(j) *= b;
+                }
+
+                Rcpp::checkUserInterrupt();
+              }
+            } else {
+              beta(j) = beta_j_old + v;
+              model->adjustResidual(residual,
+                                    Xbeta,
+                                    X,
+                                    y,
+                                    j,
+                                    beta(j) - beta_j_old,
+                                    X_offset,
+                                    standardize);
+            }
+          }
+        }
+      } else if (line_search > 0 && screening_type != "blitz") {
+        for (auto&& j : working_set) {
+
+          updateCorrelation(c, residual, X, j, X_offset, standardize);
+          double hess_j = model->hessianTerm(X, j, X_offset, standardize);
+          double beta_j_old = beta(j);
+          double v =
+            prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
+
+          if (v != 0) {
+            if (model->family == "binomial" && line_search > 0) {
+              // line search
+              bool do_line_search = false;
+              double primal_value_old;
+
+              if (line_search == 1) {
+                primal_value_old =
+                  model->primal(residual, Xbeta, beta, y, lambda, working_set);
+                do_line_search = true;
+              }
+
+              // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
+              // “Proximal Newton-type methods for minimizing composite
+              // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
+              // Accessed: Jan. 12, 2020. [Online]. Available:
+              // http://arxiv.org/abs/1206.1623)
+              beta(j) = beta_j_old + t(j) * v;
+              double c_j_old = c(j);
+              double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
+                                                 std::abs(beta_j_old));
+              model->adjustResidual(residual,
+                                    Xbeta,
+                                    X,
+                                    y,
+                                    j,
+                                    beta(j) - beta_j_old,
+                                    X_offset,
+                                    standardize);
+
+              double beta_j_prev = beta(j);
+
+              if (line_search == 2) {
+                updateCorrelation(c, residual, X, j, X_offset, standardize);
+                if (std::max(c_j_old, c(j)) - std::min(c_j_old, c(j)) >
+                    lambda_prev - lambda) {
+                  if (verbosity >= 2) {
+                    Rprintf(
+                      "    linesearch type 2 at iter: %i, index: %i t: %e\n",
+                      it + 1,
+                      j,
+                      t(j));
+                  }
+                  do_line_search = true;
+                  model->adjustResidual(residual,
+                                        Xbeta,
+                                        X,
+                                        y,
+                                        j,
+                                        beta(j) - beta_j_old,
+                                        X_offset,
+                                        standardize);
+                  beta(j) = beta_j_old;
+
+                  primal_value_old = model->primal(
+                    residual, Xbeta, beta, y, lambda, working_set);
+                  beta(j) = beta_j_old + t(j) * v;
+                  model->adjustResidual(residual,
+                                        Xbeta,
+                                        X,
+                                        y,
+                                        j,
+                                        beta(j) - beta_j_old,
+                                        X_offset,
+                                        standardize);
+                }
+              }
+
+              while (do_line_search) {
+                primal_value =
+                  model->primal(residual, Xbeta, beta, y, lambda, working_set);
+
+                if (primal_value * (1 - std::sqrt(datum::eps)) <=
+                    primal_value_old + a * t(j) * eta) {
+                  break;
+                } else {
+                  t(j) *= b;
+                }
+                beta(j) = beta_j_old + t(j) * v;
+                model->adjustResidual(residual,
+                                      Xbeta,
+                                      X,
+                                      y,
+                                      j,
+                                      beta(j) - beta_j_prev,
+                                      X_offset,
+                                      standardize);
+                beta_j_prev = beta(j);
+              }
+              if (t(j) < 1) {
+                if (line_search < 3)
+                  t(j) /= b;
+              }
+            } else {
+              beta(j) = beta_j_old + v;
+              model->adjustResidual(residual,
+                                    Xbeta,
+                                    X,
+                                    y,
+                                    j,
+                                    beta(j) - beta_j_old,
+                                    X_offset,
+                                    standardize);
+            }
+          }
+        }
+      }
+
+      if (screening_type == "blitz" || line_search == 4) {
         // this code is based on https://github.com/tbjohns/BlitzL1 as of
         // 2022-01-12, which is licensed under the MIT license, Copyright
         // Tyler B. Johnson 2015
@@ -478,7 +660,9 @@ fit(arma::uvec& screened,
           double diff = actual_grad - approximate_grad;
           prox_newton_grad_diff += diff * diff;
         }
-      } else {
+      }
+
+      if (line_search == 0 && screening_type != "blitz") {
         if (shuffle || !progress)
           working_set = arma::shuffle(working_set);
 
@@ -517,7 +701,7 @@ fit(arma::uvec& screened,
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        if (line_search) {
+        if (screening_type != "blitz" && line_search != 4) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
         }
@@ -569,7 +753,7 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
-        if (line_search) {
+        if (line_search == 4 || screening_type == "blitz") {
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
 

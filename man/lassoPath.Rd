@@ -25,7 +25,7 @@ lassoPath(
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,
-  line_search = FALSE,
+  line_search = 0,
   verbosity = 0
 )
 }
