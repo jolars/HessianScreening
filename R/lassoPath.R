@@ -1,5 +1,7 @@
 #' Lasso Path with Hessian Screening Rules
 #'
+#' This function fits the full lasso path.
+#'
 #' @param X The predictor matrix
 #' @param y The reponse vector
 #' @param family The name of the family, "gaussian" or "logistic"
@@ -14,13 +16,15 @@
 #'   `log_hessian_update_type = "auto"`
 #' @param path_length The (desired) length of the lasso path
 #' @param maxit Maximum number of iterations for Coordinate Descent loop
-#' @param tol_gap Tolerance threshold for duality gap
+#' @param tol_gap Tolerance threshold for relative duality gap.
 #' @param gamma Percent of strong approximation to add to Hessian approximation
 #' @param verify_hessian Whether to not to verify that Hessian updates are
 #'   correct. Used only for diagnostic purposes.
 #' @param force_kkt_check Whether to force KKT checks even when screening rule
 #'   is safe
-#' @param line_search Use line search when `family = "binomial"`
+#' @param line_search Use line search in CD solver. For Blitz, the line search
+#'   is always used (irrespective of input to this argument). For other solvers,
+#'   it is used only if this argument is > 0 and the family is Binomial.
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
 #' @export
@@ -35,8 +39,10 @@ lassoPath <- function(X,
                         "edpp",
                         "gap_safe",
                         "strong",
-                        "celer"
+                        "celer",
+                        "blitz"
                       ),
+                      shuffle = match.arg(screening_type) == "blitz",
                       hessian_warm_starts = TRUE,
                       celer_use_old_dual = TRUE,
                       celer_use_accel = TRUE,
@@ -70,6 +76,7 @@ lassoPath <- function(X,
       family,
       standardize,
       screening_type,
+      shuffle,
       hessian_warm_starts,
       celer_use_old_dual,
       celer_use_accel,
@@ -93,6 +100,7 @@ lassoPath <- function(X,
       family,
       standardize,
       screening_type,
+      shuffle,
       hessian_warm_starts,
       celer_use_old_dual,
       celer_use_accel,

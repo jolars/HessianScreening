@@ -30,7 +30,7 @@ safeScreening(arma::uvec& screened,
       continue;
     }
 
-    if (std::abs(XTcenter(j)) + r_normX_j + datum::eps < 1) {
+    if (std::abs(XTcenter(j)) + r_normX_j + std::sqrt(datum::eps) < 1) {
       // predictor must be zero; update residual and remove from screened set
       if (beta(j) != 0) {
         model->adjustResidual(

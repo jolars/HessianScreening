@@ -24,6 +24,7 @@ lassoPath(T& X,
           const std::string family,
           const bool standardize,
           const std::string screening_type,
+          const bool shuffle,
           const bool hessian_warm_starts,
           const bool celer_use_old_dual,
           const bool celer_use_accel,
@@ -70,12 +71,6 @@ lassoPath(T& X,
 
   double tol_gap_rel = tol_gap;
 
-  // if (family == "gaussian") {
-  //   tol_gap_rel = tol_gap * std::pow(norm(y), 2);
-  // } else if (family == "binomial") {
-  //   tol_gap_rel = tol_gap * n * std::log(2);
-  // }
-
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
   vec Xbeta(n, fill::zeros);
@@ -98,7 +93,7 @@ lassoPath(T& X,
   vec X_norms_squared(p);
 
   if (family == "gaussian" || screening_type == "gap_safe" ||
-      screening_type == "celer") {
+      screening_type == "celer" || screening_type == "blitz") {
     if (!standardize) {
       X_norms_squared = colNormsSquared(X);
     } else {
@@ -190,9 +185,9 @@ lassoPath(T& X,
   const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
 
-  bool check_kkt =
-    (screening_type != "gap_safe" && screening_type != "celer") ||
-    force_kkt_check;
+  bool check_kkt = (screening_type != "gap_safe" && screening_type != "celer" &&
+                    screening_type != "blitz") ||
+                   force_kkt_check;
 
   std::string screening_type_temp = screening_type;
 
@@ -264,6 +259,7 @@ lassoPath(T& X,
             lambda_max,
             active_set.n_elem,
             screening_type_temp,
+            shuffle,
             celer_use_old_dual,
             celer_use_accel,
             celer_prune,
@@ -586,6 +582,7 @@ lassoPathDense(arma::mat X,
                const std::string family,
                const bool standardize,
                const std::string screening_type,
+               const bool shuffle,
                const bool hessian_warm_starts,
                const bool celer_use_old_dual,
                const bool celer_use_accel,
@@ -607,6 +604,7 @@ lassoPathDense(arma::mat X,
                    family,
                    standardize,
                    screening_type,
+                   shuffle,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,
@@ -631,6 +629,7 @@ lassoPathSparse(arma::sp_mat X,
                 const std::string family,
                 const bool standardize,
                 const std::string screening_type,
+                const bool shuffle,
                 const bool hessian_warm_starts,
                 const bool celer_use_old_dual,
                 const bool celer_use_accel,
@@ -652,6 +651,7 @@ lassoPathSparse(arma::sp_mat X,
                    family,
                    standardize,
                    screening_type,
+                   shuffle,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,

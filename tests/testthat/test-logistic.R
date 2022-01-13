@@ -5,6 +5,7 @@ test_that("test logistic regression on real data", {
 
   tol_gap <- 1e-3
   standardize <- FALSE
+  screening_types <- c("working", "hessian", "celer", "gap_safe", "blitz")
 
   for (dataset in datalist) {
 
@@ -13,7 +14,7 @@ test_that("test logistic regression on real data", {
     x <- d$X
     y <- d$y
 
-    for (screening_type in c("working", "hessian", "celer", "gap_safe")) {
+    for (screening_type in screening_types) {
       fit <- lassoPath(
         x,
         y,

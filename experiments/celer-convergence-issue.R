@@ -1,13 +1,11 @@
 library(HessianScreening)
-library(readr)
 
 set.seed(3)
 
 family <- "binomial"
-density <- 0.3
 
 set.seed(14)
-d <- generateDesign(100, 3, family = family, density = density)
+d <- generateDesign(1000, 100, family = family)
 X <- d$X
 y <- d$y
 
@@ -17,17 +15,17 @@ if (family != "binomial") {
 
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 1
-line_search <- 0
+verbosity <- 2
+line_search <- 3
 tol_gap <- 1e-4
-maxit <- 1e4
+maxit <- 1e7
 standardize <- FALSE
 
 fit_celer <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "blitz",
+  screening_type = "celer",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,
@@ -38,14 +36,8 @@ fit_celer <- lassoPath(
   maxit = maxit
 )
 
-lambda <- fit_celer$lambda
+real_gaps <- duality_gaps(fit_celer, family, standardize, X, y)$gaps
 
-y_celer <- ifelse(y == 1, 1, -1)
+celer_gaps <- (fit_celer$primals - fit_celer$duals) / fit_celer$primals
 
-real_gaps <- check_gaps(fit_celer, family, standardize, X, y, tol_gap)
-
-# celer_gaps <- (fit_celer$primals - fit_celer$duals) / fit_celer$primals
-
-# print(cbind(real_gaps$gaps, celer_gaps))
-
-print(real_gaps)
+print(cbind(real_gaps, celer_gaps))

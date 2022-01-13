@@ -9,7 +9,8 @@ test_that("gaussian and logistic models for simulated data", {
       "hessian",
       "celer",
       "gap_safe",
-      "edpp"
+      "edpp",
+      "blitz"
     ),
     family = c("gaussian", "binomial"),
     standardize = c(FALSE),

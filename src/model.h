@@ -57,6 +57,8 @@ public:
                               const arma::vec& X_offset,
                               const bool standardize) = 0;
 
+  virtual arma::vec weights(const arma::vec& residual, const arma::vec& y) = 0;
+
   virtual arma::mat hessian(const arma::mat& X,
                             const arma::uvec& ind,
                             const arma::vec& X_offset,
