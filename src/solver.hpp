@@ -708,7 +708,7 @@ fit(arma::uvec& screened,
         //   model->updateResidual(residual, Xbeta, y);
         // }
 
-        if (screening_type != "blitz" || line_search == 4) {
+        if (screening_type != "blitz" && line_search != 4) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
         }
@@ -760,7 +760,7 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
-        if (line_search == 4) {
+        if (line_search == 4 || screening_type == "blitz") {
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
 
