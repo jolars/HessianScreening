@@ -24,6 +24,7 @@ lassoPath(T& X,
           const std::string family,
           const bool standardize,
           const std::string screening_type,
+          const bool shuffle,
           const bool hessian_warm_starts,
           const bool celer_use_old_dual,
           const bool celer_use_accel,
@@ -69,12 +70,6 @@ lassoPath(T& X,
     screening_type == "hessian" || screening_type == "hessian_adaptive";
 
   double tol_gap_rel = tol_gap;
-
-  // if (family == "gaussian") {
-  //   tol_gap_rel = tol_gap * std::pow(norm(y), 2);
-  // } else if (family == "binomial") {
-  //   tol_gap_rel = tol_gap * n * std::log(2);
-  // }
 
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
@@ -264,6 +259,7 @@ lassoPath(T& X,
             lambda_max,
             active_set.n_elem,
             screening_type_temp,
+            shuffle,
             celer_use_old_dual,
             celer_use_accel,
             celer_prune,
@@ -586,6 +582,7 @@ lassoPathDense(arma::mat X,
                const std::string family,
                const bool standardize,
                const std::string screening_type,
+               const bool shuffle,
                const bool hessian_warm_starts,
                const bool celer_use_old_dual,
                const bool celer_use_accel,
@@ -607,6 +604,7 @@ lassoPathDense(arma::mat X,
                    family,
                    standardize,
                    screening_type,
+                   shuffle,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,
@@ -631,6 +629,7 @@ lassoPathSparse(arma::sp_mat X,
                 const std::string family,
                 const bool standardize,
                 const std::string screening_type,
+                const bool shuffle,
                 const bool hessian_warm_starts,
                 const bool celer_use_old_dual,
                 const bool celer_use_accel,
@@ -652,6 +651,7 @@ lassoPathSparse(arma::sp_mat X,
                    family,
                    standardize,
                    screening_type,
+                   shuffle,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,

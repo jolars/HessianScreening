@@ -27,6 +27,7 @@ fit(arma::uvec& screened,
     const double lambda_max,
     const arma::uword n_active_prev,
     const std::string screening_type,
+    const bool shuffle,
     const bool celer_use_old_dual,
     const bool celer_use_accel,
     const bool celer_prune,
@@ -73,6 +74,7 @@ fit(arma::uvec& screened,
 
   // blitz and celer parameters
   bool inner_solver_converged = true;
+  bool progress = true;
   double dual_scale_old = dual_scale;
   double dual_value_old = dual_value;
   double primal_value_prev = primal_value;
@@ -94,7 +96,6 @@ fit(arma::uvec& screened,
   const uword MAX_PROX_NEWTON_CD_ITR = 20;
   const double PROX_NEWTON_EPSILON_RATIO = 10;
   const uword MIN_PROX_NEWTON_CD_ITR = 2;
-  vec prox_newton_grad_cache(p);
   bool first_prox_newton_iteration = true;
   double prox_newton_grad_diff = 0;
 
@@ -533,9 +534,12 @@ fit(arma::uvec& screened,
         // this code is based on https://github.com/tbjohns/BlitzL1 as of
         // 2022-01-12, which is licensed under the MIT license, Copyright
         // Tyler B. Johnson 2015
-        vec delta_beta(p, fill::zeros);
+        ws_size = working_set.n_elem;
+
         vec X_delta_beta(n, fill::zeros);
-        vec hess_cache(p, fill::zeros);
+        vec delta_beta(ws_size, fill::zeros);
+        vec hess_cache(ws_size);
+        vec prox_newton_grad_cache(ws_size);
 
         double prox_newton_epsilon = 0;
 
@@ -543,8 +547,9 @@ fit(arma::uvec& screened,
 
         w = model->weights(residual, y);
 
-        for (auto&& j : working_set) {
-          hess_cache(j) = model->hessianTerm(X, j, X_offset, standardize);
+        for (uword j = 0; j < ws_size; ++j) {
+          uword ind = working_set(j);
+          hess_cache(j) = model->hessianTerm(X, ind, X_offset, standardize);
         }
 
         if (first_prox_newton_iteration) {
@@ -553,7 +558,7 @@ fit(arma::uvec& screened,
           prox_newton_grad_diff = 0;
 
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
-          prox_newton_grad_cache(working_set) = -c(working_set);
+          prox_newton_grad_cache = -c(working_set);
         } else {
           prox_newton_epsilon =
             PROX_NEWTON_EPSILON_RATIO * prox_newton_grad_diff;
@@ -561,27 +566,36 @@ fit(arma::uvec& screened,
 
         for (uword it_inner = 0; it_inner < max_cd_itr; ++it_inner) {
 
-          working_set = shuffle(working_set);
+          if (shuffle || !progress) {
+            uvec perm = randperm(ws_size);
+
+            working_set = working_set(perm);
+            delta_beta = delta_beta(perm);
+            prox_newton_grad_cache = prox_newton_grad_cache(perm);
+            hess_cache = hess_cache(perm);
+          }
 
           double sum_sq_hess_diff = 0;
 
-          for (auto&& j : working_set) {
+          for (uword j = 0; j < ws_size; ++j) {
+            uword ind = working_set(j);
             double hess_j = hess_cache(j);
 
             double grad = prox_newton_grad_cache(j) +
                           weightedInnerProduct(
-                            X, j, X_delta_beta, w, X_offset, standardize);
+                            X, ind, X_delta_beta, w, X_offset, standardize);
 
-            double old_value = beta(j) + delta_beta(j);
+            double old_value = beta(ind) + delta_beta(j);
             double proposal = old_value - grad / hess_j;
             double new_value = prox(proposal, lambda / hess_j);
             double diff = new_value - old_value;
 
             if (diff != 0) {
-              delta_beta(j) = new_value - beta(j);
+              delta_beta(j) = new_value - beta(ind);
 
               // X_delta_beta += X.col(j) * diff;
-              addScaledColumn(X_delta_beta, X, j, diff, X_offset, standardize);
+              addScaledColumn(
+                X_delta_beta, X, ind, diff, X_offset, standardize);
               sum_sq_hess_diff += diff * diff * hess_j * hess_j;
             }
           }
@@ -603,12 +617,13 @@ fit(arma::uvec& screened,
 
           double subgrad_t = 0;
 
-          for (auto&& j : working_set) {
-            beta(j) += diff_t * delta_beta(j);
+          for (uword j = 0; j < ws_size; ++j) {
+            uword ind = working_set(j);
+            beta(ind) += diff_t * delta_beta(j);
 
-            if (beta(j) < 0)
+            if (beta(ind) < 0)
               subgrad_t -= lambda * delta_beta(j);
-            else if (beta(j) > 0)
+            else if (beta(ind) > 0)
               subgrad_t += lambda * delta_beta(j);
             else
               subgrad_t -= lambda * std::abs(delta_beta(j));
@@ -637,11 +652,13 @@ fit(arma::uvec& screened,
 
         updateCorrelation(c, residual, X, working_set, X_offset, standardize);
 
-        for (auto&& j : working_set) {
-          double actual_grad = -c(j);
+        for (uword j = 0; j < ws_size; ++j) {
+          uword ind = working_set(j);
+
+          double actual_grad = -c(ind);
           double approximate_grad =
             prox_newton_grad_cache(j) +
-            weightedInnerProduct(X, j, X_delta_beta, w, X_offset, standardize);
+            weightedInnerProduct(X, ind, X_delta_beta, w, X_offset, standardize);
 
           prox_newton_grad_cache(j) = actual_grad;
           double diff = actual_grad - approximate_grad;
@@ -743,9 +760,7 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
-        if (screening_type == "blitz") {
-          if (duality_gap_rel <= tol_gap_rel_inner)
-            inner_solver_converged = true;
+        if (line_search == 4) {
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
 
@@ -762,7 +777,9 @@ fit(arma::uvec& screened,
           if (verbosity >= 2) {
             Rprintf("      no progress; shuffling indices\n");
           }
-          working_set = shuffle(working_set);
+          progress = false;
+        } else {
+          progress = true;
         }
 
         duality_gap_rel_prev = duality_gap_rel;
