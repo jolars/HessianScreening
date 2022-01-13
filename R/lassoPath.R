@@ -22,9 +22,7 @@
 #'   correct. Used only for diagnostic purposes.
 #' @param force_kkt_check Whether to force KKT checks even when screening rule
 #'   is safe
-#' @param line_search Use line search in CD solver. For Blitz, the line search
-#'   is always used (irrespective of input to this argument). For other solvers,
-#'   it is used only if this argument is > 0 and the family is Binomial.
+#' @param line_search Use line search in CD solver.
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
 #' @export
@@ -56,7 +54,7 @@ lassoPath <- function(X,
                       gamma = 0.01,
                       verify_hessian = FALSE,
                       force_kkt_check = FALSE,
-                      line_search = 0,
+                      line_search = match.arg(screening_type) == "blitz",
                       verbosity = 0) {
   family <- match.arg(family)
   screening_type <- match.arg(screening_type)

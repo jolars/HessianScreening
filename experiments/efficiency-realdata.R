@@ -64,7 +64,7 @@ for (i in seq_len(nrow(g))) {
     verbosity = 0,
     gap_safe_active_start = FALSE,
     log_hessian_update_type = log_hessian_update_type,
-    line_search = 3
+    line_search = FALSE
   )
 
   g$n[i] <- n

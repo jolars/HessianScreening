@@ -72,7 +72,7 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       verbosity = 0,
       log_hessian_update_type = log_hessian_update_type,
-      line_search = 3
+      line_search = FALSE
     )
 
     time[k] <- fit$full_time
