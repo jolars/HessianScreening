@@ -1,5 +1,6 @@
 #pragma once
 
+#include "kktCheck.h"
 #include "linearAlgebra.h"
 #include "model.h"
 #include "safeScreening.h"
@@ -9,7 +10,15 @@
 #include <RcppArmadillo.h>
 
 template<typename T>
-std::tuple<double, double, double, arma::uword, double>
+std::tuple<double,
+           double,
+           double,
+           arma::uword,
+           double,
+           arma::uword,
+           arma::uword,
+           double,
+           double>
 fit(arma::uvec& screened,
     arma::vec& c,
     arma::vec& residual,
@@ -22,6 +31,8 @@ fit(arma::uvec& screened,
     const arma::vec& X_offset,
     const bool standardize,
     const arma::uvec& active_set,
+    const arma::uvec& strong_set,
+    const arma::uvec& duplicated,
     const double lambda,
     const double lambda_prev,
     const double lambda_max,
@@ -32,7 +43,6 @@ fit(arma::uvec& screened,
     const bool celer_use_accel,
     const bool celer_prune,
     const bool gap_safe_active_start,
-    const bool first_run,
     const arma::uword step,
     const arma::uword maxit,
     const double tol_gap_rel,
@@ -53,8 +63,12 @@ fit(arma::uvec& screened,
       screening_type == "blitz")
     screened.fill(true);
 
-  uvec screened_set = find(screened);
+  uvec screened_set = find(screened && duplicated == false);
   uvec working_set = screened_set;
+  uvec violations(p);
+
+  uword n_refits{ 0 };
+  uword n_violations{ 0 };
 
   double primal_value =
     model->primal(residual, Xbeta, beta, y, lambda, screened_set);
@@ -72,7 +86,6 @@ fit(arma::uvec& screened,
 
   double duality_gap_rel_prev = duality_gap_rel;
 
-  // blitz and celer parameters
   bool inner_solver_converged = true;
   bool progress = true;
   double dual_scale_old = dual_scale;
@@ -91,12 +104,12 @@ fit(arma::uvec& screened,
   vec residual_prev;
   vec z(K);
 
-  // blitz parameters
+  // line search paramters
   const uword MAX_BACKTRACK_ITR = 20;
   const uword MAX_PROX_NEWTON_CD_ITR = 20;
   const double PROX_NEWTON_EPSILON_RATIO = 10;
   const uword MIN_PROX_NEWTON_CD_ITR = 2;
-  bool first_prox_newton_iteration = true;
+  bool first_inner_iteration = true;
   double prox_newton_grad_diff = 0;
 
   if (screening_type == "celer") {
@@ -110,55 +123,103 @@ fit(arma::uvec& screened,
   uword it = 0;
   double tol_gap_rel_inner = tol_gap_rel;
 
+  // timing
+  wall_clock timer;
+  timer.tic();
+
+  double t_start = timer.toc();
+  double cd_time = 0;
+  double kkt_time = 0;
+
   if (!screened_set.is_empty()) {
     updateLinearPredictor(Xbeta, X, beta, X_offset, standardize, screened_set);
     model->updateResidual(residual, Xbeta, y);
 
     while (it < maxit) {
       if (verbosity >= 2) {
-        Rprintf("    iter: %i\n", it + 2);
+        Rprintf("    iter: %i\n", it + 1);
       }
 
-      if (screening_type == "gap_safe" && it % SCREEN_FREQUENCY == 0) {
-        updateCorrelation(c, residual, X, screened_set, X_offset, standardize);
+      if (screening_type == "hessian" || screening_type == "edpp" ||
+          screening_type == "working") {
+        if (inner_solver_converged && it > 0) {
+          double t0 = timer.toc();
+          uvec unscreened_set = find(screened == false && duplicated == false);
 
-        primal_value =
-          model->primal(residual, Xbeta, beta, y, lambda, screened_set);
+          violations.fill(false);
 
-        dual_scale = std::max(lambda, max(abs(c(screened_set))));
-        theta = residual / dual_scale;
-        dual_value = model->dual(theta, y, lambda);
-        duality_gap = primal_value - dual_value;
+          uvec check_set = setIntersect(unscreened_set, strong_set);
+          updateCorrelation(c, residual, X, check_set, X_offset, standardize);
+          kktCheck(violations, screened, c, check_set, lambda);
 
-        duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
+          if (!any(violations)) {
+            uvec check_set = setDiff(unscreened_set, strong_set);
+            updateCorrelation(c, residual, X, check_set, X_offset, standardize);
+            kktCheck(violations, screened, c, check_set, lambda);
+          }
 
-        if (verbosity >= 2) {
-          Rprintf("      global primal: %f, global dual: %f, global gap: %f\n",
-                  primal_value,
-                  dual_value,
-                  duality_gap_rel);
+          kkt_time += timer.toc() - t0;
+
+          if (any(violations)) {
+            n_refits += 1;
+            n_violations += sum(violations);
+            screened_set = find(screened);
+            working_set = screened_set;
+          } else {
+            break;
+          }
         }
+      }
 
-        if (duality_gap_rel <= tol_gap_rel)
-          break;
+      if (screening_type == "gap_safe") {
+        if (it == 0 && gap_safe_active_start) {
+          working_set = active_set;
+        } else if (it % SCREEN_FREQUENCY ==
+                   (0 + static_cast<unsigned>(gap_safe_active_start))) {
+          double t0 = timer.toc();
+          updateCorrelation(
+            c, residual, X, screened_set, X_offset, standardize);
 
-        double r_screen =
-          model->safeScreeningRadius(duality_gap, lambda);
+          primal_value =
+            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
 
-        safeScreening(screened,
-                      screened_set,
-                      c,
-                      residual,
-                      Xbeta,
-                      beta,
-                      c / dual_scale,
-                      r_screen,
-                      model,
-                      X,
-                      y,
-                      X_offset,
-                      standardize,
-                      X_norms_squared);
+          dual_scale = std::max(lambda, max(abs(c(screened_set))));
+          theta = residual / dual_scale;
+          dual_value = model->dual(theta, y, lambda);
+          duality_gap = primal_value - dual_value;
+
+          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
+
+          if (verbosity >= 2) {
+            Rprintf(
+              "      global primal: %f, global dual: %f, global gap: %f\n",
+              primal_value,
+              dual_value,
+              duality_gap_rel);
+          }
+
+          kkt_time += timer.toc() - t0;
+
+          if (duality_gap_rel <= tol_gap_rel)
+            break;
+
+          double r_screen = model->safeScreeningRadius(duality_gap, lambda);
+
+          safeScreening(screened,
+                        screened_set,
+                        c,
+                        residual,
+                        Xbeta,
+                        beta,
+                        c / dual_scale,
+                        r_screen,
+                        model,
+                        X,
+                        y,
+                        X_offset,
+                        standardize,
+                        X_norms_squared);
+        }
       }
 
       if (screening_type == "celer") {
@@ -234,8 +295,7 @@ fit(arma::uvec& screened,
                     screened_set.n_elem);
           }
 
-          double r_screen =
-            model->safeScreeningRadius(duality_gap, lambda);
+          double r_screen = model->safeScreeningRadius(duality_gap, lambda);
 
           safeScreening(screened,
                         screened_set,
@@ -339,6 +399,8 @@ fit(arma::uvec& screened,
 
       n_screened += screened_set.n_elem;
 
+      double t0 = timer.toc();
+
       if (line_search) {
         // this code is based on https://github.com/tbjohns/BlitzL1 as of
         // 2022-01-12, which is licensed under the MIT license, Copyright
@@ -361,13 +423,14 @@ fit(arma::uvec& screened,
           hess_cache(j) = model->hessianTerm(X, ind, X_offset, standardize);
         }
 
-        if (first_prox_newton_iteration) {
+        if (first_inner_iteration) {
           max_cd_itr = MIN_PROX_NEWTON_CD_ITR;
-          first_prox_newton_iteration = false;
           prox_newton_grad_diff = 0;
 
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
           prox_newton_grad_cache = -c(working_set);
+
+          first_inner_iteration = false;
         } else {
           prox_newton_epsilon =
             PROX_NEWTON_EPSILON_RATIO * prox_newton_grad_diff;
@@ -463,15 +526,20 @@ fit(arma::uvec& screened,
           double actual_grad = -c(ind);
           double approximate_grad =
             prox_newton_grad_cache(j) +
-            weightedInnerProduct(X, ind, X_delta_beta, w, X_offset, standardize);
+            weightedInnerProduct(
+              X, ind, X_delta_beta, w, X_offset, standardize);
 
           prox_newton_grad_cache(j) = actual_grad;
           double diff = actual_grad - approximate_grad;
           prox_newton_grad_diff += diff * diff;
         }
       } else {
-        if (shuffle || !progress)
-          working_set = arma::shuffle(working_set);
+        if (first_inner_iteration) {
+          first_inner_iteration = false;
+        } else {
+          if (shuffle || !progress)
+            working_set = arma::shuffle(working_set);
+        }
 
         for (auto&& j : working_set) {
           updateCorrelation(c, residual, X, j, X_offset, standardize);
@@ -494,6 +562,8 @@ fit(arma::uvec& screened,
         }
       }
 
+      kkt_time += timer.toc() - t0;
+
       if (screening_type == "celer" && celer_use_accel) {
         U = join_horiz(U.tail_cols(K - 1), residual - residual_prev);
 
@@ -503,6 +573,8 @@ fit(arma::uvec& screened,
       }
 
       it++;
+
+      inner_solver_converged = false;
 
       if (screening_type != "gap_safe" && it % CHECK_FREQUENCY == 0) {
         primal_value =
@@ -560,23 +632,26 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
+        if (inner_solver_converged) {
+          if (verbosity >= 2)
+            Rprintf("      inner solver converged\n");
+
+          first_inner_iteration = true;
+        }
+
         if (line_search) {
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
 
           primal_value_prev = primal_value;
-          first_prox_newton_iteration = true;
         }
 
-        if (inner_solver_converged && screening_type != "celer" &&
-            screening_type != "blitz")
-          break;
+        if (!first_inner_iteration) {
+          progress = duality_gap_rel < duality_gap_rel_prev;
 
-        progress = duality_gap_rel < duality_gap_rel_prev;
-        duality_gap_rel_prev = duality_gap_rel;
-
-        if (!progress && verbosity >= 2)
-          Rprintf("      no progress; shuffling indices\n");
+          if (!progress && verbosity >= 2)
+            Rprintf("      no progress; shuffling indices\n");
+        }
 
         duality_gap_rel_prev = duality_gap_rel;
       }
@@ -591,5 +666,6 @@ fit(arma::uvec& screened,
 
   double avg_screened = n_screened / (it + 1);
 
-  return { primal_value, dual_value, duality_gap, it + 1, avg_screened };
+  return { primal_value, dual_value, duality_gap, it + 1,  avg_screened,
+           n_violations, n_refits,   cd_time,     kkt_time };
 }

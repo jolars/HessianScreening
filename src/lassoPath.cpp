@@ -167,8 +167,6 @@ lassoPath(T& X,
   uvec strong = active;
   uvec strong_set = find(strong);
 
-  uvec violations(p, fill::zeros);
-
   uvec active_perm = find(active);
   uvec active_perm_prev = active_perm;
   uvec active_set = active_perm;
@@ -185,18 +183,18 @@ lassoPath(T& X,
   const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
 
-  bool check_kkt = (screening_type != "gap_safe" && screening_type != "celer" &&
-                    screening_type != "blitz") ||
-                   force_kkt_check;
+  // bool check_kkt = (screening_type != "gap_safe" && screening_type != "celer" &&
+  //                   screening_type != "blitz") ||
+  //                  force_kkt_check;
 
   std::string screening_type_temp = screening_type;
 
-  std::vector<double> it_times;
-  std::vector<double> cd_times;
-  std::vector<double> kkt_times;
-  std::vector<double> gradcorr_times;
-  std::vector<double> hess_times;
-  std::vector<double> duplicates_times;
+  std::vector<double> cd_time;
+  std::vector<double> duplicates_time;
+  std::vector<double> gradcorr_time;
+  std::vector<double> hess_time;
+  std::vector<double> it_time;
+  std::vector<double> kkt_time;
 
   wall_clock timer;
   timer.tic();
@@ -208,132 +206,109 @@ lassoPath(T& X,
   while (true) {
     i++;
 
-    double it_time = timer.toc();
+    double it_time_i = timer.toc();
 
     if (verbosity >= 1) {
       Rprintf("step: %i, lambda: %.2f\n", i, lambda);
     }
 
-    vec beta_prev = beta;
+    // double cd_time = 0;
     double dev_prev = dev;
-    uword n_passes_i_sum = 0;
-    uword n_violations_i = 0;
-    uword n_refits_i = 0;
-    bool first_run = true;
+    // double kkt_time = 0;
+    // uword n_passes_i = 0;
+    // uword n_refits_i = 0;
+    // uword n_violations_i = 0;
+    vec beta_prev = beta;
 
-    double cd_time = 0;
-    double hess_time = 0;
-    double kkt_time = 0;
-
-    while (true) {
-      if (verbosity >= 1) {
-        Rprintf("  running coordinate descent\n");
-      }
-
-      double t0 = timer.toc();
-
-      if (first_run && screening_type != "gap_safe") {
-        n_screened.emplace_back(sum(screened));
-      } else if (first_run && screening_type == "gap_safe" &&
-                 gap_safe_active_start) {
-        screening_type_temp = "working";
-      } else {
-        screening_type_temp = screening_type;
-      }
-
-      auto [primal_value, dual_value, duality_gap, n_passes_i, avg_screened] =
-        fit(screened,
-            c,
-            residual,
-            Xbeta,
-            beta,
-            model,
-            X,
-            y,
-            X_norms_squared,
-            X_offset,
-            standardize,
-            active_set_prev,
-            lambda,
-            lambda_prev,
-            lambda_max,
-            active_set.n_elem,
-            screening_type_temp,
-            shuffle,
-            celer_use_old_dual,
-            celer_use_accel,
-            celer_prune,
-            gap_safe_active_start,
-            first_run,
-            i,
-            maxit,
-            tol_gap_rel,
-            line_search,
-            ws_size_init,
-            verbosity);
-
-      cd_time += timer.toc() - t0;
-
-      n_passes_i_sum += n_passes_i;
-
-      if (n_passes_i >= maxit) {
-        Rcpp::warning("the solver did not converge.");
-      }
-
-      if (screening_type == "gap_safe" &&
-          !(first_run && gap_safe_active_start)) {
-        n_screened.push_back(avg_screened);
-      }
-
-      t0 = timer.toc();
-
-      if (check_kkt && !(screening_type == "gap_safe" && first_run)) {
-        uvec unscreened_set = find(screened == false && duplicated == false);
-
-        violations.fill(false);
-
-        if (screening_type == "strong" || screening_type == "edpp") {
-          updateCorrelation(
-            c, residual, X, unscreened_set, X_offset, standardize);
-          kktCheck(violations, screened, c, unscreened_set, lambda);
-
-        } else {
-          uvec check_set = setIntersect(unscreened_set, strong_set);
-          updateCorrelation(c, residual, X, check_set, X_offset, standardize);
-          kktCheck(violations, screened, c, check_set, lambda);
-
-          if (!any(violations)) {
-            uvec check_set = setDiff(unscreened_set, strong_set);
-            updateCorrelation(c, residual, X, check_set, X_offset, standardize);
-            kktCheck(violations, screened, c, check_set, lambda);
-          }
-        }
-      }
-
-      kkt_time += timer.toc() - t0;
-
-      n_violations_i += sum(violations);
-
-      if (!any(violations) && !(screening_type == "gap_safe" &&
-                                gap_safe_active_start && first_run)) {
-        duals.emplace_back(dual_value);
-        primals.emplace_back(primal_value);
-        n_passes.emplace_back(n_passes_i_sum);
-        n_refits.emplace_back(n_refits_i);
-        n_violations.emplace_back(n_violations_i);
-        lambdas.emplace_back(lambda);
-        cd_times.emplace_back(cd_time);
-        kkt_times.emplace_back(kkt_time);
-
-        break;
-      } else {
-        n_refits_i++;
-      }
-
-      first_run = false;
-
-      Rcpp::checkUserInterrupt();
+    if (verbosity >= 1) {
+      Rprintf("  running coordinate descent\n");
     }
+
+    //     double t0 = timer.toc();
+
+    //     if (first_run && screening_type != "gap_safe") {
+    //       n_screened.emplace_back(sum(screened));
+    //     } else if (first_run && screening_type == "gap_safe" &&
+    //                gap_safe_active_start) {
+    //       screening_type_temp = "working";
+    //     } else {
+    //       screening_type_temp = screening_type;
+    //     }
+
+    auto [primal_value,
+          dual_value,
+          duality_gap,
+          n_passes_i,
+          avg_screened,
+          n_violations_i,
+          n_refits_i,
+          cd_time_i,
+          kkt_time_i] = fit(screened,
+                          c,
+                          residual,
+                          Xbeta,
+                          beta,
+                          model,
+                          X,
+                          y,
+                          X_norms_squared,
+                          X_offset,
+                          standardize,
+                          active_set_prev,
+                          strong_set,
+                          duplicated,
+                          lambda,
+                          lambda_prev,
+                          lambda_max,
+                          active_set.n_elem,
+                          screening_type_temp,
+                          shuffle,
+                          celer_use_old_dual,
+                          celer_use_accel,
+                          celer_prune,
+                          gap_safe_active_start,
+                          i,
+                          maxit,
+                          tol_gap_rel,
+                          line_search,
+                          ws_size_init,
+                          verbosity);
+
+    if (n_passes_i >= maxit) {
+      Rcpp::warning("the solver did not converge.");
+    }
+
+    // if (screening_type == "gap_safe" && !(first_run && gap_safe_active_start)) {
+    //   n_screened.push_back(avg_screened);
+    // }
+
+    // t0 = timer.toc();
+
+    duals.emplace_back(dual_value);
+    primals.emplace_back(primal_value);
+    n_passes.emplace_back(n_passes_i);
+    n_refits.emplace_back(n_refits_i);
+    n_violations.emplace_back(n_violations_i);
+    lambdas.emplace_back(lambda);
+    cd_time.emplace_back(cd_time_i);
+    kkt_time.emplace_back(kkt_time_i);
+
+    //     if (!any(violations) &&
+    //         !(screening_type == "gap_safe" && gap_safe_active_start &&
+    //         first_run)) {
+    //       duals.emplace_back(dual_value);
+    //       primals.emplace_back(primal_value);
+    //       n_passes.emplace_back(n_passes_i_sum);
+    //       n_refits.emplace_back(n_refits_i);
+    //       n_violations.emplace_back(n_violations_i);
+    //       lambdas.emplace_back(lambda);
+    //       cd_times.emplace_back(cd_time);
+    //       kkt_times.emplace_back(kkt_time);
+
+    //       break;
+    //     } else {
+    //       n_refits_i++;
+    //     }
 
     if (i > 1) {
       active = beta != 0;
@@ -377,7 +352,7 @@ lassoPath(T& X,
       ever_active(new_duplicates).fill(false);
     }
 
-    duplicates_times.emplace_back(timer.toc() - t0);
+    duplicates_time.emplace_back(timer.toc() - t0);
 
     uword new_active = setDiff(active_set, active_set_prev).n_elem;
     ever_active(active_set).fill(true);
@@ -404,8 +379,8 @@ lassoPath(T& X,
                                              verbosity);
 
     if (stop_path) {
-      hess_times.emplace_back(0);
-      it_times.emplace_back(timer.toc() - it_time);
+      hess_time.emplace_back(0);
+      it_time.emplace_back(timer.toc() - it_time_i);
       break;
     }
 
@@ -450,8 +425,7 @@ lassoPath(T& X,
         active_perm = active_set;
       }
 
-      hess_time = timer.toc() - t0;
-      hess_times.emplace_back(hess_time);
+      hess_time.emplace_back(timer.toc() - t0);
 
       // for hessian_adaptive we need to use all predictors, but this is not the
       // case for the standard hessian method
@@ -470,14 +444,14 @@ lassoPath(T& X,
                                          X_offset,
                                          standardize);
 
-      gradcorr_times.emplace_back(timer.toc() - t0);
+      gradcorr_time.emplace_back(timer.toc() - t0);
     }
 
     if (i > 10 && screening_type == "hessian" && log_hessian_auto) {
       double cd_cum =
-        std::accumulate(cd_times.begin() + i - 5, cd_times.end(), 0.0);
+        std::accumulate(cd_time.begin() + i - 5, cd_time.end(), 0.0);
       double kkt_cum =
-        std::accumulate(kkt_times.begin() + i - 5, kkt_times.end(), 0.0);
+        std::accumulate(kkt_time.begin() + i - 5, kkt_time.end(), 0.0);
 
       if (verbosity > 0) {
         Rprintf(
@@ -542,7 +516,7 @@ lassoPath(T& X,
     lambda_prev = lambda;
     lambda = lambda_next;
 
-    it_times.emplace_back(timer.toc() - it_time);
+    it_time.emplace_back(timer.toc() - it_time_i);
 
     Rcpp::checkUserInterrupt();
   }
@@ -567,11 +541,11 @@ lassoPath(T& X,
                       Named("duplicates") = wrap(duplicates_mat),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
-                      Named("it_time") = wrap(it_times),
-                      Named("cd_time") = wrap(cd_times),
-                      Named("hess_time") = wrap(hess_times),
-                      Named("kkt_time") = wrap(kkt_times),
-                      Named("gradcorr_time") = wrap(gradcorr_times),
+                      Named("it_time") = wrap(it_time),
+                      Named("cd_time") = wrap(cd_time),
+                      Named("hess_time") = wrap(hess_time),
+                      Named("kkt_time") = wrap(kkt_time),
+                      Named("gradcorr_time") = wrap(gradcorr_time),
                       Named("family") = wrap(family));
 }
 
