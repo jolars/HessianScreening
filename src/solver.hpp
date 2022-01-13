@@ -151,7 +151,6 @@ fit(arma::uvec& screened,
         if (duality_gap_rel <= tol_gap_rel)
           break;
 
-        // screening
         XTcenter = c / dual_scale;
         double r_screen =
           model->safeScreeningRadius(std::max(duality_gap, 0.0), lambda);
@@ -313,10 +312,10 @@ fit(arma::uvec& screened,
           if (it > 0) {
             ws_size = std::min(2 * active_set.n_elem, p);
 
-            // TODO(jolars): This kind of hurts performance for blitz
-            // in quite a few occasions. Should it be removed?
-            if (ws_size < 100)
-              ws_size = 100;
+            // TODO(jolars): The commented-out code below is actually
+            // what blitz does, but it's not efficient for low p or n.
+            // if (ws_size < 100)
+            //   ws_size = 100;
           }
 
           XTcenter = c / dual_scale;
