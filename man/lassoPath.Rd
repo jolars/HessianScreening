@@ -10,7 +10,8 @@ lassoPath(
   family = c("gaussian", "binomial"),
   standardize = TRUE,
   screening_type = c("working", "hessian", "hessian_adaptive", "edpp", "gap_safe",
-    "strong", "celer"),
+    "strong", "celer", "blitz"),
+  shuffle = match.arg(screening_type) == "blitz",
   hessian_warm_starts = TRUE,
   celer_use_old_dual = TRUE,
   celer_use_accel = TRUE,
@@ -20,11 +21,11 @@ lassoPath(
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
   maxit = 1e+05,
-  tol_gap = 1e-04,
+  tol_gap = 1e-05,
   gamma = 0.01,
   verify_hessian = FALSE,
   force_kkt_check = FALSE,
-  line_search = 3,
+  line_search = 0,
   verbosity = 0
 )
 }
@@ -52,7 +53,7 @@ updating the hessian for logistic regression}
 
 \item{maxit}{Maximum number of iterations for Coordinate Descent loop}
 
-\item{tol_gap}{Tolerance threshold for duality gap}
+\item{tol_gap}{Tolerance threshold for relative duality gap.}
 
 \item{gamma}{Percent of strong approximation to add to Hessian approximation}
 
@@ -62,10 +63,12 @@ correct. Used only for diagnostic purposes.}
 \item{force_kkt_check}{Whether to force KKT checks even when screening rule
 is safe}
 
-\item{line_search}{Use line search when \code{family = "binomial"}}
+\item{line_search}{Use line search in CD solver. For Blitz, the line search
+is always used (irrespective of input to this argument). For other solvers,
+it is used only if this argument is > 0 and the family is Binomial.}
 
 \item{verbosity}{Controls the level of verbosity. 0 = no output.}
 }
 \description{
-Lasso Path with Hessian Screening Rules
+This function fits the full lasso path.
 }
