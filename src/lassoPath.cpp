@@ -36,8 +36,8 @@ lassoPath(T& X,
           const arma::uword maxit,
           const double tol_gap,
           const double gamma,
+          const bool store_dual_variables,
           const bool verify_hessian,
-          const bool force_kkt_check,
           const bool line_search,
           const arma::uword verbosity)
 {
@@ -73,6 +73,7 @@ lassoPath(T& X,
 
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
+  mat thetas(n, 0);
   vec Xbeta(n, fill::zeros);
   vec residual(n, fill::zeros);
   vec c(p);
@@ -182,10 +183,7 @@ lassoPath(T& X,
 
   const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
-
-  // bool check_kkt = (screening_type != "gap_safe" && screening_type != "celer" &&
-  //                   screening_type != "blitz") ||
-  //                  force_kkt_check;
+  double dev_prev = dev;
 
   std::string screening_type_temp = screening_type;
 
@@ -212,77 +210,59 @@ lassoPath(T& X,
       Rprintf("step: %i, lambda: %.2f\n", i, lambda);
     }
 
-    // double cd_time = 0;
-    double dev_prev = dev;
-    // double kkt_time = 0;
-    // uword n_passes_i = 0;
-    // uword n_refits_i = 0;
-    // uword n_violations_i = 0;
     vec beta_prev = beta;
 
     if (verbosity >= 1) {
       Rprintf("  running coordinate descent\n");
     }
 
-    //     double t0 = timer.toc();
-
-    //     if (first_run && screening_type != "gap_safe") {
-    //       n_screened.emplace_back(sum(screened));
-    //     } else if (first_run && screening_type == "gap_safe" &&
-    //                gap_safe_active_start) {
-    //       screening_type_temp = "working";
-    //     } else {
-    //       screening_type_temp = screening_type;
-    //     }
-
     auto [primal_value,
           dual_value,
           duality_gap,
+          theta,
           n_passes_i,
           avg_screened,
           n_violations_i,
           n_refits_i,
           cd_time_i,
           kkt_time_i] = fit(screened,
-                          c,
-                          residual,
-                          Xbeta,
-                          beta,
-                          model,
-                          X,
-                          y,
-                          X_norms_squared,
-                          X_offset,
-                          standardize,
-                          active_set_prev,
-                          strong_set,
-                          duplicated,
-                          lambda,
-                          lambda_prev,
-                          lambda_max,
-                          active_set.n_elem,
-                          screening_type_temp,
-                          shuffle,
-                          celer_use_old_dual,
-                          celer_use_accel,
-                          celer_prune,
-                          gap_safe_active_start,
-                          i,
-                          maxit,
-                          tol_gap_rel,
-                          line_search,
-                          ws_size_init,
-                          verbosity);
+                            c,
+                            residual,
+                            Xbeta,
+                            beta,
+                            model,
+                            X,
+                            y,
+                            X_norms_squared,
+                            X_offset,
+                            standardize,
+                            active_set_prev,
+                            strong_set,
+                            duplicated,
+                            lambda,
+                            lambda_prev,
+                            lambda_max,
+                            active_set.n_elem,
+                            screening_type_temp,
+                            shuffle,
+                            celer_use_old_dual,
+                            celer_use_accel,
+                            celer_prune,
+                            gap_safe_active_start,
+                            i,
+                            maxit,
+                            tol_gap_rel,
+                            line_search,
+                            ws_size_init,
+                            verbosity);
 
     if (n_passes_i >= maxit) {
       Rcpp::warning("the solver did not converge.");
     }
 
-    // if (screening_type == "gap_safe" && !(first_run && gap_safe_active_start)) {
-    //   n_screened.push_back(avg_screened);
-    // }
-
-    // t0 = timer.toc();
+    if (store_dual_variables) {
+      thetas.insert_cols(thetas.n_cols, theta);
+    }
 
     duals.emplace_back(dual_value);
     primals.emplace_back(primal_value);
@@ -292,23 +272,6 @@ lassoPath(T& X,
     lambdas.emplace_back(lambda);
     cd_time.emplace_back(cd_time_i);
     kkt_time.emplace_back(kkt_time_i);
-
-    //     if (!any(violations) &&
-    //         !(screening_type == "gap_safe" && gap_safe_active_start &&
-    //         first_run)) {
-    //       duals.emplace_back(dual_value);
-    //       primals.emplace_back(primal_value);
-    //       n_passes.emplace_back(n_passes_i_sum);
-    //       n_refits.emplace_back(n_refits_i);
-    //       n_violations.emplace_back(n_violations_i);
-    //       lambdas.emplace_back(lambda);
-    //       cd_times.emplace_back(cd_time);
-    //       kkt_times.emplace_back(kkt_time);
-
-    //       break;
-    //     } else {
-    //       n_refits_i++;
-    //     }
 
     if (i > 1) {
       active = beta != 0;
@@ -320,6 +283,7 @@ lassoPath(T& X,
     active_perm = join_vert(safeSetIntersect(active_perm_prev, active_set),
                             setDiff(active_set, active_set_prev));
 
+    dev_prev = dev;
     dev = model->deviance(residual, Xbeta, y);
     devs.emplace_back(dev);
     dev_ratios.emplace_back(1.0 - dev / null_dev);
@@ -528,6 +492,7 @@ lassoPath(T& X,
   umat duplicates_mat = join_horiz(uvec(originals), uvec(duplicates));
 
   return List::create(Named("beta") = wrap(betas),
+                      Named("theta") = wrap(thetas),
                       Named("lambda") = wrap(lambdas),
                       Named("primals") = wrap(primals),
                       Named("duals") = wrap(duals),
@@ -538,7 +503,6 @@ lassoPath(T& X,
                       Named("screened") = wrap(n_screened),
                       Named("strong") = wrap(n_strong),
                       Named("new_active") = wrap(n_new_active),
-                      Named("duplicates") = wrap(duplicates_mat),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
                       Named("it_time") = wrap(it_time),
@@ -568,8 +532,8 @@ lassoPathDense(arma::mat X,
                const arma::uword maxit,
                const double tol_gap,
                const double gamma,
+               const bool store_dual_variables,
                const bool verify_hessian,
-               const bool force_kkt_check,
                const bool line_search,
                const arma::uword verbosity)
 {
@@ -590,8 +554,8 @@ lassoPathDense(arma::mat X,
                    maxit,
                    tol_gap,
                    gamma,
+                   store_dual_variables,
                    verify_hessian,
-                   force_kkt_check,
                    line_search,
                    verbosity);
 }
@@ -615,8 +579,8 @@ lassoPathSparse(arma::sp_mat X,
                 const arma::uword maxit,
                 const double tol_gap,
                 const double gamma,
+                const bool store_dual_variables,
                 const bool verify_hessian,
-                const bool force_kkt_check,
                 const bool line_search,
                 const arma::uword verbosity)
 {
@@ -637,8 +601,8 @@ lassoPathSparse(arma::sp_mat X,
                    maxit,
                    tol_gap,
                    gamma,
+                   store_dual_variables,
                    verify_hessian,
-                   force_kkt_check,
                    line_search,
                    verbosity);
 }

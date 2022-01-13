@@ -24,7 +24,8 @@ test_that("test logistic regression on real data", {
         tol_gap = tol_gap,
         celer_use_accel = FALSE,
         celer_use_old_dual = FALSE,
-        verbosity = 0
+        verbosity = 0,
+        store_dual_variables = TRUE
       )
 
       gaps <- check_gaps(fit, "binomial", standardize, x, y, tol_gap)

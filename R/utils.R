@@ -24,11 +24,11 @@ gaussian_primal <- function(x, y, beta, lambda) {
   0.5 * norm(y - x %*% beta, "2")^2 + lambda * sum(abs(beta))
 }
 
-gaussian_dual <- function(x, y, beta, lambda) {
-  residual <- y - x %*% beta
-  correlation <- Matrix::crossprod(x, residual)
+gaussian_dual <- function(y, theta, lambda) {
+#   residual <- y - x %*% beta
+#   correlation <- Matrix::crossprod(x, residual)
 
-  theta <- residual / max(lambda, max(abs(correlation)))
+#   theta <- residual / max(lambda, max(abs(correlation)))
 
   0.5 * norm(y, "2")^2 - 0.5 * lambda^2 * norm(theta - y / lambda, "2")^2
 }
@@ -38,17 +38,17 @@ binomial_primal <- function(x, y, beta, lambda) {
   -sum(y * xbeta - log1p(exp(xbeta))) + lambda * sum(abs(beta))
 }
 
-binomial_dual <- function(x, y, beta, lambda) {
-  exp_xbeta <- exp(x %*% beta)
-  pr <- exp_xbeta / (1 + exp_xbeta)
-  pr <- ifelse(pr < 1e-5, 1e-5, pr)
-  pr <- ifelse(pr > 1 - 1e-5, 1 - 1e-5, pr)
+binomial_dual <- function(y, theta, lambda) {
+#   exp_xbeta <- exp(x %*% beta)
+#   pr <- exp_xbeta / (1 + exp_xbeta)
+#   pr <- ifelse(pr < 1e-5, 1e-5, pr)
+#   pr <- ifelse(pr > 1 - 1e-5, 1 - 1e-5, pr)
 
-  residual <- y - pr
+#   residual <- y - pr
 
-  correlation <- Matrix::crossprod(x, residual)
+#   correlation <- Matrix::crossprod(x, residual)
 
-  theta <- residual / max(lambda, max(abs(correlation)))
+#   theta <- residual / max(lambda, max(abs(correlation)))
 
   prx <- y - lambda * theta
   prx <- ifelse(prx < 1e-5, 1e-5, prx)
@@ -68,7 +68,12 @@ binomial_dual <- function(x, y, beta, lambda) {
 #' @export
 check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
   beta <- fit$beta
+  theta <- fit$theta
   lambda <- fit$lambda
+
+  if (ncol(theta) == 0) {
+    stop("please call fitLasso() with `store_dual_variables = TRUE`")
+  }
 
   duals <- primals <- double(length(lambda))
 
@@ -77,10 +82,10 @@ check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
   for (i in seq_along(duals)) {
     if (family == "gaussian") {
       primals[i] <- gaussian_primal(x, y, beta[, i], lambda[i])
-      duals[i] <- gaussian_dual(x, y, beta[, i], lambda[i])
+      duals[i] <- gaussian_dual(y, theta[, i], lambda[i])
     } else if (family == "binomial") {
       primals[i] <- binomial_primal(x, y, beta[, i], lambda[i])
-      duals[i] <- binomial_dual(x, y, beta[, i], lambda[i])
+      duals[i] <- binomial_dual(y, theta[, i], lambda[i])
     }
   }
 

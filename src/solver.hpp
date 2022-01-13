@@ -13,6 +13,7 @@ template<typename T>
 std::tuple<double,
            double,
            double,
+           arma::vec,
            arma::uword,
            double,
            arma::uword,
@@ -71,6 +72,8 @@ fit(arma::uvec& screened,
 
   uvec screened_set = find(screened && duplicated == false);
   uvec working_set = screened_set;
+  uvec safe(p, fill::ones);
+  uvec safe_set = find(safe);
   uvec violations(p);
 
   uword n_refits{ 0 };
@@ -123,8 +126,6 @@ fit(arma::uvec& screened,
     residual_prev = residual;
   }
 
-  vec t(p, fill::ones); // learning rates
-
   double n_screened = 0;
   uword it = 0;
   double tol_gap_rel_inner = tol_gap_rel;
@@ -149,7 +150,8 @@ fit(arma::uvec& screened,
           screening_type == "working") {
         if (inner_solver_converged && it > 0) {
           double t0 = timer.toc();
-          uvec unscreened_set = find(screened == false && duplicated == false);
+          uvec unscreened_set =
+            find(safe && screened == false && duplicated == false);
 
           violations.fill(false);
 
@@ -165,17 +167,47 @@ fit(arma::uvec& screened,
 
           kkt_time += timer.toc() - t0;
 
-          if (any(violations)) {
-            if (verbosity >= 2)
-              Rprintf("    violations encountered\n");
+          primal_value =
+            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
 
-            n_refits += 1;
-            n_violations += sum(violations);
-            screened_set = find(screened);
-            working_set = screened_set;
-          } else {
-            break;
+          dual_scale = std::max(lambda, max(abs(c(safe_set))));
+          theta = residual / dual_scale;
+          dual_value = model->dual(theta, y, lambda);
+          duality_gap = primal_value - dual_value;
+
+          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
+
+          if (verbosity >= 2) {
+            Rprintf("    global primal: %f, global dual: %f, global gap: %f\n",
+                    primal_value,
+                    dual_value,
+                    duality_gap_rel);
           }
+
+          if (duality_gap_rel <= tol_gap_rel)
+            break;
+
+          double r_screen = model->safeScreeningRadius(duality_gap, lambda);
+
+          safeScreening(safe,
+                        safe_set,
+                        c,
+                        residual,
+                        Xbeta,
+                        beta,
+                        c / dual_scale,
+                        r_screen,
+                        model,
+                        X,
+                        y,
+                        X_offset,
+                        standardize,
+                        X_norms_squared);
+
+          n_refits += 1;
+          n_violations += sum(violations);
+          screened_set = find(screened && safe);
+          working_set = screened_set;
         }
       }
 
@@ -227,6 +259,7 @@ fit(arma::uvec& screened,
                         X_offset,
                         standardize,
                         X_norms_squared);
+          working_set = screened_set;
         }
       }
 
@@ -446,14 +479,14 @@ fit(arma::uvec& screened,
 
         for (uword it_inner = 0; it_inner < max_cd_itr; ++it_inner) {
 
-          //           if (shuffle || !progress) {
-          //             uvec perm = randperm(ws_size);
+          if (shuffle || !progress) {
+            uvec perm = randperm(ws_size);
 
-          //             working_set = working_set(perm);
-          //             delta_beta = delta_beta(perm);
-          //             prox_newton_grad_cache = prox_newton_grad_cache(perm);
-          //             hess_cache = hess_cache(perm);
-          //           }
+            working_set = working_set(perm);
+            delta_beta = delta_beta(perm);
+            prox_newton_grad_cache = prox_newton_grad_cache(perm);
+            hess_cache = hess_cache(perm);
+          }
 
           double sum_sq_hess_diff = 0;
 
@@ -555,6 +588,10 @@ fit(arma::uvec& screened,
         for (auto&& j : working_set) {
           updateCorrelation(c, residual, X, j, X_offset, standardize);
           double hess_j = model->hessianTerm(X, j, X_offset, standardize);
+
+          if (hess_j <= 0)
+            continue;
+
           double beta_j_old = beta(j);
           double v =
             prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
@@ -679,6 +716,6 @@ fit(arma::uvec& screened,
 
   double avg_screened = n_screened / (it + 1);
 
-  return { primal_value, dual_value, duality_gap, it + 1,  avg_screened,
-           n_violations, n_refits,   cd_time,     kkt_time };
+  return { primal_value, dual_value,   duality_gap, theta,   it + 1,
+           avg_screened, n_violations, n_refits,    cd_time, kkt_time };
 }

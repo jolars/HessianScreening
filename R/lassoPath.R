@@ -20,8 +20,6 @@
 #' @param gamma Percent of strong approximation to add to Hessian approximation
 #' @param verify_hessian Whether to not to verify that Hessian updates are
 #'   correct. Used only for diagnostic purposes.
-#' @param force_kkt_check Whether to force KKT checks even when screening rule
-#'   is safe
 #' @param line_search Use line search in CD solver.
 #' @param verbosity Controls the level of verbosity. 0 = no output.
 #'
@@ -52,8 +50,8 @@ lassoPath <- function(X,
                       maxit = 1e5,
                       tol_gap = 1e-5,
                       gamma = 0.01,
+                      store_dual_variables = FALSE,
                       verify_hessian = FALSE,
-                      force_kkt_check = FALSE,
                       line_search = match.arg(screening_type) == "blitz",
                       verbosity = 0) {
   family <- match.arg(family)
@@ -86,8 +84,8 @@ lassoPath <- function(X,
       maxit,
       tol_gap,
       gamma,
+      store_dual_variables,
       verify_hessian,
-      force_kkt_check,
       line_search,
       verbosity
     )
@@ -110,8 +108,8 @@ lassoPath <- function(X,
       maxit,
       tol_gap,
       gamma,
+      store_dual_variables,
       verify_hessian,
-      force_kkt_check,
       line_search,
       verbosity
     )

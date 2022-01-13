@@ -60,7 +60,8 @@ test_that("gaussian and logistic models for simulated data", {
       tol_gap = tol_gap,
       celer_use_old_dual = FALSE,
       celer_use_accel = TRUE,
-      celer_prune = FALSE
+      celer_prune = FALSE,
+      store_dual_variables = TRUE
     )
 
     gaps <- check_gaps(fit, family, standardize, X, y, tol_gap)
