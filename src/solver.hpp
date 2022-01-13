@@ -517,7 +517,7 @@ fit(arma::uvec& screened,
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        if (line_search) {
+        if (!line_search) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
         }
