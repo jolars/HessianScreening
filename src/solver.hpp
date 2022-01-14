@@ -28,7 +28,7 @@ fit(arma::uvec& screened,
     const std::unique_ptr<Model>& model,
     const T& X,
     const arma::vec& y,
-    const arma::vec& X_norms_squared,
+    const arma::vec& X_norms,
     const arma::vec& X_offset,
     const bool standardize,
     const arma::uvec& active_set,
@@ -56,10 +56,10 @@ fit(arma::uvec& screened,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  uword check_frequency = 10;
+  uword check_frequency = n > p ? 3 : 10;
 
-  if (screening_type == "hessian") {
-    check_frequency = 2;
+  if (screening_type == "celer") {
+    check_frequency = 10;
   } else if (screening_type == "blitz") {
     check_frequency = 1;
   }
@@ -72,7 +72,7 @@ fit(arma::uvec& screened,
 
   uvec screened_set = find(screened && duplicated == false);
   uvec working_set = screened_set;
-  uvec safe(p, fill::ones);
+  uvec safe = duplicated == false;
   uvec safe_set = find(safe);
   uvec violations(p);
 
@@ -150,6 +150,7 @@ fit(arma::uvec& screened,
           screening_type == "working") {
         if (inner_solver_converged && it > 0) {
           double t0 = timer.toc();
+
           uvec unscreened_set =
             find(safe && screened == false && duplicated == false);
 
@@ -191,22 +192,22 @@ fit(arma::uvec& screened,
 
           safeScreening(safe,
                         safe_set,
-                        c,
                         residual,
                         Xbeta,
                         beta,
-                        c / dual_scale,
+                        c,
+                        dual_scale,
                         r_screen,
                         model,
                         X,
                         y,
                         X_offset,
                         standardize,
-                        X_norms_squared);
+                        X_norms);
 
           n_refits += 1;
           n_violations += sum(violations);
-          screened_set = find(screened && safe);
+          screened_set = find(screened);
           working_set = screened_set;
         }
       }
@@ -247,18 +248,19 @@ fit(arma::uvec& screened,
 
           safeScreening(screened,
                         screened_set,
-                        c,
                         residual,
                         Xbeta,
                         beta,
-                        c / dual_scale,
+                        c,
+                        dual_scale,
                         r_screen,
                         model,
                         X,
                         y,
                         X_offset,
                         standardize,
-                        X_norms_squared);
+                        X_norms);
+
           working_set = screened_set;
         }
       }
@@ -309,8 +311,8 @@ fit(arma::uvec& screened,
           vec d(p);
           d.fill(datum::inf);
 
-          d(screened_set) = (1.0 - abs(c(screened_set)) / dual_scale) /
-                            sqrt(X_norms_squared(screened_set));
+          d(screened_set) =
+            (1.0 - abs(c(screened_set)) / dual_scale) / X_norms(screened_set);
 
           if (celer_prune) {
             tol_gap_rel_inner = duality_gap * 0.3;
@@ -340,18 +342,18 @@ fit(arma::uvec& screened,
 
           safeScreening(screened,
                         screened_set,
-                        c,
                         residual,
                         Xbeta,
                         beta,
-                        c / dual_scale,
+                        c,
+                        dual_scale,
                         r_screen,
                         model,
                         X,
                         y,
                         X_offset,
                         standardize,
-                        X_norms_squared);
+                        X_norms);
 
           ws_size = std::min(ws_size, screened_set.n_elem);
 
@@ -390,8 +392,8 @@ fit(arma::uvec& screened,
           vec d(p);
           d.fill(datum::inf);
 
-          d(screened_set) = (1.0 - abs(c(screened_set)) / dual_scale) /
-                            sqrt(X_norms_squared(screened_set));
+          d(screened_set) =
+            (1.0 - abs(c(screened_set)) / dual_scale) / X_norms(screened_set);
 
           tol_gap_rel_inner = duality_gap * 0.3;
 
@@ -412,18 +414,18 @@ fit(arma::uvec& screened,
 
           safeScreening(screened,
                         screened_set,
-                        c,
                         residual,
                         Xbeta,
                         beta,
-                        c / dual_scale,
+                        c,
+                        dual_scale,
                         r_screen,
                         model,
                         X,
                         y,
                         X_offset,
                         standardize,
-                        X_norms_squared);
+                        X_norms);
 
           if (verbosity >= 2) {
             Rprintf("      n_active: %i, n_working: %i, n_screened: %i\n",

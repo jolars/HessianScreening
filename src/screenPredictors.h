@@ -13,7 +13,7 @@ screenPredictors(const std::string screening_type,
                  const vec& c,
                  const vec& c_grad,
                  const T& X,
-                 const vec& X_norms_squared,
+                 const vec& X_norms,
                  const vec& X_offset,
                  const vec& y,
                  const double lambda,
@@ -48,9 +48,7 @@ screenPredictors(const std::string screening_type,
 
     vec XTcenter = matTransposeMultiply(X, center, X_offset, standardize);
 
-    screened = r_screen * sqrt(X_norms_squared) + abs(XTcenter) +
-                 std::sqrt(datum::eps) >=
-               1;
+    screened = r_screen * X_norms + abs(XTcenter) + datum::eps >= 1;
   }
 
   return screened;

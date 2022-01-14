@@ -46,4 +46,3 @@ addScaledColumn(arma::vec& out,
                 const double a,
                 const arma::vec& X_offset,
                 const bool standardize);
-

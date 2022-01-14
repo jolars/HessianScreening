@@ -1,6 +1,5 @@
 #include "binomial.h"
 #include "checkStoppingConditions.h"
-#include "colNormsSquared.h"
 #include "findDuplicates.h"
 #include "gaussian.h"
 #include "getNextLambda.h"
@@ -11,6 +10,7 @@
 #include "screenPredictors.h"
 #include "setupModel.h"
 #include "solver.hpp"
+#include "squaredColNorms.h"
 #include "standardize.h"
 #include "updateCorrelation.h"
 #include "updateHessian.h"
@@ -91,16 +91,8 @@ lassoPath(T& X,
   const vec X_offset = X_mean / X_sd;
   const double y_center = mean(y);
 
-  vec X_norms_squared(p);
-
-  if (family == "gaussian" || screening_type == "gap_safe" ||
-      screening_type == "celer" || screening_type == "blitz") {
-    if (!standardize) {
-      X_norms_squared = colNormsSquared(X);
-    } else {
-      X_norms_squared.fill(static_cast<double>(n));
-    }
-  }
+  vec X_norms_squared = squaredColNorms(X, X_offset, standardize);
+  vec X_norms = sqrt(X_norms_squared);
 
   uword ws_size_init = 100;
   ws_size_init = std::min(p, static_cast<uword>(100));
@@ -233,7 +225,7 @@ lassoPath(T& X,
                             model,
                             X,
                             y,
-                            X_norms_squared,
+                            X_norms,
                             X_offset,
                             standardize,
                             active_set_prev,
@@ -272,6 +264,7 @@ lassoPath(T& X,
     lambdas.emplace_back(lambda);
     cd_time.emplace_back(cd_time_i);
     kkt_time.emplace_back(kkt_time_i);
+    n_screened.emplace_back(avg_screened);
 
     if (i > 1) {
       active = beta != 0;
