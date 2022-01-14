@@ -91,11 +91,10 @@ lassoPath(T& X,
   const vec X_offset = X_mean / X_sd;
   const double y_center = mean(y);
 
-  vec X_norms_squared = squaredColNorms(X, X_offset, standardize);
-  vec X_norms = sqrt(X_norms_squared);
+  const vec X_norms_squared = squaredColNorms(X, X_offset, standardize);
+  const vec X_norms = sqrt(X_norms_squared);
 
-  uword ws_size_init = 100;
-  ws_size_init = std::min(p, static_cast<uword>(100));
+  const uword ws_size_init = std::min(p, static_cast<uword>(100));
 
   auto model = setupModel(family, X_norms_squared, n, log_hessian_update_type);
 
