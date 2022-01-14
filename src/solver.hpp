@@ -56,11 +56,11 @@ fit(arma::uvec& screened,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  uword check_frequency = n > p ? 3 : 10;
+  uword check_frequency = n > p ? 1 : 10;
 
   if (screening_type == "celer") {
     check_frequency = 10;
-  } else if (screening_type == "blitz") {
+  } else if (screening_type == "blitz" || line_search) {
     check_frequency = 1;
   }
 
@@ -81,7 +81,7 @@ fit(arma::uvec& screened,
 
   double primal_value =
     model->primal(residual, Xbeta, beta, y, lambda, screened_set);
-  double primal_value_prev = datum::inf;
+  double primal_value_prev = primal_value;
 
   double dual_scale = std::max(lambda, max(abs(c)));
   vec theta = residual / dual_scale;
@@ -128,6 +128,7 @@ fit(arma::uvec& screened,
 
   double n_screened = 0;
   uword it = 0;
+  uword it_inner = 0;
   double tol_gap_rel_inner = tol_gap_rel;
 
   // timing
@@ -215,8 +216,7 @@ fit(arma::uvec& screened,
       if (screening_type == "gap_safe") {
         if (it == 0 && gap_safe_active_start) {
           working_set = active_set;
-        } else if (it % SCREEN_FREQUENCY ==
-                   (0 + static_cast<unsigned>(gap_safe_active_start))) {
+        } else if (it % SCREEN_FREQUENCY == 0) {
           double t0 = timer.toc();
           updateCorrelation(
             c, residual, X, screened_set, X_offset, standardize);
@@ -442,6 +442,12 @@ fit(arma::uvec& screened,
 
       n_screened += screened_set.n_elem;
 
+      if (inner_solver_converged) {
+        // reset inner solver counters
+        it_inner = 0;
+        inner_solver_converged = false;
+      }
+
       double t0 = timer.toc();
 
       if (line_search) {
@@ -614,19 +620,18 @@ fit(arma::uvec& screened,
 
       kkt_time += timer.toc() - t0;
 
-      if (screening_type == "celer" && celer_use_accel) {
-        U = join_horiz(U.tail_cols(K - 1), residual - residual_prev);
+      if (screening_type == "celer" && celer_use_accel && it_inner > 0) {
+        sword ind = (it_inner - 1) % check_frequency - K;
 
-        residual_storage =
-          join_horiz(residual_storage.tail_cols(K - 1), residual);
-        residual_prev = residual;
+        if (ind >= 0) {
+          U.col(ind) = residual - residual_prev;
+          residual_storage.col(ind) = residual;
+        }
       }
 
-      it++;
+      residual_prev = residual;
 
-      inner_solver_converged = false;
-
-      if (screening_type != "gap_safe" && it % check_frequency == 0) {
+      if (screening_type != "gap_safe" && (it_inner % check_frequency == 0)) {
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
@@ -642,7 +647,7 @@ fit(arma::uvec& screened,
         duality_gap = primal_value - dual_value;
         duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
 
-        if (screening_type == "celer" && celer_use_accel && it >= K) {
+        if (screening_type == "celer" && celer_use_accel && it_inner >= K) {
           // use dual extrapolation
           bool success =
             solve(z, symmatu(U.t() * U), ones<vec>(K), solve_opts::no_approx);
@@ -653,11 +658,10 @@ fit(arma::uvec& screened,
 
             vec residual_accel(n, fill::zeros);
 
-            for (uword i = 0; i < K; ++i) {
-              residual_accel += celer_c(i) * residual_storage.col(K - i - 1);
-            }
+            for (uword i = 0; i < K; ++i)
+              residual_accel += celer_c(i) * residual_storage.col(i);
 
-            vec c_accel(p, fill::zeros);
+            vec c_accel(p);
 
             updateCorrelation(
               c_accel, residual_accel, X, working_set, X_offset, standardize);
@@ -668,6 +672,9 @@ fit(arma::uvec& screened,
             double dual_value_accel = model->dual(theta_accel, y, lambda);
 
             if (dual_value_accel > dual_value) {
+              if (verbosity >= 2)
+                Rprintf("      using accelerated dual point\n");
+
               dual_value = dual_value_accel;
               theta = theta_accel;
             }
@@ -711,6 +718,9 @@ fit(arma::uvec& screened,
       if (it % 10 == 0) {
         Rcpp::checkUserInterrupt();
       }
+
+      it++;
+      it_inner++;
     }
   } else {
     beta.zeros();
