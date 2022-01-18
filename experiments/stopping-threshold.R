@@ -66,6 +66,8 @@ for (i in seq_len(nrow(g))) {
     i, nrow(g), family, n, p, tol_gap, screening_type
   )
 
+  time <- double(max_it)
+
   for (j in seq_len(max_it)) {
     set.seed(j)
 
