@@ -1,5 +1,4 @@
 library(HessianScreening)
-library(RColorBrewer)
 library(tibble)
 library(dplyr)
 library(tidyr)
