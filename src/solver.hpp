@@ -197,7 +197,7 @@ fit(arma::uvec& screened,
           }
 
           if (outer_check) {
-            // have updated entire correlation vector, so let's use 
+            // have updated entire correlation vector, so let's use
             // it to gap-safe screen
             double r_screen = model->safeScreeningRadius(duality_gap, lambda);
 
@@ -215,10 +215,10 @@ fit(arma::uvec& screened,
                           X_offset,
                           standardize,
                           X_norms);
+            screened = screened && safe;
+            screened_set = find(screened);
           }
 
-          screened = screened && safe;
-          screened_set = find(screened);
           working_set = screened_set;
         }
 
