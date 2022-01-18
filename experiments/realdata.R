@@ -106,11 +106,11 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (j > min_it) {
-      se <- sd(time[1:j]) / sqrt(j)
-      ci_width <- 2 * qt(1 - conf_level / 2, df = j - 1) * se
+    if (k > min_it) {
+      se <- sd(time[1:k]) / sqrt(k)
+      ci_width <- 2 * qt(1 - conf_level / 2, df = k - 1) * se
 
-      if (ci_width / mean(time[1:j]) < max_err) {
+      if (ci_width / mean(time[1:k]) < max_err) {
         break
       }
     }
