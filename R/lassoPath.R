@@ -7,6 +7,11 @@
 #' @param family The name of the family, "gaussian" or "logistic"
 #' @param standardize Whether to standardize the predictors
 #' @param screening_type Screening rule
+#' @param shuffle Shuffle working set before each CD pass?
+#' @param check_frequency Frequency at which duality gap is checked for 
+#'   inner CD loop
+#' @param screen_frequency Frequency at which predictors are screened for
+#'   the gap safe solver
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
 #' @param hessian_warm_starts Whether to use the active start strategy for
 #'   the Gap-Safe rule
@@ -21,7 +26,8 @@
 #' @param verify_hessian Whether to not to verify that Hessian updates are
 #'   correct. Used only for diagnostic purposes.
 #' @param line_search Use line search in CD solver.
-#' @param verbosity Controls the level of verbosity. 0 = no output.
+#' @param verbosity Controls the level of verbosity. 0 = no output, 1 = outer
+#'   level output, 2 = inner solver output
 #'
 #' @export
 lassoPath <- function(X,
@@ -39,6 +45,8 @@ lassoPath <- function(X,
                         "blitz"
                       ),
                       shuffle = match.arg(screening_type) == "blitz",
+                      check_frequency = 10,
+                      screen_frequency = 10,
                       hessian_warm_starts = TRUE,
                       celer_use_old_dual = TRUE,
                       celer_use_accel = TRUE,
@@ -48,15 +56,27 @@ lassoPath <- function(X,
                       log_hessian_auto_update_freq = 10,
                       path_length = 100L,
                       maxit = 1e5,
-                      tol_gap = 1e-5,
+                      tol_gap = 1e-4,
                       gamma = 0.01,
                       store_dual_variables = FALSE,
                       verify_hessian = FALSE,
-                      line_search = match.arg(screening_type) == "blitz",
+                      line_search = NULL,
                       verbosity = 0) {
   family <- match.arg(family)
   screening_type <- match.arg(screening_type)
   log_hessian_update_type <- match.arg(log_hessian_update_type)
+
+  if (is.null(line_search)) {
+    if (screening_type == "blitz") {
+      line_search <- 2
+    # } else if (family == "binomial") {
+    #   line_search <- 1
+    } else {
+      line_search <- 0
+    }
+  }
+
+  stopifnot(line_search %in% c(0, 1, 2))
 
   sparse <- inherits(X, "sparseMatrix")
 
@@ -73,6 +93,8 @@ lassoPath <- function(X,
       standardize,
       screening_type,
       shuffle,
+      check_frequency,
+      screen_frequency,
       hessian_warm_starts,
       celer_use_old_dual,
       celer_use_accel,
@@ -97,6 +119,8 @@ lassoPath <- function(X,
       standardize,
       screening_type,
       shuffle,
+      check_frequency,
+      screen_frequency,
       hessian_warm_starts,
       celer_use_old_dual,
       celer_use_accel,

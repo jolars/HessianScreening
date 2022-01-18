@@ -15,6 +15,7 @@ g <- expand_grid(
   screening_type = c(
     "hessian",
     "working",
+    "blitz",
     "celer"
   ),
   path_length = 100,
@@ -23,10 +24,12 @@ g <- expand_grid(
   time = list(NA),
   screened = list(NA),
   active = list(NA),
-  step = list(NA)
+  step = list(NA),
+  converged = NA
 )
 
-n_it <- 2
+MIN_ITERATIONS <- 10
+n_it <- 10 * MIN_ITERATIONS
 
 tol_gap <- 1e-5
 
@@ -39,6 +42,12 @@ for (i in seq_len(nrow(g))) {
 
   if (family == "binomial" && screening_type == "edpp") {
     next
+  }
+
+  if (screening_type %in% c("hessian", "blitz")) {
+    check_frequency <- 1
+  } else {
+    check_frequency <- 10
   }
 
   if (scenario == 1) {
@@ -75,11 +84,12 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
+      check_frequency = check_frequency,
       verbosity = 0,
       gamma = 0.01,
-      line_search = FALSE,
       tol_gap = tol_gap,
-      celer_use_accel = FALSE,
+      celer_prune = FALSE,
+      celer_use_accel = TRUE,
       celer_use_old_dual = TRUE
     )
 
@@ -91,8 +101,20 @@ for (i in seq_len(nrow(g))) {
     screened[j, 1:n_lambda] <- fit$screened
     active[j, 1:n_lambda] <- fit$active
 
+    if (any(!fit$converged)) {
+      warning(
+        "failed to converge at i = ",
+        i,
+        " for solver = ",
+        screening_type,
+        " at steps ",
+        paste(which(!fit$converged)),
+        collapse = ","
+      )
+    }
+
     # stop if standard error is within 2.5% of mean
-    if (j > 19) {
+    if (j > MIN_ITERATIONS) {
       time_se <- sd(time[1:j]) / sqrt(j)
 
       if (time_se / mean(time[1:j]) < 0.025) {
@@ -121,6 +143,7 @@ for (i in seq_len(nrow(g))) {
   g$screened[i] <- list(screened)
   g$active[i] <- list(active)
   g$step[i] <- list(1:path_length)
+  g$converged[i] <- all(fit$converged)
 }
 
 saveRDS(g, "results/simulateddata.rds")

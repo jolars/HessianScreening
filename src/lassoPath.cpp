@@ -25,6 +25,8 @@ lassoPath(T& X,
           const bool standardize,
           const std::string screening_type,
           const bool shuffle,
+          const arma::uword check_frequency,
+          const arma::uword screen_frequency,
           const bool hessian_warm_starts,
           const bool celer_use_old_dual,
           const bool celer_use_accel,
@@ -38,7 +40,7 @@ lassoPath(T& X,
           const double gamma,
           const bool store_dual_variables,
           const bool verify_hessian,
-          const bool line_search,
+          const arma::uword line_search,
           const arma::uword verbosity)
 {
   using namespace arma;
@@ -185,6 +187,8 @@ lassoPath(T& X,
   std::vector<double> it_time;
   std::vector<double> kkt_time;
 
+  std::vector<bool> converged;
+
   wall_clock timer;
   timer.tic();
 
@@ -229,13 +233,14 @@ lassoPath(T& X,
                             standardize,
                             active_set_prev,
                             strong_set,
-                            duplicated,
                             lambda,
                             lambda_prev,
                             lambda_max,
                             active_set.n_elem,
                             screening_type_temp,
                             shuffle,
+                            check_frequency,
+                            screen_frequency,
                             celer_use_old_dual,
                             celer_use_accel,
                             celer_prune,
@@ -248,7 +253,10 @@ lassoPath(T& X,
                             verbosity);
 
     if (n_passes_i >= maxit) {
-      Rcpp::warning("the solver did not converge.");
+      // Rcpp::warning("solver failed to converge");
+      converged.emplace_back(false);
+    } else {
+      converged.emplace_back(true);
     }
 
     if (store_dual_variables) {
@@ -493,7 +501,6 @@ lassoPath(T& X,
                       Named("refits") = wrap(n_refits),
                       Named("active") = wrap(n_active),
                       Named("screened") = wrap(n_screened),
-                      Named("strong") = wrap(n_strong),
                       Named("new_active") = wrap(n_new_active),
                       Named("passes") = wrap(n_passes),
                       Named("full_time") = wrap(full_time),
@@ -502,6 +509,7 @@ lassoPath(T& X,
                       Named("hess_time") = wrap(hess_time),
                       Named("kkt_time") = wrap(kkt_time),
                       Named("gradcorr_time") = wrap(gradcorr_time),
+                      Named("converged") = wrap(converged),
                       Named("family") = wrap(family));
 }
 
@@ -513,6 +521,8 @@ lassoPathDense(arma::mat X,
                const bool standardize,
                const std::string screening_type,
                const bool shuffle,
+               const arma::uword check_frequency,
+               const arma::uword screen_frequency,
                const bool hessian_warm_starts,
                const bool celer_use_old_dual,
                const bool celer_use_accel,
@@ -526,7 +536,7 @@ lassoPathDense(arma::mat X,
                const double gamma,
                const bool store_dual_variables,
                const bool verify_hessian,
-               const bool line_search,
+               const arma::uword line_search,
                const arma::uword verbosity)
 {
   return lassoPath(X,
@@ -535,6 +545,8 @@ lassoPathDense(arma::mat X,
                    standardize,
                    screening_type,
                    shuffle,
+                   check_frequency,
+                   screen_frequency,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,
@@ -560,6 +572,8 @@ lassoPathSparse(arma::sp_mat X,
                 const bool standardize,
                 const std::string screening_type,
                 const bool shuffle,
+                const arma::uword check_frequency,
+                const arma::uword screen_frequency,
                 const bool hessian_warm_starts,
                 const bool celer_use_old_dual,
                 const bool celer_use_accel,
@@ -573,7 +587,7 @@ lassoPathSparse(arma::sp_mat X,
                 const double gamma,
                 const bool store_dual_variables,
                 const bool verify_hessian,
-                const bool line_search,
+                const arma::uword line_search,
                 const arma::uword verbosity)
 {
   return lassoPath(X,
@@ -582,6 +596,8 @@ lassoPathSparse(arma::sp_mat X,
                    standardize,
                    screening_type,
                    shuffle,
+                   check_frequency,
+                   screen_frequency,
                    hessian_warm_starts,
                    celer_use_old_dual,
                    celer_use_accel,

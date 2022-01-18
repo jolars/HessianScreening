@@ -16,7 +16,7 @@ if (family != "binomial") {
 n <- nrow(X)
 p <- ncol(X)
 verbosity <- 2
-line_search <- FALSE
+line_search <- 0
 tol_gap <- 1e-4
 maxit <- 1e7
 standardize <- FALSE

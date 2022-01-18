@@ -7,23 +7,29 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
   # gaussian
-  "cadata",
-  "e2006-tfidf-train",
-  "e2006-log1p-train",
-  "YearPredictionMSD-train",
+  # "e2006-tfidf-train",
+  # "e2006-log1p-train",
+  # "YearPredictionMSD-train",
   # binomial
   "arcene",
   "colon-cancer",
   "duke-breast-cancer",
   "ijcnn1-train",
-  "madelon-train",
-  "rcv1-train",
-  "news20"
+  "madelon-train"
+  # "rcv1-train",
+  # "news20"
 )
 
 g <- expand_grid(
   dataset = datasets,
-  screening_type = c("working", "hessian", "gap_safe", "edpp", "strong"),
+  screening_type = c(
+    "working",
+    "hessian",
+    # "gap_safe",
+    # "edpp",
+    # "blitz",
+    "celer"
+  ),
   family = NA,
   n = NA,
   p = NA,
@@ -35,6 +41,12 @@ g <- expand_grid(
   screened = list(NA),
   active = list(NA)
 )
+
+tol_gap <- 1e-4
+
+min_it <- 2
+max_error <- 0.05
+n_it <- 100 * min_it
 
 for (i in seq_len(nrow(g))) {
   d <- readRDS(file.path("data", paste0(g$dataset[i], ".rds")))
@@ -72,16 +84,28 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       verbosity = 0,
       log_hessian_update_type = log_hessian_update_type,
-      line_search = FALSE
+      tol_gap = tol_gap
     )
 
     time[k] <- fit$full_time
 
+    if (any(!fit$converged)) {
+      warning(
+        "failed to converge at i = ",
+        i,
+        " for solver = ",
+        screening_type,
+        " at steps ",
+        paste(which(!fit$converged)),
+        collapse = ","
+      )
+    }
+
     # stop if standard error is within 2.5% of mean
-    if (k > 1) {
+    if (k > min_it) {
       time_se <- sd(time[1:k]) / sqrt(k)
 
-      if (time_se / mean(time[1:k]) < 0.025) {
+      if (time_se / mean(time[1:k]) < ) {
         break
       }
     }

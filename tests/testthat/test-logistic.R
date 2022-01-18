@@ -3,7 +3,7 @@ test_that("test logistic regression on real data", {
 
   datalist <- "leukemia"
 
-  tol_gap <- 1e-3
+  tol_gap <- 1e-4
   standardize <- FALSE
   screening_types <- c("working", "hessian", "celer", "gap_safe", "blitz")
 
@@ -15,6 +15,7 @@ test_that("test logistic regression on real data", {
     y <- d$y
 
     for (screening_type in screening_types) {
+
       fit <- lassoPath(
         x,
         y,
@@ -28,7 +29,7 @@ test_that("test logistic regression on real data", {
         store_dual_variables = TRUE
       )
 
-      gaps <- check_gaps(fit, "binomial", standardize, x, y, tol_gap)
+      gaps <- check_gaps(fit, standardize, x, y, tol_gap)
 
       expect_true(all(gaps$below_tol))
     }

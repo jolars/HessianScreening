@@ -38,4 +38,8 @@ test: compile-attributes
 vignettes:
 	Rscript -e 'devtools::build_vignettes()'
 
+container:
+	$(DELETE) container.sif;\
+	sudo singularity build container.sif Singularity
+
 

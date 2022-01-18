@@ -2,7 +2,6 @@ library(tibble)
 library(dplyr)
 library(tidyr)
 library(readr)
-library(forcats)
 library(stringr)
 
 d_raw <- readRDS("results/realdata.rds")
@@ -16,7 +15,9 @@ d <-
       "working" = "Working",
       "hessian" = "Hessian",
       "gap_safe" = "GapSafe",
-      "edpp" = "EDPP"
+      "edpp" = "EDPP",
+      "celer" = "Celer",
+      "blitz" = "Blitz"
     ),
     family = recode(
       family,

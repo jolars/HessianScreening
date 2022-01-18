@@ -8,8 +8,8 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   # gaussian
   # "cadata",
-  "e2006-tfidf-train",
-  "e2006-log1p-train",
+  # "e2006-tfidf-train",
+  # "e2006-log1p-train",
   # "YearPredictionMSD-train",
   # binomial
   "arcene",
@@ -17,13 +17,20 @@ datasets <- c(
   "duke-breast-cancer",
   # "ijcnn1-train",
   # "madelon-train",
-  "rcv1-train",
-  "news20"
+  # "rcv1-train",
+  # "news20"
 )
 
 g <- expand_grid(
   dataset = datasets,
-  screening_type = c("strong", "hessian", "gap_safe", "edpp"),
+  screening_type = c(
+    "working",
+    "hessian",
+    "gap_safe",
+    "edpp",
+    "celer",
+    "blitz"
+  ),
   family = NA,
   n = NA,
   p = NA,
@@ -64,7 +71,7 @@ for (i in seq_len(nrow(g))) {
     verbosity = 0,
     gap_safe_active_start = FALSE,
     log_hessian_update_type = log_hessian_update_type,
-    line_search = FALSE
+    line_search = 0
   )
 
   g$n[i] <- n

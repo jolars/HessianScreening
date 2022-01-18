@@ -12,6 +12,8 @@ lassoPath(
   screening_type = c("working", "hessian", "hessian_adaptive", "edpp", "gap_safe",
     "strong", "celer", "blitz"),
   shuffle = match.arg(screening_type) == "blitz",
+  check_frequency = 10,
+  screen_frequency = 10,
   hessian_warm_starts = TRUE,
   celer_use_old_dual = TRUE,
   celer_use_accel = TRUE,
@@ -21,11 +23,11 @@ lassoPath(
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
   maxit = 1e+05,
-  tol_gap = 1e-05,
+  tol_gap = 1e-04,
   gamma = 0.01,
+  store_dual_variables = FALSE,
   verify_hessian = FALSE,
-  force_kkt_check = FALSE,
-  line_search = FALSE,
+  line_search = NULL,
   verbosity = 0
 )
 }
@@ -39,6 +41,14 @@ lassoPath(
 \item{standardize}{Whether to standardize the predictors}
 
 \item{screening_type}{Screening rule}
+
+\item{shuffle}{Shuffle working set before each CD pass?}
+
+\item{check_frequency}{Frequency at which duality gap is checked for
+inner CD loop}
+
+\item{screen_frequency}{Frequency at which predictors are screened for
+the gap safe solver}
 
 \item{hessian_warm_starts}{Whether to use the active start strategy for
 the Gap-Safe rule}
@@ -60,14 +70,10 @@ updating the hessian for logistic regression}
 \item{verify_hessian}{Whether to not to verify that Hessian updates are
 correct. Used only for diagnostic purposes.}
 
-\item{force_kkt_check}{Whether to force KKT checks even when screening rule
-is safe}
+\item{line_search}{Use line search in CD solver.}
 
-\item{line_search}{Use line search in CD solver. For Blitz, the line search
-is always used (irrespective of input to this argument). For other solvers,
-it is used only if this argument is > 0 and the family is Binomial.}
-
-\item{verbosity}{Controls the level of verbosity. 0 = no output.}
+\item{verbosity}{Controls the level of verbosity. 0 = no output, 1 = outer
+level output, 2 = inner solver output}
 }
 \description{
 This function fits the full lasso path.

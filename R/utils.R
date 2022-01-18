@@ -25,11 +25,6 @@ gaussian_primal <- function(x, y, beta, lambda) {
 }
 
 gaussian_dual <- function(y, theta, lambda) {
-#   residual <- y - x %*% beta
-#   correlation <- Matrix::crossprod(x, residual)
-
-#   theta <- residual / max(lambda, max(abs(correlation)))
-
   0.5 * norm(y, "2")^2 - 0.5 * lambda^2 * norm(theta - y / lambda, "2")^2
 }
 
@@ -66,14 +61,27 @@ binomial_dual <- function(y, theta, lambda) {
 #'
 #' @return primals, duals, and relative duality gaps
 #' @export
-check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
+check_gaps <- function(fit, standardize, x, y, tol_gap = 1e-4) {
   beta <- fit$beta
   theta <- fit$theta
   lambda <- fit$lambda
+  family <- fit$family
 
   if (ncol(theta) == 0) {
     stop("please call fitLasso() with `store_dual_variables = TRUE`")
   }
+
+  if (standardize) {
+    pop_sd <- function(a) sqrt((length(a) - 1) / length(a)) * sd(a)
+
+    s <- apply(x, 2, pop_sd)
+    beta <- beta * s
+
+    x <- scale(x, scale = s)
+  }
+
+  if (family == "gaussian")
+    y <- y - mean(y)
 
   duals <- primals <- double(length(lambda))
 
@@ -95,5 +103,13 @@ check_gaps <- function(fit, family, standardize, x, y, tol_gap = 1e-4) {
     gaps = primals - duals,
     rel_gaps = (primals - duals) / pmax(1, primals),
     below_tol = (primals - duals) / pmax(1, primals) <= tol_gap
+  )
+}
+
+recode_methods <- function(x) {
+  screening_type = factor(
+    x,
+    levels = c("hessian", "working", "edpp", "celer", "blitz", "gap_safe"),
+    labels = c("Hessian", "Working", "EDPP", "Celer", "Blitz", "Gap Safe")
   )
 }

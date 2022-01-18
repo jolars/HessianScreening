@@ -1,5 +1,5 @@
-Bootstrap: docker
-from: rocker/r-ver:4.0.4
+Bootstrap: library
+from: jolars/default/r:4.1.2
 
 %files
     data /Project/data
@@ -14,18 +14,21 @@ from: rocker/r-ver:4.0.4
     DESCRIPTION /Project/DESCRIPTION
     NAMESPACE /Project/NAMESPACE
     renv.lock /Project/renv.lock
-    .Rprofile /Project/.Rprofile
+    #.Rprofile /Project/.Rprofile
     .Rbuildignore
 
+    /home/gerd-jln/.cache/R/renv/cache /renv/cache
+
 %post
-    # # need to switch from pthreads to openmp to get right performance
-    apt-get update
-    apt-get install -y libopenblas-openmp-dev libopenblas0-openmp
-    apt-get remove -y libopenblas-pthread-dev libopenblas0-pthread
+    export RENV_VERSION=0.15.1
+    export RENV_PATHS_CACHE=/renv/cache
 
-    cd Project
+    R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
+    R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
 
-    Rscript -e 'renv::restore()'
+    cd /Project
+
+    R --vanilla -s -e 'renv::restore()'
 
     R CMD INSTALL --preclean --no-multiarch .
 
@@ -34,9 +37,9 @@ from: rocker/r-ver:4.0.4
 %runscript
     if [ -z "$@" ]; then
         # if there's no argument, simply test R
-        Rscript -e 'sessionInfo()'
+        R --vanilla -s -e 'sessionInfo()'
     else
         # if there's an argument, then run it and hope it's an R script
         cd /Project
-        Rscript -e "source(\"experiments/$@\")"
+        R --vanilla -s -e "source(\"experiments/$@\")"
     fi
