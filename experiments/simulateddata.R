@@ -28,10 +28,12 @@ g <- expand_grid(
   converged = NA
 )
 
-MIN_ITERATIONS <- 10
-n_it <- 10 * MIN_ITERATIONS
+tol_gap <- 1e-4
 
-tol_gap <- 1e-5
+min_it <- 10
+max_it <- 100 * min_it
+max_err <- 0.1
+conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -44,11 +46,13 @@ for (i in seq_len(nrow(g))) {
     next
   }
 
-  if (screening_type %in% c("hessian", "blitz")) {
-    check_frequency <- 1
-  } else {
-    check_frequency <- 10
-  }
+  # if (screening_type %in% c("hessian", "blitz")) {
+  #   check_frequency <- 1
+  # } else {
+  #   check_frequency <- 10
+  # }
+  
+  check_frequency <- 10
 
   if (scenario == 1) {
     n <- 10000
@@ -62,15 +66,15 @@ for (i in seq_len(nrow(g))) {
     s <- 20
   }
 
-  avg_screened <- violations <- time <- double(n_it)
-  active <- screened <- matrix(NA, nrow = n_it, ncol = path_length)
+  avg_screened <- violations <- time <- double(max_it)
+  active <- screened <- matrix(NA, nrow = max_it, ncol = path_length)
 
   printf(
     "%02d/%i %-10s n: %4d p: %4d rho: %1.1f %-10s\n",
     i, nrow(g), family, n, p, rho, screening_type
   )
 
-  for (j in seq_len(n_it)) {
+  for (j in seq_len(max_it)) {
     set.seed(j)
 
     d <- generateDesign(n, p, family = family, rho = rho, snr = snr)
@@ -86,7 +90,6 @@ for (i in seq_len(nrow(g))) {
       log_hessian_update_type = "full",
       check_frequency = check_frequency,
       verbosity = 0,
-      gamma = 0.01,
       tol_gap = tol_gap,
       celer_prune = FALSE,
       celer_use_accel = TRUE,
@@ -114,10 +117,11 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (j > MIN_ITERATIONS) {
-      time_se <- sd(time[1:j]) / sqrt(j)
+    if (j > min_it) {
+      se <- sd(time[1:j]) / sqrt(j)
+      ci_width <- 2 * qt(1 - conf_level / 2, df = j - 1) * se
 
-      if (time_se / mean(time[1:j]) < 0.025) {
+      if (ci_width / mean(time[1:j]) < max_err) {
         break
       }
     }

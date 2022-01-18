@@ -7,7 +7,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
   # gaussian
-  # "e2006-tfidf-train",
+  "e2006-tfidf-train",
   # "e2006-log1p-train",
   # "YearPredictionMSD-train",
   # binomial
@@ -27,7 +27,7 @@ g <- expand_grid(
     "hessian",
     # "gap_safe",
     # "edpp",
-    # "blitz",
+    "blitz",
     "celer"
   ),
   family = NA,
@@ -44,9 +44,11 @@ g <- expand_grid(
 
 tol_gap <- 1e-4
 
-min_it <- 2
-max_error <- 0.05
-n_it <- 100 * min_it
+min_it <- 10
+# max_it <- 10 * min_it
+max_it <- 1
+max_err <- 0.1
+conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
   d <- readRDS(file.path("data", paste0(g$dataset[i], ".rds")))
@@ -72,11 +74,13 @@ for (i in seq_len(nrow(g))) {
 
   printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
-  n_it <- 100
+  max_it <- 100
 
-  time <- double(n_it)
+  time <- double(max_it)
 
-  for (k in seq_len(n_it)) {
+  for (k in seq_len(max_it)) {
+    set.seed(848)
+
     fit <- lassoPath(
       X,
       y,
@@ -102,10 +106,11 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (k > min_it) {
-      time_se <- sd(time[1:k]) / sqrt(k)
+    if (j > min_it) {
+      se <- sd(time[1:j]) / sqrt(j)
+      ci_width <- 2 * qt(1 - conf_level / 2, df = j - 1) * se
 
-      if (time_se / mean(time[1:k]) < ) {
+      if (ci_width / mean(time[1:j]) < max_err) {
         break
       }
     }
