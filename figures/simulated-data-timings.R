@@ -1,10 +1,6 @@
 library(tibble)
 library(tidyr)
 library(dplyr)
-library(forcats)
-library(lattice)
-library(latticeExtra)
-library(tactile)
 library(tikzDevice)
 library(ggplot2)
 
@@ -17,14 +13,7 @@ fw <- 5.6
 d_raw <- readRDS("results/simulateddata.rds") %>%
   filter(screening_type != "strong") %>%
   mutate(
-    screening_type = recode(
-      screening_type,
-      "hessian" = "Hessian",
-      "working" = "Working",
-      "gap_safe" = "Gap Safe",
-      "edpp" = "EDPP",
-      "celer" = "Celer"
-    ),
+    screening_type = recode_methods(screening_type),
     rho = as.factor(rho),
     np = paste0("$n=", n, "$, $p=", p, "$"),
     np = reorder(np, p),

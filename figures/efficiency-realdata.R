@@ -1,9 +1,9 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(lemon)
+# library(lemon)
 library(tikzDevice)
-library(knitr)
+# library(knitr)
 
 source("R/utils.R")
 

@@ -33,13 +33,14 @@ fit(arma::uvec& screened,
     const bool standardize,
     const arma::uvec& active_set,
     const arma::uvec& strong_set,
-    const arma::uvec& duplicated,
     const double lambda,
     const double lambda_prev,
     const double lambda_max,
     const arma::uword n_active_prev,
     const std::string screening_type,
     const bool shuffle,
+    const arma::uword check_frequency,
+    const arma::uword screen_frequency,
     const bool celer_use_old_dual,
     const bool celer_use_accel,
     const bool celer_prune,
@@ -47,7 +48,7 @@ fit(arma::uvec& screened,
     const arma::uword step,
     const arma::uword maxit,
     const double tol_gap_rel,
-    const bool line_search,
+    const arma::uword line_search,
     const arma::uword ws_size_init,
     const arma::uword verbosity)
 {
@@ -56,23 +57,13 @@ fit(arma::uvec& screened,
   const uword n = X.n_rows;
   const uword p = X.n_cols;
 
-  uword check_frequency = n > p ? 1 : 10;
-
-  if (screening_type == "celer") {
-    check_frequency = 10;
-  } else if (screening_type == "blitz" || line_search) {
-    check_frequency = 1;
-  }
-
-  const uword SCREEN_FREQUENCY = 10;
-
   if (screening_type == "celer" || screening_type == "gap_safe" ||
       screening_type == "blitz")
     screened.fill(true);
 
-  uvec screened_set = find(screened && duplicated == false);
+  uvec screened_set = find(screened);
   uvec working_set = screened_set;
-  uvec safe = duplicated == false;
+  uvec safe(p, fill::ones);
   uvec safe_set = find(safe);
   uvec violations(p);
 
@@ -95,7 +86,7 @@ fit(arma::uvec& screened,
   double duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
   double duality_gap_rel_prev = datum::inf;
 
-  bool inner_solver_converged = true;
+  bool inner_solver_converged = false;
   bool progress = true;
   double dual_scale_old = dual_scale;
   double dual_value_old = dual_value;
@@ -113,12 +104,20 @@ fit(arma::uvec& screened,
   vec residual_prev;
   vec z(K);
 
-  // line search paramters
+  // gap-safe stuff
+  bool active_start = gap_safe_active_start;
+
+  // line search type 1 paramters
   const uword MAX_BACKTRACK_ITR = 20;
   const uword MAX_PROX_NEWTON_CD_ITR = 20;
   const double PROX_NEWTON_EPSILON_RATIO = 10;
   const uword MIN_PROX_NEWTON_CD_ITR = 2;
-  bool first_inner_iteration = true;
+
+  // line search type 2 parameters
+  const double a = 0.1;
+  const double b = 0.5;
+  vec t(p, fill::ones); // learning rates
+
   double prox_newton_grad_diff = 0;
 
   if (screening_type == "celer") {
@@ -139,7 +138,7 @@ fit(arma::uvec& screened,
   double kkt_time = 0;
 
   if (!screened_set.is_empty()) {
-    updateLinearPredictor(Xbeta, X, beta, X_offset, standardize, screened_set);
+    updateLinearPredictor(Xbeta, X, beta, X_offset, standardize, active_set);
     model->updateResidual(residual, Xbeta, y);
 
     while (it < maxit) {
@@ -152,8 +151,9 @@ fit(arma::uvec& screened,
         if (inner_solver_converged && it > 0) {
           double t0 = timer.toc();
 
-          uvec unscreened_set =
-            find(safe && screened == false && duplicated == false);
+          bool outer_check = false;
+
+          uvec unscreened_set = find(safe && (screened == false));
 
           violations.fill(false);
 
@@ -165,58 +165,70 @@ fit(arma::uvec& screened,
             uvec check_set = setDiff(unscreened_set, strong_set);
             updateCorrelation(c, residual, X, check_set, X_offset, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
+
+            n_refits += 1;
+            outer_check = true;
           }
 
           kkt_time += timer.toc() - t0;
 
-          primal_value =
-            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
+          if (!any(violations)) {
+            // only check gap when there are no violations
+            primal_value =
+              model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-          dual_scale = std::max(lambda, max(abs(c(safe_set))));
-          theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
-          duality_gap = primal_value - dual_value;
+            dual_scale = std::max(lambda, max(abs(c(safe_set))));
+            theta = residual / dual_scale;
+            dual_value = model->dual(theta, y, lambda);
+            duality_gap = primal_value - dual_value;
 
-          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
+            duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
 
-          if (verbosity >= 2) {
-            Rprintf("    global primal: %f, global dual: %f, global gap: %f\n",
-                    primal_value,
-                    dual_value,
-                    duality_gap_rel);
+            if (verbosity >= 2) {
+              Rprintf(
+                "    global primal: %f, global dual: %f, global gap: %f\n",
+                primal_value,
+                dual_value,
+                duality_gap_rel);
+            }
+
+            if (duality_gap_rel <= tol_gap_rel)
+              break;
           }
 
-          if (duality_gap_rel <= tol_gap_rel)
-            break;
+          if (outer_check) {
+            // have updated entire correlation vector, so let's use 
+            // it to gap-safe screen
+            double r_screen = model->safeScreeningRadius(duality_gap, lambda);
 
-          double r_screen = model->safeScreeningRadius(duality_gap, lambda);
+            safeScreening(safe,
+                          safe_set,
+                          residual,
+                          Xbeta,
+                          beta,
+                          c,
+                          dual_scale,
+                          r_screen,
+                          model,
+                          X,
+                          y,
+                          X_offset,
+                          standardize,
+                          X_norms);
+          }
 
-          safeScreening(safe,
-                        safe_set,
-                        residual,
-                        Xbeta,
-                        beta,
-                        c,
-                        dual_scale,
-                        r_screen,
-                        model,
-                        X,
-                        y,
-                        X_offset,
-                        standardize,
-                        X_norms);
-
-          n_refits += 1;
-          n_violations += sum(violations);
+          screened = screened && safe;
           screened_set = find(screened);
           working_set = screened_set;
         }
+
+        n_violations += sum(violations);
       }
 
       if (screening_type == "gap_safe") {
         if (it == 0 && gap_safe_active_start) {
           working_set = active_set;
-        } else if (it % SCREEN_FREQUENCY == 0) {
+        } else if ((it % screen_frequency == 0) && !active_start) {
           double t0 = timer.toc();
           updateCorrelation(
             c, residual, X, screened_set, X_offset, standardize);
@@ -266,7 +278,7 @@ fit(arma::uvec& screened,
       }
 
       if (screening_type == "celer") {
-        if (inner_solver_converged) {
+        if (inner_solver_converged || it == 0) {
           primal_value =
             model->primal(residual, Xbeta, beta, y, lambda, screened_set);
 
@@ -364,9 +376,9 @@ fit(arma::uvec& screened,
       }
 
       if (screening_type == "blitz") {
-        if (inner_solver_converged) {
+        if (inner_solver_converged || it == 0) {
           primal_value =
-            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
+            model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
           updateCorrelation(
             c, residual, X, screened_set, X_offset, standardize);
@@ -435,7 +447,9 @@ fit(arma::uvec& screened,
           }
 
           ws_size = std::min(ws_size, screened_set.n_elem);
+
           uvec ind = sort_index(d(screened_set), "ascend");
+
           working_set = screened_set(ind.head(ws_size));
         }
       }
@@ -443,14 +457,48 @@ fit(arma::uvec& screened,
       n_screened += screened_set.n_elem;
 
       if (inner_solver_converged) {
-        // reset inner solver counters
+        // reset inner solver variables
         it_inner = 0;
         inner_solver_converged = false;
+        progress = true;
       }
 
       double t0 = timer.toc();
 
-      if (line_search) {
+      // beta(setDiff(screened_set, working_set)).zeros();
+
+      if (line_search == 0) {
+        // no line search
+        if (it_inner != 0) {
+          if (shuffle || !progress)
+            working_set = arma::shuffle(working_set);
+        }
+
+        for (auto&& j : working_set) {
+          updateCorrelation(c, residual, X, j, X_offset, standardize);
+          double hess_j = model->hessianTerm(X, j, X_offset, standardize);
+
+          if (hess_j <= 0)
+            continue;
+
+          double beta_j_old = beta(j);
+          double v =
+            prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
+
+          if (v != 0) {
+            beta(j) = beta_j_old + v;
+            model->adjustResidual(residual,
+                                  Xbeta,
+                                  X,
+                                  y,
+                                  j,
+                                  beta(j) - beta_j_old,
+                                  X_offset,
+                                  standardize);
+          }
+        }
+      } else if (line_search == 1) {
+        // blitz-type line search
         // this code is based on https://github.com/tbjohns/BlitzL1 as of
         // 2022-01-12, which is licensed under the MIT license, Copyright
         // Tyler B. Johnson 2015
@@ -472,14 +520,12 @@ fit(arma::uvec& screened,
           hess_cache(j) = model->hessianTerm(X, ind, X_offset, standardize);
         }
 
-        if (first_inner_iteration) {
+        if (it_inner == 0) {
           max_cd_itr = MIN_PROX_NEWTON_CD_ITR;
           prox_newton_grad_diff = 0;
 
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
           prox_newton_grad_cache = -c(working_set);
-
-          first_inner_iteration = false;
         } else {
           prox_newton_epsilon =
             PROX_NEWTON_EPSILON_RATIO * prox_newton_grad_diff;
@@ -487,14 +533,12 @@ fit(arma::uvec& screened,
 
         for (uword it_inner = 0; it_inner < max_cd_itr; ++it_inner) {
 
-          if (shuffle || !progress) {
-            uvec perm = randperm(ws_size);
+          uvec perm = randperm(ws_size);
 
-            working_set = working_set(perm);
-            delta_beta = delta_beta(perm);
-            prox_newton_grad_cache = prox_newton_grad_cache(perm);
-            hess_cache = hess_cache(perm);
-          }
+          working_set = working_set(perm);
+          delta_beta = delta_beta(perm);
+          prox_newton_grad_cache = prox_newton_grad_cache(perm);
+          hess_cache = hess_cache(perm);
 
           double sum_sq_hess_diff = 0;
 
@@ -585,10 +629,14 @@ fit(arma::uvec& screened,
           double diff = actual_grad - approximate_grad;
           prox_newton_grad_diff += diff * diff;
         }
-      } else {
-        if (first_inner_iteration) {
-          first_inner_iteration = false;
-        } else {
+      } else if (line_search == 2) {
+        // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
+        // “Proximal Newton-type methods for minimizing composite
+        // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
+        // Accessed: Jan. 12, 2020. [Online]. Available:
+        // http://arxiv.org/abs/1206.1623)
+
+        if (it_inner == 0) {
           if (shuffle || !progress)
             working_set = arma::shuffle(working_set);
         }
@@ -605,20 +653,38 @@ fit(arma::uvec& screened,
             prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
 
           if (v != 0) {
-            beta(j) = beta_j_old + v;
-            model->adjustResidual(residual,
-                                  Xbeta,
-                                  X,
-                                  y,
-                                  j,
-                                  beta(j) - beta_j_old,
-                                  X_offset,
-                                  standardize);
+            double primal_value_old =
+              model->primal(residual, Xbeta, beta, y, lambda, working_set);
+
+            while (true) {
+              double beta_j_prev = beta(j);
+
+              beta(j) = beta_j_old + t(j) * v;
+              model->adjustResidual(residual,
+                                    Xbeta,
+                                    X,
+                                    y,
+                                    j,
+                                    beta(j) - beta_j_prev,
+                                    X_offset,
+                                    standardize);
+
+              primal_value =
+                model->primal(residual, Xbeta, beta, y, lambda, working_set);
+
+              double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
+                                                 std::abs(beta_j_old));
+
+              if (primal_value * (1 - std::sqrt(datum::eps)) <=
+                  primal_value_old + a * t(j) * eta) {
+                break;
+              } else {
+                t(j) *= b;
+              }
+            }
           }
         }
       }
-
-      kkt_time += timer.toc() - t0;
 
       if (screening_type == "celer" && celer_use_accel && it_inner > 0) {
         sword ind = (it_inner - 1) % check_frequency - K;
@@ -631,11 +697,13 @@ fit(arma::uvec& screened,
 
       residual_prev = residual;
 
-      if (screening_type != "gap_safe" && (it_inner % check_frequency == 0)) {
+      bool check = screening_type == "gap_safe" ? active_start : true;
+
+      if (check && (it_inner % check_frequency == 0)) {
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        if (!line_search) {
+        if (line_search != 1) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
         }
@@ -689,9 +757,10 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
 
-        if (line_search) {
-          // line search should ensure progress, so if primal value increases,
-          // then the limit of machine precision must have been reached
+        if (line_search > 0) {
+          // line search should ensure progress in the primal, so if primal
+          // value increases, then the limit of machine precision must have been
+          // reached
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
         }
@@ -705,15 +774,17 @@ fit(arma::uvec& screened,
           if (verbosity >= 2)
             Rprintf("      inner solver converged\n");
 
-          first_inner_iteration = true;
-          progress = true;
           primal_value_prev = datum::inf;
           duality_gap_rel_prev = datum::inf;
+
+          active_start = false;
         } else {
-          duality_gap_rel_prev = duality_gap_rel;
           primal_value_prev = primal_value;
+          duality_gap_rel_prev = duality_gap_rel;
         }
       }
+
+      cd_time += timer.toc() - t0;
 
       if (it % 10 == 0) {
         Rcpp::checkUserInterrupt();
@@ -722,6 +793,7 @@ fit(arma::uvec& screened,
       it++;
       it_inner++;
     }
+
   } else {
     beta.zeros();
   }

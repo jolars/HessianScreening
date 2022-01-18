@@ -64,7 +64,7 @@ test_that("gaussian and logistic models for simulated data", {
       store_dual_variables = TRUE
     )
 
-    gaps <- check_gaps(fit, family, standardize, X, y, tol_gap)
+    gaps <- check_gaps(fit, standardize, X, y, tol_gap)
 
     expect_true(all(gaps$below_tol))
   }

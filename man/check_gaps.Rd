@@ -4,16 +4,16 @@
 \alias{check_gaps}
 \title{Get Duality Gaps}
 \usage{
-check_gaps(fit, family, standardize, x, y, tol_gap = 1e-04)
+check_gaps(fit, standardize, x, y, tol_gap = 1e-04)
 }
 \arguments{
 \item{fit}{the resulting fit}
 
-\item{family}{the loss function}
-
 \item{x}{design matrix}
 
 \item{y}{response vector}
+
+\item{family}{the loss function}
 }
 \value{
 primals, duals, and relative duality gaps
