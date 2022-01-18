@@ -215,6 +215,7 @@ fit(arma::uvec& screened,
                           X_offset,
                           standardize,
                           X_norms);
+
             screened = screened && safe;
             screened_set = find(screened);
           }
