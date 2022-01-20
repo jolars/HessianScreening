@@ -1,5 +1,5 @@
-Bootstrap: library
-from: jolars/default/r:4.1.2
+Bootstrap: docker
+from: fedora:35
 
 %files
     data /Project/data
@@ -14,14 +14,29 @@ from: jolars/default/r:4.1.2
     DESCRIPTION /Project/DESCRIPTION
     NAMESPACE /Project/NAMESPACE
     renv.lock /Project/renv.lock
-    #.Rprofile /Project/.Rprofile
     .Rbuildignore
 
     /home/gerd-jln/.cache/R/renv/cache /renv/cache
 
 %post
+    export R_VERSION=4.1.2
     export RENV_VERSION=0.15.1
     export RENV_PATHS_CACHE=/renv/cache
+
+    dnf update -y
+
+    # set locale
+    dnf install -y glibc-langpack-en glibc-locale-source
+    localedef -f UTF-8 -i en_US en_US.UTF-8
+
+    dnf install -y \
+      R-${R_VERSION} \
+      libpng-devel \
+      libxml2-devel \
+      libjpeg-devel \
+      libcurl-devel \
+      libxslt-devel \
+      openssl-devel
 
     R -e "install.packages('remotes', repos = c(CRAN = 'https://cloud.r-project.org'))"
     R -e "remotes::install_github('rstudio/renv@${RENV_VERSION}')"
@@ -30,7 +45,7 @@ from: jolars/default/r:4.1.2
 
     R --vanilla -s -e 'renv::restore()'
 
-    R CMD INSTALL --preclean --no-multiarch .
+    R CMD INSTALL --no-multiarch .
 
     chmod -R a+rX /Project
 
