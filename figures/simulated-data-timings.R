@@ -12,6 +12,8 @@ theme_set(theme_minimal(base_size = 9))
 fig_width <- 6.8
 fig_height <- 2.5
 
+conf_level <- 0.05
+
 d_raw <- readRDS("results/simulateddata.rds") %>%
   filter(!(screening_type %in% c("strong", "edpp"))) %>%
   mutate(
@@ -32,7 +34,7 @@ d1 <-
   group_by(np, rho, family, screening_type) %>% summarize(
     meantime = mean(time),
     se = sd(time) / sqrt(n()),
-    t = qt(1 - 0.05/2, df = n() - 1) * se
+    t = qnorm(1 - conf_level/2) * se
   ) %>%
   mutate(
     hi = meantime + t,
