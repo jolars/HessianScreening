@@ -31,9 +31,9 @@ checkStoppingConditions(const arma::uword step,
       "    dev ratio:  %.3f\n    dev change: %.6f\n", dev_ratio, dev_change);
   }
 
-  // if (dev_change <= 1e-5 && screening_type != "hessian_adaptive") {
-  //   return true;
-  // }
+  if (dev_change <= 1e-5 && screening_type != "hessian_adaptive") {
+    return true;
+  }
 
   if (dev_ratio >= 0.999) {
     return true;
