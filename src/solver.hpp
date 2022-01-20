@@ -47,7 +47,7 @@ fit(arma::uvec& screened,
     const bool gap_safe_active_start,
     const arma::uword step,
     const arma::uword maxit,
-    const double tol_gap_rel,
+    double tol_gap_rel,
     const arma::uword line_search,
     const arma::uword ws_size_init,
     const arma::uword verbosity)
@@ -81,12 +81,12 @@ fit(arma::uvec& screened,
   vec w(n, fill::ones);
 
   // const double tol_mod = model->toleranceModifier(y);
+  tol_gap_rel = tol_gap_rel * model->toleranceModifier(y);
 
   const double GAP_EPS = 1.0;
 
   double duality_gap = primal_value - dual_value;
-  double duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
-  double duality_gap_rel_prev = datum::inf;
+  double duality_gap_prev = datum::inf;
 
   bool inner_solver_converged = false;
   bool progress = true;
@@ -186,17 +186,15 @@ fit(arma::uvec& screened,
             dual_value = model->dual(theta, y, lambda);
             duality_gap = primal_value - dual_value;
 
-            duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
-
             if (verbosity >= 2) {
               Rprintf(
                 "    global primal: %f, global dual: %f, global gap: %f\n",
                 primal_value,
                 dual_value,
-                duality_gap_rel);
+                duality_gap);
             }
 
-            if (duality_gap_rel <= tol_gap_rel)
+            if (duality_gap <= tol_gap_rel)
               break;
           }
 
@@ -246,19 +244,17 @@ fit(arma::uvec& screened,
           dual_value = model->dual(theta, y, lambda);
           duality_gap = primal_value - dual_value;
 
-          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
-
           if (verbosity >= 2) {
             Rprintf(
               "      global primal: %f, global dual: %f, global gap: %f\n",
               primal_value,
               dual_value,
-              duality_gap_rel);
+              duality_gap);
           }
 
           kkt_time += timer.toc() - t0;
 
-          if (duality_gap_rel <= tol_gap_rel)
+          if (duality_gap <= tol_gap_rel)
             break;
 
           double r_screen = model->safeScreeningRadius(duality_gap, lambda);
@@ -312,17 +308,16 @@ fit(arma::uvec& screened,
           }
 
           duality_gap = primal_value - dual_value;
-          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
 
           if (verbosity >= 2) {
             Rprintf(
               "      global primal: %f, global dual: %f, global gap: %f\n",
               primal_value,
               dual_value,
-              duality_gap_rel);
+              duality_gap);
           }
 
-          if (duality_gap_rel <= tol_gap_rel)
+          if (duality_gap <= tol_gap_rel)
             break;
 
           vec d(p);
@@ -393,17 +388,16 @@ fit(arma::uvec& screened,
           dual_value = model->dual(theta, y, lambda);
 
           duality_gap = primal_value - dual_value;
-          duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
 
           if (verbosity >= 2) {
             Rprintf(
               "      global primal: %f, global dual: %f, global gap: %f\n",
               primal_value,
               dual_value,
-              duality_gap_rel);
+              duality_gap);
           }
 
-          if (duality_gap_rel <= tol_gap_rel)
+          if (duality_gap <= tol_gap_rel)
             break;
 
           vec d(p);
@@ -718,7 +712,6 @@ fit(arma::uvec& screened,
         dual_value = model->dual(theta, y, lambda);
 
         duality_gap = primal_value - dual_value;
-        duality_gap_rel = duality_gap / std::max(GAP_EPS, primal_value);
 
         if (screening_type == "celer" && celer_use_accel && it_inner >= K) {
           // use dual extrapolation
@@ -758,9 +751,9 @@ fit(arma::uvec& screened,
           Rprintf("      primal: %f, dual: %f, gap: %f\n",
                   primal_value,
                   dual_value,
-                  duality_gap_rel);
+                  duality_gap);
 
-        inner_solver_converged = duality_gap_rel <= tol_gap_rel_inner;
+        inner_solver_converged = duality_gap <= tol_gap_rel_inner;
 
         if (line_search > 0) {
           // line search should ensure progress in the primal, so if primal
@@ -770,7 +763,7 @@ fit(arma::uvec& screened,
             inner_solver_converged = true;
         }
 
-        progress = duality_gap_rel < duality_gap_rel_prev;
+        progress = duality_gap < duality_gap_prev;
 
         if (!progress && verbosity >= 2)
           Rprintf("      no progress; shuffling indices\n");
@@ -780,12 +773,12 @@ fit(arma::uvec& screened,
             Rprintf("      inner solver converged\n");
 
           primal_value_prev = datum::inf;
-          duality_gap_rel_prev = datum::inf;
+          duality_gap_prev = datum::inf;
 
           active_start = false;
         } else {
           primal_value_prev = primal_value;
-          duality_gap_rel_prev = duality_gap_rel;
+          duality_gap_prev = duality_gap;
         }
       }
 
