@@ -332,7 +332,7 @@ fit(arma::uvec& screened,
             (1.0 - abs(c(screened_set)) / dual_scale) / X_norms(screened_set);
 
           if (celer_prune) {
-            tol_gap_rel_inner = duality_gap_rel * 0.3;
+            tol_gap_rel_inner = duality_gap * 0.3;
             uvec active_set = find(beta != 0);
 
             d(active_set).fill(-1);
@@ -412,7 +412,7 @@ fit(arma::uvec& screened,
           d(screened_set) =
             (1.0 - abs(c(screened_set)) / dual_scale) / X_norms(screened_set);
 
-          tol_gap_rel_inner = duality_gap_rel * 0.3;
+          tol_gap_rel_inner = duality_gap * 0.3;
 
           uvec active_set = find(beta != 0);
 
@@ -538,8 +538,8 @@ fit(arma::uvec& screened,
 
         for (uword it_inner = 0; it_inner < max_cd_itr; ++it_inner) {
 
+          // blitz always shuffles the working set
           uvec perm = randperm(ws_size);
-
           working_set = working_set(perm);
           delta_beta = delta_beta(perm);
           prox_newton_grad_cache = prox_newton_grad_cache(perm);
