@@ -113,6 +113,4 @@ public:
 
   virtual double safeScreeningRadius(const double duality_gap,
                                      const double lambda) = 0;
-
-  virtual double toleranceModifier(const arma::vec& y) = 0;
 };

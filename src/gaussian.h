@@ -106,6 +106,4 @@ public:
   void standardizeY(arma::vec& y);
 
   double safeScreeningRadius(const double duality_gap, const double lambda);
-
-  double toleranceModifier(const arma::vec& y);
 };

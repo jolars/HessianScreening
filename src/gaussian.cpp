@@ -237,9 +237,3 @@ Gaussian::safeScreeningRadius(const double duality_gap, const double lambda)
 {
   return std::sqrt(2 * std::max(duality_gap, 0.0)) / lambda;
 }
-
-double
-Gaussian::toleranceModifier(const arma::vec& y)
-{
-  return std::pow(arma::norm(y), 2);
-}
