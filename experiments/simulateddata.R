@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 g <- expand_grid(
   family = c("gaussian", "binomial"),
   scenario = c(1, 2),
-  tol_gap = c(1e-4),
+  tol_gap = c(1e-6),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
@@ -30,7 +30,7 @@ g <- expand_grid(
   converged = NA
 )
 
-min_it <- 10
+min_it <- 5
 max_it <- 100 * min_it
 max_err <- 0.1
 conf_level <- 0.05
@@ -53,8 +53,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 40000
+    n <- 200
+    p <- 20000
     snr <- 2
     s <- 20
   }
