@@ -15,9 +15,9 @@ datasets <- c(
   "colon-cancer",
   "duke-breast-cancer",
   "ijcnn1-train",
-  "madelon-train"
-  # "rcv1-train",
-  # "news20"
+  "madelon-train",
+  "rcv1-train",
+  "news20"
 )
 
 g <- expand_grid(
@@ -44,9 +44,8 @@ g <- expand_grid(
 
 tol_gap <- 1e-4
 
-min_it <- 10
-# max_it <- 10 * min_it
-max_it <- 1
+min_it <- 3
+max_it <- 10 * min_it
 max_err <- 0.1
 conf_level <- 0.05
 

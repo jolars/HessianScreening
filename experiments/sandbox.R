@@ -3,49 +3,38 @@ library(readr)
 
 set.seed(3)
 
-family <- "binomial"
-density <- 0.3
+family <- "gaussian"
+density <- 1 
 
 set.seed(14)
-d <- generateDesign(100, 3, family = family, density = density)
+d <- generateDesign(100, 1000, family = family, density = density)
+# d <- readRDS("data/e2006-tfidf-train.rds")
 X <- d$X
 y <- d$y
 
-if (family != "binomial") {
-  y <- y - mean(y)
-}
-
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 1
-line_search <- 0
+verbosity <- 0
 tol_gap <- 1e-4
 maxit <- 1e4
-standardize <- FALSE
+standardize <- TRUE
 
-fit_celer <- lassoPath(
+fit <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "blitz",
+  screening_type = "celer",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,
-  line_search = line_search,
   gap_safe_active_start = TRUE,
-  celer_use_accel = FALSE,
-  celer_prune = TRUE,
-  maxit = maxit
+  celer_use_accel = TRUE,
+  celer_prune = FALSE,
+  maxit = maxit,
+  store_dual_variables = TRUE
 )
 
-lambda <- fit_celer$lambda
+# real_gaps <- check_gaps(fit, standardize, X, y, tol_gap)
 
-y_celer <- ifelse(y == 1, 1, -1)
-
-real_gaps <- check_gaps(fit_celer, family, standardize, X, y, tol_gap)
-
-# celer_gaps <- (fit_celer$primals - fit_celer$duals) / fit_celer$primals
-
-# print(cbind(real_gaps$gaps, celer_gaps))
-
-print(real_gaps)
+# print(real_gaps)
+print(fit$screened)

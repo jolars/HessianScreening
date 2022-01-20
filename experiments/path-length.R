@@ -6,21 +6,20 @@ library(tidyr)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
-  family = c("gaussian", "binomial"),
+  family = c("gaussian"),
   scenario = c(1, 2),
-  tol_gap = c(1e-4),
   n = NA,
   p = NA,
-  rho = c(0, 0.4, 0.8),
+  rho = c(0.3),
   screening_type = c(
     "hessian",
     "working",
-    # "edpp",
     # "gap_safe",
+    # "edpp",
     "blitz",
     "celer"
   ),
-  path_length = 100,
+  path_length = c(10, 20, 50, 100, 200),
   avg_screened = NA,
   avg_violations = NA,
   time = list(NA),
@@ -29,6 +28,8 @@ g <- expand_grid(
   step = list(NA),
   converged = NA
 )
+
+tol_gap <- 1e-4
 
 min_it <- 10
 max_it <- 100 * min_it
@@ -41,7 +42,6 @@ for (i in seq_len(nrow(g))) {
   screening_type <- g$screening_type[i]
   path_length <- g$path_length[i]
   scenario <- g$scenario[i]
-  tol_gap <- g$tol_gap[i]
 
   if (family == "binomial" && screening_type == "edpp") {
     next
@@ -53,8 +53,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 40000
+    n <- 200
+    p <- 20000
     snr <- 2
     s <- 20
   }
@@ -63,8 +63,8 @@ for (i in seq_len(nrow(g))) {
   active <- screened <- matrix(NA, nrow = max_it, ncol = path_length)
 
   printf(
-    "%02d/%i %-10s n: %4d p: %4d rho: %1.1f %-10s\n",
-    i, nrow(g), family, n, p, rho, screening_type
+    "%02d/%i %-10s n: %4d p: %4d path_length: %3d %-10s\n",
+    i, nrow(g), family, n, p, path_length, screening_type
   )
 
   for (j in seq_len(max_it)) {
@@ -139,4 +139,4 @@ for (i in seq_len(nrow(g))) {
   g$converged[i] <- all(fit$converged)
 }
 
-saveRDS(g, "results/simulateddata.rds")
+saveRDS(g, "results/path-length.rds")

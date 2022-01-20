@@ -15,7 +15,7 @@ g <- expand_grid(
   screening_type = c(
     "hessian",
     "working",
-    # "blitz",
+    "blitz",
     "celer"
   ),
   path_length = 100,
@@ -41,22 +41,14 @@ for (i in seq_len(nrow(g))) {
     next
   }
 
-  # if (screening_type %in% c("hessian", "blitz")) {
-  #   check_frequency <- 1
-  # } else {
-  #   check_frequency <- 10
-  # }
-  
-  check_frequency <- 10
-
   if (scenario == 1) {
     n <- 10000
     p <- 100
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 200
-    p <- 20000
+    n <- 400
+    p <- 40000
     snr <- 2
     s <- 20
   }
@@ -82,12 +74,8 @@ for (i in seq_len(nrow(g))) {
       screening_type = screening_type,
       path_length = path_length,
       log_hessian_update_type = "full",
-      check_frequency = check_frequency,
       verbosity = 0,
-      tol_gap = tol_gap,
-      celer_prune = FALSE,
-      celer_use_accel = TRUE,
-      celer_use_old_dual = TRUE
+      tol_gap = tol_gap
     )
 
     n_lambda <- length(fit$lambda)

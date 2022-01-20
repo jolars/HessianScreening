@@ -3,15 +3,17 @@ library(tidyr)
 library(dplyr)
 library(tikzDevice)
 library(ggplot2)
+requireNamespace("Hmisc")
 
 source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fw <- 5.6
+fig_width <- 6.8
+fig_height <- 2.5
 
 d_raw <- readRDS("results/simulateddata.rds") %>%
-  filter(screening_type != "strong") %>%
+  filter(!(screening_type %in% c("strong", "edpp"))) %>%
   mutate(
     screening_type = recode_methods(screening_type),
     rho = as.factor(rho),
@@ -27,15 +29,17 @@ d1 <-
     screening_type = as.factor(screening_type),
     family = as.factor(family)
   ) %>%
-  group_by(np, rho, family, screening_type) %>%
-  summarize(
+  group_by(np, rho, family, screening_type) %>% summarize(
     meantime = mean(time),
-    se = sd(time / n())
+    se = sd(time) / sqrt(n()),
+    t = qt(1 - 0.05/2, df = n() - 1) * se
   ) %>%
   mutate(
-    hi = meantime + se,
-    lo = meantime - se,
-    rel_time = meantime / min(meantime)
+    hi = meantime + t,
+    lo = meantime - t,
+    rel_time = meantime / min(meantime),
+    hi = hi / min(meantime),
+    lo = lo / min(meantime)
   ) %>%
   drop_na(meantime)
 
@@ -50,13 +54,18 @@ options(
 )
 
 file <- "figures/simulateddata-timings.tex"
-# tikz(file, width = fw, height = 2.5, standAlone = TRUE)
+# tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
   rel_time,
   fill = screening_type
 )) +
-  geom_col(position = "dodge", col = 1) +
+  geom_col(position = position_dodge(0.9), col = 1) +
+  geom_errorbar(
+    aes(ymin = lo, ymax = hi),
+    position = position_dodge(0.9),
+    width = 0.25
+  ) +
   facet_wrap(c("family", "np"), nrow = 1) +
   scale_fill_manual(values = cols[1:5]) +
   labs(
