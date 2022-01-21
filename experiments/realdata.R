@@ -8,9 +8,9 @@ printf <- function(...) invisible(cat(sprintf(...)))
 datasets <- c(
   # gaussian
   "e2006-tfidf-train",
-  # "e2006-log1p-train",
-  # "YearPredictionMSD-train",
-  # binomial
+  "e2006-log1p-train",
+  "YearPredictionMSD-train",
+  # # binomial
   "arcene",
   "colon-cancer",
   "duke-breast-cancer",
@@ -39,13 +39,14 @@ g <- expand_grid(
   avg_screened = NA,
   violations = list(NA),
   screened = list(NA),
-  active = list(NA)
+  active = list(NA),
+  converged = NA
 )
 
 tol_gap <- 1e-4
 
-min_it <- 3
-max_it <- 10 * min_it
+min_it <- 2
+max_it <- 1000
 max_err <- 0.1
 conf_level <- 0.05
 
@@ -71,14 +72,15 @@ for (i in seq_len(nrow(g))) {
   log_hessian_update_type <-
     ifelse(sparsity * n / max(n, p) < 0.001, "full", "approx")
 
-  printf("%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
-
-  max_it <- 100
+  printf("\r%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
 
   time <- double(max_it)
 
   for (k in seq_len(max_it)) {
     set.seed(848)
+
+    printf("\r%s, it: %02d", format(Sys.time(), "%H:%M:%S"), k)
+    flush.console() 
 
     fit <- lassoPath(
       X,
@@ -107,7 +109,7 @@ for (i in seq_len(nrow(g))) {
     # stop if standard error is within 2.5% of mean
     if (k > min_it) {
       se <- sd(time[1:k]) / sqrt(k)
-      ci_width <- 2 * qt(1 - conf_level / 2, df = k - 1) * se
+      ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 
       if (ci_width / mean(time[1:k]) < max_err) {
         break
@@ -125,6 +127,7 @@ for (i in seq_len(nrow(g))) {
   g$violations[i] <- list(fit$violations)
   g$screened[i] <- list(fit$screened)
   g$active[i] <- list(fit$active)
+  g$converged[i] <- all(fit$converged)
 }
 
 cat("DONE!\n")

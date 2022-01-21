@@ -54,7 +54,7 @@ for (i in seq_len(nrow(g))) {
   }
 
   printf(
-    "%02d/%i %-10s n: %4d p: %4d tol_gap: %1.1e %-10s\n",
+    "\r%02d/%i %-10s n: %4d p: %4d tol_gap: %1.1e %-10s\n",
     i, nrow(g), family, n, p, tol_gap, screening_type
   )
 
@@ -62,6 +62,9 @@ for (i in seq_len(nrow(g))) {
 
   for (j in seq_len(max_it)) {
     set.seed(j)
+
+    printf("\r%s, it: %02d", format(Sys.time(), "%H:%M:%S"), j)
+    flush.console() 
 
     d <- generateDesign(n, p, family = family, rho = rho, snr = snr)
     X <- d$X
@@ -97,7 +100,7 @@ for (i in seq_len(nrow(g))) {
     # stop if standard error is within 2.5% of mean
     if (j > min_it) {
       se <- sd(time[1:j]) / sqrt(j)
-      ci_width <- 2 * qt(1 - conf_level / 2, df = j - 1) * se
+      ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 
       if (ci_width / mean(time[1:j]) < max_err) {
         break
