@@ -173,27 +173,25 @@ fit(arma::uvec& screened,
 
           kkt_time += timer.toc() - t0;
 
-          if (!any(violations)) {
-            // only check gap when there are no violations
-            primal_value =
-              model->primal(residual, Xbeta, beta, y, lambda, working_set);
+          // check duality gap even if there are violations
+          primal_value =
+            model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-            dual_scale = std::max(lambda, max(abs(c(safe_set))));
-            theta = residual / dual_scale;
-            dual_value = model->dual(theta, y, lambda);
-            duality_gap = primal_value - dual_value;
+          dual_scale = std::max(lambda, max(abs(c(safe_set))));
+          theta = residual / dual_scale;
+          dual_value = model->dual(theta, y, lambda);
+          duality_gap = primal_value - dual_value;
 
-            if (verbosity >= 2) {
-              Rprintf("    GLOBAL primal: %f, dual: %f, gap: %f, tol: %f\n",
-                      primal_value,
-                      dual_value,
-                      duality_gap,
-                      tol_gap * tol_mod);
-            }
-
-            if (duality_gap <= tol_gap * tol_mod)
-              break;
+          if (verbosity >= 2) {
+            Rprintf("    GLOBAL primal: %f, dual: %f, gap: %f, tol: %f\n",
+                    primal_value,
+                    dual_value,
+                    duality_gap,
+                    tol_gap * tol_mod);
           }
+
+          if (duality_gap <= tol_gap * tol_mod)
+            break;
 
           if (outer_check) {
             // have updated entire correlation vector, so let's use
@@ -375,7 +373,7 @@ fit(arma::uvec& screened,
       if (screening_type == "blitz") {
         if (inner_solver_converged || it == 0) {
           primal_value =
-            model->primal(residual, Xbeta, beta, y, lambda, working_set);
+            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
 
           updateCorrelation(
             c, residual, X, screened_set, X_offset, standardize);

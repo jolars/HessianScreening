@@ -32,8 +32,8 @@ g <- expand_grid(
 tol_gap <- 1e-6
 
 min_it <- 10
-max_it <- 100 * min_it
-max_err <- 0.1
+max_it <- 1000
+max_err <- 0.2
 conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
@@ -53,8 +53,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 200
-    p <- 20000
+    n <- 400
+    p <- 40000
     snr <- 2
     s <- 20
   }

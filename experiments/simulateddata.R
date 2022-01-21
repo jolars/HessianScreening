@@ -30,11 +30,10 @@ g <- expand_grid(
   converged = NA
 )
 
-# min_it <- 10
-# max_it <- 100 * min_it
-# max_err <- 0.1
-# conf_level <- 0.05
-max_it <- 20
+min_it <- 10
+max_it <- 1000
+max_err <- 0.2
+conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -54,8 +53,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 200
-    p <- 20000
+    n <- 400
+    p <- 40000
     snr <- 2
     s <- 20
   }
@@ -110,14 +109,14 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-#     if (j >= min_it) {
-#       se <- sd(time[1:j]) / sqrt(j)
-#       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
+    if (j >= min_it) {
+      se <- sd(time[1:j]) / sqrt(j)
+      ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 
-#       if (ci_width / mean(time[1:j]) < max_err) {
-#         break
-#       }
-#     }
+      if (ci_width / mean(time[1:j]) < max_err) {
+        break
+      }
+    }
   }
 
   time <- time[1:j]

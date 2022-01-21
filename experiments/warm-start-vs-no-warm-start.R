@@ -24,7 +24,7 @@ g <- expand_grid(
 )
 
 min_it <- 10
-max_it <- 100 * min_it
+max_it <- 1000
 max_err <- 0.1
 conf_level <- 0.05
 

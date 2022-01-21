@@ -7,11 +7,11 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 g <- expand_grid(
   family = c("gaussian", "binomial"),
-  scenario = c(1, 2),
+  scenario = 2,
   n = NA,
   p = NA,
-  rho = c(0),
-  tol_gap = c(1e-4, 1e-5, 1e-6, 1e-7),
+  rho = c(0, 0.4),
+  tol_gap = c(1e-5, 1e-6, 1e-7, 1e-8),
   screening_type = c(
     "hessian",
     "working",
@@ -25,8 +25,8 @@ g <- expand_grid(
 )
 
 min_it <- 10
-max_it <- 100 * min_it
-max_err <- 0.1
+max_it <- 1000
+max_err <- 0.2
 conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
@@ -47,8 +47,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 40000
+    n <- 200
+    p <- 20000
     snr <- 2
     s <- 20
   }

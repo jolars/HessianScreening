@@ -47,7 +47,7 @@ tol_gap <- 1e-6
 
 min_it <- 3
 max_it <- 1000
-max_err <- 0.1
+max_err <- 0.2
 conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
