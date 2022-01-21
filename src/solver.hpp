@@ -167,8 +167,11 @@ fit(arma::uvec& screened,
             updateCorrelation(c, residual, X, check_set, X_offset, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
 
-            n_refits += 1;
             outer_check = true;
+          }
+
+          if (any(violations)) {
+            n_refits += 1;
           }
 
           kkt_time += timer.toc() - t0;
