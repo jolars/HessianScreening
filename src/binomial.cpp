@@ -321,3 +321,9 @@ Binomial::safeScreeningRadius(const double duality_gap, const double lambda)
 {
   return std::sqrt(0.5 * std::max(duality_gap, 0.0)) / lambda;
 }
+
+double
+Binomial::toleranceModifier(const arma::vec& y)
+{
+  return y.n_elem * std::log(2);
+}
