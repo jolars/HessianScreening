@@ -93,6 +93,8 @@ fit(arma::uvec& screened,
   vec d(p);
   vec residual_old;
 
+  double tol_mod = model->toleranceModifier(y);
+
   // celer acceleration
   const uword K = 5;
   mat U(n, K);
@@ -125,7 +127,7 @@ fit(arma::uvec& screened,
   double n_screened = 0;
   uword it = 0;
   uword it_inner = 0;
-  double tol_gap_inner = tol_gap;
+  double tol_gap_inner = tol_gap * tol_mod;
 
   // timing
   wall_clock timer;
@@ -186,10 +188,10 @@ fit(arma::uvec& screened,
                       primal_value,
                       dual_value,
                       duality_gap,
-                      tol_gap * primal_value);
+                      tol_gap * tol_mod);
             }
 
-            if (duality_gap <= tol_gap * primal_value)
+            if (duality_gap <= tol_gap * tol_mod)
               break;
           }
 
@@ -244,12 +246,12 @@ fit(arma::uvec& screened,
                     primal_value,
                     dual_value,
                     duality_gap,
-                    tol_gap * primal_value);
+                    tol_gap * tol_mod);
           }
 
           kkt_time += timer.toc() - t0;
 
-          if (duality_gap <= tol_gap * primal_value)
+          if (duality_gap <= tol_gap * tol_mod)
             break;
 
           double r_screen = model->safeScreeningRadius(duality_gap, lambda);
@@ -309,10 +311,10 @@ fit(arma::uvec& screened,
                     primal_value,
                     dual_value,
                     duality_gap,
-                    tol_gap * primal_value);
+                    tol_gap * tol_mod);
           }
 
-          if (duality_gap <= tol_gap * primal_value)
+          if (duality_gap <= tol_gap * tol_mod)
             break;
 
           vec d(p);
@@ -389,10 +391,10 @@ fit(arma::uvec& screened,
                     primal_value,
                     dual_value,
                     duality_gap,
-                    tol_gap * primal_value);
+                    tol_gap * tol_mod);
           }
 
-          if (duality_gap <= tol_gap * primal_value)
+          if (duality_gap <= tol_gap * tol_mod)
             break;
 
           vec d(p);
@@ -747,14 +749,9 @@ fit(arma::uvec& screened,
                   primal_value,
                   dual_value,
                   duality_gap,
-                  tol_gap * primal_value);
+                  tol_gap_inner);
 
-        if (screening_type == "blitz" ||
-            (screening_type == "celer" && celer_prune)) {
-          inner_solver_converged = duality_gap <= tol_gap_inner;
-        } else {
-          inner_solver_converged = duality_gap <= tol_gap * primal_value;
-        }
+        inner_solver_converged = duality_gap <= tol_gap_inner;
 
         if (line_search == 1) {
           // line search should ensure progress in the primal, so if primal

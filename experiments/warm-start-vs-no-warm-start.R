@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 g <- expand_grid(
   family = c("gaussian", "binomial"),
   scenario = c(1, 2),
-  tol_gap = c(1e-4, 1e-5, 1e-6),
+  tol_gap = c(1e-5, 1e-6, 1e-7),
   n = NA,
   p = NA,
   rho = c(0.2),
@@ -102,7 +102,7 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (j > min_it) {
+    if (j >= min_it) {
       se <- sd(time[1:j]) / sqrt(j)
       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 

@@ -29,7 +29,7 @@ g <- expand_grid(
   converged = NA
 )
 
-tol_gap <- 1e-4
+tol_gap <- 1e-6
 
 max_it <- 100
 

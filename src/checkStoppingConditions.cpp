@@ -31,7 +31,7 @@ checkStoppingConditions(const arma::uword step,
       "    dev ratio:  %.3f\n    dev change: %.6f\n", dev_ratio, dev_change);
   }
 
-  if (std::abs(dev_change) <= 1e-5) {
+  if (dev_change <= 1e-5) {
     return true;
   }
 

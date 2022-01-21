@@ -10,14 +10,14 @@ datasets <- c(
   "e2006-tfidf-train",
   "e2006-log1p-train",
   "YearPredictionMSD-train",
-  # # binomial
+  # binomial
   "arcene",
   "colon-cancer",
   "duke-breast-cancer",
   "ijcnn1-train",
   "madelon-train",
-  "rcv1-train",
-  "news20"
+  "rcv1-train"
+  # "news20"
 )
 
 g <- expand_grid(
@@ -43,9 +43,9 @@ g <- expand_grid(
   converged = NA
 )
 
-tol_gap <- 1e-4
+tol_gap <- 1e-6
 
-min_it <- 2
+min_it <- 3
 max_it <- 1000
 max_err <- 0.1
 conf_level <- 0.05
@@ -107,7 +107,7 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (k > min_it) {
+    if (k >= min_it) {
       se <- sd(time[1:k]) / sqrt(k)
       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 

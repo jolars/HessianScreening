@@ -7,23 +7,23 @@ family <- "gaussian"
 density <- 1 
 
 set.seed(14)
-d <- generateDesign(100, 1000, family = family, density = density)
-# d <- readRDS("data/e2006-tfidf-train.rds")
+# d <- generateDesign(100, 1000, family = family, density = density)
+d <- readRDS("data/e2006-tfidf-train.rds")
 X <- d$X
 y <- d$y
 
 n <- nrow(X)
 p <- ncol(X)
-verbosity <- 0
-tol_gap <- 1e-4
-maxit <- 1e4
+verbosity <- 2
+tol_gap <- 1e-5
+maxit <- 1e5
 standardize <- TRUE
 
 fit <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "celer",
+  screening_type = "blitz",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,

@@ -98,7 +98,7 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (j > min_it) {
+    if (j >= min_it) {
       se <- sd(time[1:j]) / sqrt(j)
       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 

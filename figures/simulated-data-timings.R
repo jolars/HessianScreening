@@ -3,7 +3,6 @@ library(tidyr)
 library(dplyr)
 library(tikzDevice)
 library(ggplot2)
-requireNamespace("Hmisc")
 
 source("R/utils.R")
 
@@ -15,7 +14,7 @@ fig_height <- 2.5
 conf_level <- 0.05
 
 d_raw <- readRDS("results/simulateddata.rds") %>%
-  filter(!(screening_type %in% c("strong", "edpp"))) %>%
+  filter(!(screening_type %in% c("strong", "edpp", "gap_safe"))) %>%
   mutate(
     screening_type = recode_methods(screening_type),
     rho = as.factor(rho),
@@ -31,14 +30,15 @@ d1 <-
     screening_type = as.factor(screening_type),
     family = as.factor(family)
   ) %>%
-  group_by(np, rho, family, screening_type) %>% summarize(
+  group_by(np, rho, family, screening_type) %>% 
+  summarize(
     meantime = mean(time),
     se = sd(time) / sqrt(n()),
-    t = qnorm(1 - conf_level/2) * se
+    ci = qnorm(1 - conf_level/2) * se
   ) %>%
   mutate(
-    hi = meantime + t,
-    lo = meantime - t,
+    hi = meantime + ci,
+    lo = meantime - ci,
     rel_time = meantime / min(meantime),
     hi = hi / min(meantime),
     lo = lo / min(meantime)
@@ -73,7 +73,7 @@ ggplot(d1, aes(
   labs(
     fill = "Screening",
     x = "Correlation ($\\rho$)",
-    y = "Time"
+    y = "Time (relative)"
   ) +
   theme(legend.position = c(0.1, 0.7), legend.title = element_blank())
 # dev.off()

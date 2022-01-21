@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 g <- expand_grid(
   family = c("gaussian", "binomial"),
   scenario = c(1, 2),
-  tol_gap = c(1e-4),
+  tol_gap = c(1e-6),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),
@@ -30,10 +30,11 @@ g <- expand_grid(
   converged = NA
 )
 
-min_it <- 10
-max_it <- 100 * min_it
-max_err <- 0.1
-conf_level <- 0.05
+# min_it <- 10
+# max_it <- 100 * min_it
+# max_err <- 0.1
+# conf_level <- 0.05
+max_it <- 20
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]
@@ -53,8 +54,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 400
-    p <- 40000
+    n <- 200
+    p <- 20000
     snr <- 2
     s <- 20
   }
@@ -109,14 +110,14 @@ for (i in seq_len(nrow(g))) {
     }
 
     # stop if standard error is within 2.5% of mean
-    if (j > min_it) {
-      se <- sd(time[1:j]) / sqrt(j)
-      ci_width <- 2 * qnorm(1 - conf_level / 2) * se
+#     if (j >= min_it) {
+#       se <- sd(time[1:j]) / sqrt(j)
+#       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
 
-      if (ci_width / mean(time[1:j]) < max_err) {
-        break
-      }
-    }
+#       if (ci_width / mean(time[1:j]) < max_err) {
+#         break
+#       }
+#     }
   }
 
   time <- time[1:j]
@@ -141,5 +142,7 @@ for (i in seq_len(nrow(g))) {
   g$step[i] <- list(1:path_length)
   g$converged[i] <- all(fit$converged)
 }
+
+cat("\n")
 
 saveRDS(g, "results/simulateddata.rds")
