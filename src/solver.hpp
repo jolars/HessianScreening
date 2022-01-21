@@ -170,16 +170,6 @@ fit(arma::uvec& screened,
             outer_check = true;
           }
 
-          if (!any(violations)) {
-            if (verbosity >= 2)
-              Rprintf("    GLOBAL primal: %f, dual: %f, gap: %f, tol: %f\n",
-                      primal_value,
-                      dual_value,
-                      duality_gap,
-                      tol_gap * tol_mod);
-
-            break;
-          }
           kkt_time += timer.toc() - t0;
 
           // check duality gap even if there are violations
