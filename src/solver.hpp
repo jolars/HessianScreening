@@ -170,10 +170,16 @@ fit(arma::uvec& screened,
             outer_check = true;
           }
 
-          if (any(violations)) {
-            n_refits += 1;
-          }
+          if (!any(violations)) {
+            if (verbosity >= 2)
+              Rprintf("    GLOBAL primal: %f, dual: %f, gap: %f, tol: %f\n",
+                      primal_value,
+                      dual_value,
+                      duality_gap,
+                      tol_gap * tol_mod);
 
+            break;
+          }
           kkt_time += timer.toc() - t0;
 
           // check duality gap even if there are violations
@@ -195,6 +201,10 @@ fit(arma::uvec& screened,
 
           if (duality_gap <= tol_gap * tol_mod)
             break;
+
+          if (any(violations)) {
+            n_refits += 1;
+          }
 
           if (outer_check) {
             // have updated entire correlation vector, so let's use
@@ -795,8 +805,8 @@ fit(arma::uvec& screened,
     beta.zeros();
   }
 
-  double avg_screened = n_screened / (it + 1);
+  double avg_screened = n_screened / it;
 
-  return { primal_value, dual_value,   duality_gap, theta,   it + 1,
+  return { primal_value, dual_value,   duality_gap, theta,   it,
            avg_screened, n_violations, n_refits,    cd_time, kkt_time };
 }
