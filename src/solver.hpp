@@ -749,7 +749,12 @@ fit(arma::uvec& screened,
                   duality_gap,
                   tol_gap * primal_value);
 
-        inner_solver_converged = duality_gap <= tol_gap_inner;
+        if (screening_type == "blitz" ||
+            (screening_type == "celer" && celer_prune)) {
+          inner_solver_converged = duality_gap <= tol_gap_inner;
+        } else {
+          inner_solver_converged = duality_gap <= tol_gap * primal_value;
+        }
 
         if (line_search == 1) {
           // line search should ensure progress in the primal, so if primal
