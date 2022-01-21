@@ -8,7 +8,7 @@ printf <- function(...) invisible(cat(sprintf(...)))
 g <- expand_grid(
   family = c("gaussian", "binomial"),
   scenario = c(1, 2),
-  tol_gap = c(1e-6),
+  tol_gap = c(1e-4),
   n = NA,
   p = NA,
   rho = c(0, 0.4, 0.8),

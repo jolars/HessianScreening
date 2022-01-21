@@ -29,9 +29,9 @@ g <- expand_grid(
   converged = NA
 )
 
-tol_gap <- 1e-6
+tol_gap <- 1e-4
 
-max_it <- 100
+max_it <- 50
 
 for (i in seq_len(nrow(g))) {
   rho <- g$rho[i]

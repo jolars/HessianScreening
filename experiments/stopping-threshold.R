@@ -11,7 +11,7 @@ g <- expand_grid(
   n = NA,
   p = NA,
   rho = c(0, 0.4),
-  tol_gap = c(1e-5, 1e-6, 1e-7, 1e-8),
+  tol_gap = c(1e-3, 1e-4, 1e-5, 1e-6),
   screening_type = c(
     "hessian",
     "working",
@@ -47,8 +47,8 @@ for (i in seq_len(nrow(g))) {
     snr <- 1
     s <- 5
   } else if (scenario == 2) {
-    n <- 200
-    p <- 20000
+    n <- 400
+    p <- 40000
     snr <- 2
     s <- 20
   }

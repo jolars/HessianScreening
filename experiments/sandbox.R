@@ -1,152 +1,42 @@
-library(HessianScreening) 
-library(tibble)
-library(dplyr)
-library(tidyr)
+library(HessianScreening)
+library(readr)
 
-printf <- function(...) invisible(cat(sprintf(...)))
+set.seed(3)
 
-g <- expand_grid(
-  family = c("binomial"),
-  scenario = c(1),
-  tol_gap = c(1e-6),
-  n = NA,
-  p = NA,
-  rho = c(0, 0.4, 0.8),
-  screening_type = c(
-    "hessian",
-    # "working",
-    # "edpp",
-    # "gap_safe",
-    "blitz"
-    # "celer"
-  ),
-  path_length = 100,
-  avg_screened = NA,
-  avg_violations = NA,
-  time = list(NA),
-  screened = list(NA),
-  active = list(NA),
-  step = list(NA),
-  converged = NA
+family <- "gaussian"
+density <- 1 
+
+set.seed(14)
+d <- generateDesign(100, 1000, family = family, density = density)
+# d <- readRDS("data/e2006-tfidf-train.rds")
+X <- d$X
+y <- d$y
+
+n <- nrow(X)
+p <- ncol(X)
+verbosity <- 1
+tol_gap <- 1e-4
+maxit <- 1e5
+standardize <- TRUE
+
+fit <- lassoPath(
+  X,
+  y,
+  family = family,
+  screening_type = "working",
+  standardize = standardize,
+  verbosity = verbosity,
+  tol_gap = tol_gap,
+  gap_safe_active_start = TRUE,
+  celer_use_accel = TRUE,
+  celer_prune = FALSE,
+  maxit = maxit,
+  store_dual_variables = TRUE,
+  check_frequency = 1
 )
 
-max_it <- 5
+# real_gaps <- check_gaps(fit, standardize, X, y, tol_gap)
 
-min_it <- 10
-max_it <- 1000
-max_error <- 0.5
-conf_level <- 0.05
-
-for (i in seq_len(nrow(g))) {
-  rho <- g$rho[i]
-  family <- g$family[i]
-  screening_type <- g$screening_type[i]
-  path_length <- g$path_length[i]
-  scenario <- g$scenario[i]
-  tol_gap <- g$tol_gap[i]
-
-  if (family == "binomial" && screening_type == "edpp") {
-    next
-  }
-
-  if (scenario == 1) {
-    n <- 10000
-    p <- 200
-    snr <- 1
-    s <- 5
-  } else if (scenario == 2) {
-    n <- 200
-    p <- 20000
-    snr <- 2
-    s <- 20
-  }
-
-  line_search <- 1
-
-  avg_screened <- violations <- time <- double(max_it)
-  active <- screened <- matrix(NA, nrow = max_it, ncol = path_length)
-
-  printf(
-    "\r%02d/%i %-10s n: %4d p: %4d rho: %1.1f %-10s\n",
-    i, nrow(g), family, n, p, rho, screening_type
-  )
-
-  for (j in seq_len(max_it)) {
-    set.seed(j)
-
-    printf("\r%s, it: %02d", format(Sys.time(), "%H:%M:%S"), j)
-    flush.console() 
-
-    d <- generateDesign(n, p, family = family, rho = rho, snr = snr)
-    X <- d$X
-    y <- d$y
-
-    fit <- lassoPath(
-      X,
-      y,
-      family = family,
-      screening_type = screening_type,
-      path_length = path_length,
-      log_hessian_update_type = "full",
-      line_search = line_search,
-      verbosity = 0,
-      tol_gap = tol_gap
-    )
-
-    n_lambda <- length(fit$lambda)
-
-    time[j] <- fit$full_time
-    avg_screened[j] <- mean(fit$active / fit$screened)
-    violations[j] <- sum(fit$violations)
-    screened[j, 1:n_lambda] <- fit$screened
-    active[j, 1:n_lambda] <- fit$active
-
-    if (any(!fit$converged)) {
-      warning(
-        "failed to converge at i = ",
-        i,
-        " for solver = ",
-        screening_type,
-        " at steps ",
-        paste(which(!fit$converged)),
-        collapse = ","
-      )
-    }
-
-    # stop if standard error is within 2.5% of mean
-#     if (j >= min_it) {
-#       se <- sd(time[1:j]) / sqrt(j)
-#       ci_width <- 2 * qnorm(1 - conf_level / 2) * se
-
-#       if (ci_width / mean(time[1:j]) < max_err) {
-#         break
-#       }
-#     }
-  }
-
-  time <- time[1:j]
-  active <- active[1:j, ]
-  screened <- screened[1:j, ]
-  violations <- violations[1:j]
-  avg_screened <- avg_screened[1:j]
-
-  dontuse <- apply(screened, 2, anyNA)
-
-  active <- colMeans(active)
-  screened <- colMeans(screened)
-
-  g$n[i] <- n
-  g$p[i] <- p
-  g$family[i] <- family
-  g$time[i] <- list(time)
-  g$avg_screened[i] <- mean(avg_screened)
-  g$avg_violations[i] <- mean(violations)
-  g$screened[i] <- list(screened)
-  g$active[i] <- list(active)
-  g$step[i] <- list(1:path_length)
-  g$converged[i] <- all(fit$converged)
-}
-
-cat("\n")
-
-saveRDS(g, "results/simulateddata.rds")
+# print(real_gaps)
+print(fit$screened)
+print(cbind(fit$active, fit$screened))

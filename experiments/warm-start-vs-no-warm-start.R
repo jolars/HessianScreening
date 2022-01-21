@@ -8,10 +8,10 @@ printf <- function(...) invisible(cat(sprintf(...)))
 g <- expand_grid(
   family = c("gaussian", "binomial"),
   scenario = c(1, 2),
-  tol_gap = c(1e-5, 1e-6, 1e-7),
+  tol_gap = c(1e-3, 1e-4, 1e-5),
   n = NA,
   p = NA,
-  rho = c(0.2),
+  rho = c(0.4),
   method = c(
     "working",
     "hessian",
@@ -25,7 +25,7 @@ g <- expand_grid(
 
 min_it <- 10
 max_it <- 1000
-max_err <- 0.1
+max_err <- 0.2
 conf_level <- 0.05
 
 for (i in seq_len(nrow(g))) {
