@@ -48,7 +48,7 @@ fit(arma::uvec& screened,
     const arma::uword step,
     const arma::uword maxit,
     const double tol_gap,
-    const arma::uword line_search,
+    const bool line_search,
     const arma::uword ws_size_init,
     const arma::uword verbosity)
 {
@@ -111,12 +111,6 @@ fit(arma::uvec& screened,
   const uword MAX_PROX_NEWTON_CD_ITR = 20;
   const double PROX_NEWTON_EPSILON_RATIO = 10;
   const uword MIN_PROX_NEWTON_CD_ITR = 2;
-
-  // line search type 2 parameters
-  const double a = 0.1;
-  const double b = 0.5;
-  vec t(p, fill::ones); // learning rates
-
   double prox_newton_grad_diff = 0;
 
   if (screening_type == "celer") {
@@ -462,9 +456,7 @@ fit(arma::uvec& screened,
 
       double t0 = timer.toc();
 
-      // beta(setDiff(screened_set, working_set)).zeros();
-
-      if (line_search == 0) {
+      if (!line_search) {
         // no line search
         if (it_inner != 0) {
           if (shuffle || !progress)
@@ -494,7 +486,7 @@ fit(arma::uvec& screened,
                                   standardize);
           }
         }
-      } else if (line_search == 1) {
+      } else {
         // blitz-type line search
         // this code is based on https://github.com/tbjohns/BlitzL1 as of
         // 2022-01-12, which is licensed under the MIT license, Copyright
@@ -626,61 +618,6 @@ fit(arma::uvec& screened,
           double diff = actual_grad - approximate_grad;
           prox_newton_grad_diff += diff * diff;
         }
-      } else if (line_search == 2) {
-        // line search (see J. D. Lee, Y. Sun, and M. A. Saunders,
-        // “Proximal Newton-type methods for minimizing composite
-        // functions,” arXiv:1206.1623 [cs, math, stat], Mar. 2014,
-        // Accessed: Jan. 12, 2020. [Online]. Available:
-        // http://arxiv.org/abs/1206.1623)
-
-        if (it_inner == 0) {
-          if (shuffle || !progress)
-            working_set = arma::shuffle(working_set);
-        }
-
-        for (auto&& j : working_set) {
-          updateCorrelation(c, residual, X, j, X_offset, standardize);
-          double hess_j = model->hessianTerm(X, j, X_offset, standardize);
-
-          if (hess_j <= 0)
-            continue;
-
-          double beta_j_old = beta(j);
-          double v =
-            prox(beta_j_old + c(j) / hess_j, lambda / hess_j) - beta(j);
-
-          if (v != 0) {
-            double primal_value_old =
-              model->primal(residual, Xbeta, beta, y, lambda, working_set);
-
-            while (true) {
-              double beta_j_prev = beta(j);
-
-              beta(j) = beta_j_old + t(j) * v;
-              model->adjustResidual(residual,
-                                    Xbeta,
-                                    X,
-                                    y,
-                                    j,
-                                    beta(j) - beta_j_prev,
-                                    X_offset,
-                                    standardize);
-
-              primal_value =
-                model->primal(residual, Xbeta, beta, y, lambda, working_set);
-
-              double eta = -c(j) * v + lambda * (std::abs(beta_j_old + v) -
-                                                 std::abs(beta_j_old));
-
-              if (primal_value * (1 - std::sqrt(datum::eps)) <=
-                  primal_value_old + a * t(j) * eta) {
-                break;
-              } else {
-                t(j) *= b;
-              }
-            }
-          }
-        }
       }
 
       if (screening_type == "celer" && celer_use_accel && it_inner > 0) {
@@ -696,11 +633,11 @@ fit(arma::uvec& screened,
 
       bool check = screening_type == "gap_safe" ? active_start : true;
 
-      if ((check && (it_inner % check_frequency == 0)) || line_search == 1) {
+      if ((check && (it_inner % check_frequency == 0)) || line_search) {
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
-        if (line_search != 1) {
+        if (!line_search) {
           // correlation vector is always updated at end of line search
           updateCorrelation(c, residual, X, working_set, X_offset, standardize);
         }
@@ -754,7 +691,7 @@ fit(arma::uvec& screened,
 
         inner_solver_converged = duality_gap <= tol_gap_inner;
 
-        if (line_search == 1) {
+        if (line_search) {
           // line search should ensure progress in the primal, so if primal
           // value increases, then the limit of machine precision must have been
           // reached

@@ -41,7 +41,7 @@ lassoPath(T& X,
           const double gamma,
           const bool store_dual_variables,
           const bool verify_hessian,
-          const arma::uword line_search,
+          const bool line_search,
           const arma::uword verbosity)
 {
   using namespace arma;
@@ -524,7 +524,7 @@ lassoPathDense(arma::mat X,
                const double gamma,
                const bool store_dual_variables,
                const bool verify_hessian,
-               const arma::uword line_search,
+               const bool line_search,
                const arma::uword verbosity)
 {
   return lassoPath(X,
@@ -579,7 +579,7 @@ lassoPathSparse(arma::sp_mat X,
                 const double gamma,
                 const bool store_dual_variables,
                 const bool verify_hessian,
-                const arma::uword line_search,
+                const bool line_search,
                 const arma::uword verbosity)
 {
   return lassoPath(X,

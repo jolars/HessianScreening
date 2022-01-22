@@ -8,6 +8,7 @@ lassoPath(
   X,
   y,
   family = c("gaussian", "binomial"),
+  lambda = NULL,
   standardize = TRUE,
   screening_type = c("working", "hessian", "edpp", "gap_safe", "strong", "celer",
     "blitz"),
@@ -17,7 +18,7 @@ lassoPath(
   hessian_warm_starts = TRUE,
   celer_use_old_dual = TRUE,
   celer_use_accel = TRUE,
-  celer_prune = FALSE,
+  celer_prune = TRUE,
   gap_safe_active_start = TRUE,
   log_hessian_update_type = c("full", "auto", "approx"),
   log_hessian_auto_update_freq = 10,
@@ -27,7 +28,7 @@ lassoPath(
   gamma = 0.01,
   store_dual_variables = FALSE,
   verify_hessian = FALSE,
-  line_search = NULL,
+  line_search = TRUE,
   verbosity = 0
 )
 }

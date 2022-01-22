@@ -7,7 +7,7 @@ library(stringr)
 d_raw <- readRDS("results/realdata.rds")
 
 d <-
-  d_raw %>%
+  as_tibble(d_raw) %>%
   drop_na(time) %>%
   mutate(
     screening_type = recode(
@@ -24,15 +24,12 @@ d <-
       "gaussian" = "Gaussian",
       "binomial" = "Binomial"
     ),
-    dataset = str_remove(dataset, "(-train|-test)"),
-    dataset = recode(
-      dataset,
-      "YearPredictionMSD" = "YearPredMSD"
-    )
+    dataset = str_remove(dataset, "(-train|-test)")
   ) %>%
-  select(dataset, family, n, p, density, screening = screening_type, time) %>%
-  arrange(family, dataset, screening) %>%
-  pivot_wider(names_from = "screening", values_from = "time")
+  group_by(dataset, family, n, p, density, screening_type) %>%
+  summarize(time = mean(time)) %>%
+  arrange(family, dataset, screening_type) %>%
+  pivot_wider(names_from = "screening_type", values_from = "time")
 
 filter(d, family == "Gaussian") %>%
   select(-family) %>%

@@ -20,116 +20,130 @@ datasets <- c(
   "news20"
 )
 
-g <- expand_grid(
-  dataset = datasets,
-  screening_type = c(
-    "working",
-    "hessian",
-    # "gap_safe",
-    # "edpp",
-    "blitz",
-    "celer"
-  ),
-  family = NA,
-  n = NA,
-  p = NA,
-  density = NA,
-  time = NA,
-  total_violations = NA,
-  avg_screened = NA,
-  violations = list(NA),
-  screened = list(NA),
-  active = list(NA),
-  converged = NA
+tol_gap <- 1e-4
+screening_types <- c(
+  "hessian",
+  "working",
+  # "edpp",
+  # "gap_safe",
+  "blitz",
+  "celer"
 )
 
-tol_gap <- 1e-4
+path_length <- 100
 
-min_it <- 3
-max_it <- 1000
-max_err <- 0.2
-conf_level <- 0.05
+n_sim <- length(datasets)
+out <- data.frame()
 
-for (i in seq_len(nrow(g))) {
-  d <- readRDS(file.path("data", paste0(g$dataset[i], ".rds")))
-  screening_type <- g$screening_type[i]
+it_sim <- 0
+
+for (dataset in datasets) {
+  it_sim <- it_sim + 1
+
+  d <- readRDS(file.path("data", paste0(dataset, ".rds")))
 
   X <- d$X
   y <- d$y
 
   n <- nrow(X)
   p <- ncol(X)
+  
+  max_it <- if (dataset %in% c("colon-cancer", "duke-breast-cancer")) {
+    20
+  } else if (dataset %in% c(
+    "ijcnn1-train",
+    "arcene"
+  )) {
+    10
+  } else {
+    3
+  }
 
   dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
   sparsity <- 1 - dens
 
   family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
 
-  if (family == "binomial" && screening_type == "edpp") {
-    next
-  }
-
   log_hessian_update_type <-
     ifelse(sparsity * n / max(n, p) < 0.001, "full", "approx")
 
-  printf("\r%02d/%i %-10.10s %s\n", i, nrow(g), g$dataset[i], screening_type)
+  printf(
+    "\r%02d/%i %-10s\n", it_sim, n_sim, dataset)
 
-  time <- double(max_it)
-
-  for (k in seq_len(max_it)) {
-    set.seed(848)
-
-    printf("\r%s, it: %02d", format(Sys.time(), "%H:%M:%S"), k)
-    flush.console() 
+  for (i in 1:max_it) {
+    set.seed(i)
 
     fit <- lassoPath(
       X,
       y,
       family = family,
-      screening_type = screening_type,
+      screening_type = "hessian",
+      path_length = path_length,
       verbosity = 0,
-      log_hessian_update_type = log_hessian_update_type,
+      line_search = TRUE,
       tol_gap = tol_gap
     )
 
-    time[k] <- fit$full_time
+    lambda <- fit$lambda
 
-    if (any(!fit$converged)) {
-      warning(
-        "failed to converge at i = ",
-        i,
-        " for solver = ",
-        screening_type,
-        " at steps ",
-        paste(which(!fit$converged)),
-        collapse = ","
-      )
-    }
+    for (screening_type in screening_types) {
+      set.seed(i)
 
-    # stop if standard error is within 2.5% of mean
-    if (k >= min_it) {
-      se <- sd(time[1:k]) / sqrt(k)
-      ci_width <- 2 * qnorm(1 - conf_level / 2) * se
-
-      if (ci_width / mean(time[1:k]) < max_err) {
-        break
+      if (family == "binomial" && screening_type == "edpp") {
+        next
       }
+
+      printf(
+        "\r%s, it: %02d/%02d %-10s",
+        format(Sys.time(), "%H:%M:%S"),
+        i,
+        max_it,
+        screening_type
+      )
+      flush.console()
+
+      fit <- lassoPath(
+        X,
+        y,
+        family = family,
+        lambda = lambda,
+        screening_type = screening_type,
+        path_length = path_length,
+        log_hessian_update_type = "full",
+        celer_prune = TRUE,
+        verbosity = 0,
+        tol_gap = tol_gap
+      )
+
+      n_lambda <- length(fit$lambda)
+
+      if (any(!fit$converged)) {
+        warning(
+          "failed to converge at i = ",
+          i,
+          " for solver = ",
+          screening_type,
+          " at steps ",
+          paste(which(!fit$converged)),
+          collapse = ","
+        )
+      }
+
+      res <- data.frame(
+        dataset = dataset,
+        n = n,
+        p = p,
+        family = family,
+        density = dens,
+        screening_type = screening_type,
+        it = i,
+        time = fit$full_time,
+        converged = all(fit$converged)
+      )
+
+      out <- rbind(out, res)
     }
   }
-
-  g$n[i] <- n
-  g$p[i] <- p
-  g$family[i] <- family
-  g$time[i] <- mean(time[1:k])
-  g$density[i] <- dens
-  g$total_violations[i] <- sum(fit$violations)
-  g$avg_screened[i] <- mean(fit$active / fit$screened)
-  g$violations[i] <- list(fit$violations)
-  g$screened[i] <- list(fit$screened)
-  g$active[i] <- list(fit$active)
-  g$converged[i] <- all(fit$converged)
 }
 
-cat("DONE!\n")
-
-saveRDS(g, "results/realdata.rds")
+saveRDS(out, "results/realdata.rds")

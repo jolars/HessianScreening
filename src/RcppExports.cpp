@@ -12,7 +12,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // lassoPathDense
-Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, arma::vec lambdas, const std::string lambda_type, const bool standardize, const std::string screening_type, const bool shuffle, const arma::uword check_frequency, const arma::uword screen_frequency, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool store_dual_variables, const bool verify_hessian, const arma::uword line_search, const arma::uword verbosity);
+Rcpp::List lassoPathDense(arma::mat X, arma::vec y, const std::string family, arma::vec lambdas, const std::string lambda_type, const bool standardize, const std::string screening_type, const bool shuffle, const arma::uword check_frequency, const arma::uword screen_frequency, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool store_dual_variables, const bool verify_hessian, const bool line_search, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPathDense(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP lambdasSEXP, SEXP lambda_typeSEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP shuffleSEXP, SEXP check_frequencySEXP, SEXP screen_frequencySEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP celer_pruneSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP store_dual_variablesSEXP, SEXP verify_hessianSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -40,14 +40,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< const bool >::type store_dual_variables(store_dual_variablesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verify_hessian(verify_hessianSEXP);
-    Rcpp::traits::input_parameter< const arma::uword >::type line_search(line_searchSEXP);
+    Rcpp::traits::input_parameter< const bool >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
     rcpp_result_gen = Rcpp::wrap(lassoPathDense(X, y, family, lambdas, lambda_type, standardize, screening_type, shuffle, check_frequency, screen_frequency, hessian_warm_starts, celer_use_old_dual, celer_use_accel, celer_prune, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, store_dual_variables, verify_hessian, line_search, verbosity));
     return rcpp_result_gen;
 END_RCPP
 }
 // lassoPathSparse
-Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, arma::vec lambdas, const std::string lambda_type, const bool standardize, const std::string screening_type, const bool shuffle, const arma::uword check_frequency, const arma::uword screen_frequency, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool store_dual_variables, const bool verify_hessian, const arma::uword line_search, const arma::uword verbosity);
+Rcpp::List lassoPathSparse(arma::sp_mat X, arma::vec y, const std::string family, arma::vec lambdas, const std::string lambda_type, const bool standardize, const std::string screening_type, const bool shuffle, const arma::uword check_frequency, const arma::uword screen_frequency, const bool hessian_warm_starts, const bool celer_use_old_dual, const bool celer_use_accel, const bool celer_prune, const bool gap_safe_active_start, std::string log_hessian_update_type, const arma::uword log_hessian_auto_update_freq, const arma::uword path_length, const arma::uword maxit, const double tol_gap, const double gamma, const bool store_dual_variables, const bool verify_hessian, const bool line_search, const arma::uword verbosity);
 RcppExport SEXP _HessianScreening_lassoPathSparse(SEXP XSEXP, SEXP ySEXP, SEXP familySEXP, SEXP lambdasSEXP, SEXP lambda_typeSEXP, SEXP standardizeSEXP, SEXP screening_typeSEXP, SEXP shuffleSEXP, SEXP check_frequencySEXP, SEXP screen_frequencySEXP, SEXP hessian_warm_startsSEXP, SEXP celer_use_old_dualSEXP, SEXP celer_use_accelSEXP, SEXP celer_pruneSEXP, SEXP gap_safe_active_startSEXP, SEXP log_hessian_update_typeSEXP, SEXP log_hessian_auto_update_freqSEXP, SEXP path_lengthSEXP, SEXP maxitSEXP, SEXP tol_gapSEXP, SEXP gammaSEXP, SEXP store_dual_variablesSEXP, SEXP verify_hessianSEXP, SEXP line_searchSEXP, SEXP verbositySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -75,7 +75,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const double >::type gamma(gammaSEXP);
     Rcpp::traits::input_parameter< const bool >::type store_dual_variables(store_dual_variablesSEXP);
     Rcpp::traits::input_parameter< const bool >::type verify_hessian(verify_hessianSEXP);
-    Rcpp::traits::input_parameter< const arma::uword >::type line_search(line_searchSEXP);
+    Rcpp::traits::input_parameter< const bool >::type line_search(line_searchSEXP);
     Rcpp::traits::input_parameter< const arma::uword >::type verbosity(verbositySEXP);
     rcpp_result_gen = Rcpp::wrap(lassoPathSparse(X, y, family, lambdas, lambda_type, standardize, screening_type, shuffle, check_frequency, screen_frequency, hessian_warm_starts, celer_use_old_dual, celer_use_accel, celer_prune, gap_safe_active_start, log_hessian_update_type, log_hessian_auto_update_freq, path_length, maxit, tol_gap, gamma, store_dual_variables, verify_hessian, line_search, verbosity));
     return rcpp_result_gen;

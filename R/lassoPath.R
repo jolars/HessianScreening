@@ -50,7 +50,7 @@ lassoPath <- function(X,
                       hessian_warm_starts = TRUE,
                       celer_use_old_dual = TRUE,
                       celer_use_accel = TRUE,
-                      celer_prune = FALSE,
+                      celer_prune = TRUE,
                       gap_safe_active_start = TRUE,
                       log_hessian_update_type = c("full", "auto", "approx"),
                       log_hessian_auto_update_freq = 10,
@@ -60,7 +60,7 @@ lassoPath <- function(X,
                       gamma = 0.01,
                       store_dual_variables = FALSE,
                       verify_hessian = FALSE,
-                      line_search = NULL,
+                      line_search = TRUE,
                       verbosity = 0) {
   n <- nrow(X)
   p <- ncol(X)
@@ -69,22 +69,12 @@ lassoPath <- function(X,
   screening_type <- match.arg(screening_type)
   log_hessian_update_type <- match.arg(log_hessian_update_type)
 
-  if (is.null(line_search)) {
-    if (screening_type == "blitz") {
-      line_search <- 1
-    } else {
-      line_search <- 0
-    }
-  }
-
   if (is.null(lambda)) {
     lambda <- double(path_length)
     lambda_type <- "auto"
   } else {
     lambda_type <- "user"
   }
-
-  stopifnot(line_search %in% c(0, 1, 2))
 
   sparse <- inherits(X, "sparseMatrix")
 

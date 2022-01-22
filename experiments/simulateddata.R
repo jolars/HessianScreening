@@ -5,37 +5,9 @@ library(tidyr)
 
 printf <- function(...) invisible(cat(sprintf(...)))
 
-# g <- expand_grid(
-#   family = c("gaussian", "binomial"),
-#   scenario = c(1, 2),
-#   tol_gap = c(1e-4),
-#   n = NA,
-#   p = NA,
-#   rho = c(0, 0.4, 0.8),
-#   screening_type = c(
-#     "hessian",
-#     "working",
-#     # "edpp",
-#     # "gap_safe",
-#     "blitz",
-#     "celer"
-#   ),
-#   path_length = 100,
-#   avg_screened = NA,
-#   avg_violations = NA,
-#   time = list(NA),
-#   screened = list(NA),
-#   active = list(NA),
-#   step = list(NA),
-#   converged = NA
-# )
-
 tol_gap <- 1e-4
-
 families <- c("gaussian", "binomial")
-
 scenarios <- c(1, 2)
-
 rhos <- c(0, 0.4, 0.8)
 
 screening_types <- c(
@@ -50,12 +22,11 @@ screening_types <- c(
 path_length <- 100
 
 n_sim <- length(families) * length(scenarios) * length(rhos)
-
 out <- data.frame()
 
-max_it <- 5
+max_it <- 20
 
-it_sim <- 0L
+it_sim <- 0
 
 for (family in families) {
   for (scenario in scenarios) {
@@ -65,14 +36,14 @@ for (family in families) {
       snr <- 1
       s <- 5
     } else if (scenario == 2) {
-      n <- 200
-      p <- 20000
+      n <- 400
+      p <- 40000
       snr <- 2
       s <- 20
     }
 
     for (rho in rhos) {
-      it_sim <- it_sim + 1L
+      it_sim <- it_sim + 1
 
       printf(
         "\r%02d/%i %-10s n: %4d p: %4d rho: %0.2f\n",
@@ -90,11 +61,11 @@ for (family in families) {
           X,
           y,
           family = family,
-          screening_type = "working",
+          screening_type = "hessian",
           path_length = path_length,
           verbosity = 0,
-          tol_gap = tol_gap,
-          line_search = 1
+          line_search = TRUE,
+          tol_gap = tol_gap
         )
 
         lambda <- fit$lambda
@@ -118,8 +89,7 @@ for (family in families) {
             log_hessian_update_type = "full",
             celer_prune = TRUE,
             verbosity = 0,
-            tol_gap = tol_gap,
-            line_search = 1
+            tol_gap = tol_gap
           )
 
           n_lambda <- length(fit$lambda)
@@ -154,8 +124,6 @@ for (family in families) {
   }
 }
 
-
-
 cat("\n")
 
-saveRDS(g, "results/simulateddata.rds")
+saveRDS(out, "results/simulateddata.rds")
