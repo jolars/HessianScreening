@@ -696,7 +696,7 @@ fit(arma::uvec& screened,
 
       bool check = screening_type == "gap_safe" ? active_start : true;
 
-      if (check && (it_inner % check_frequency == 0)) {
+      if ((check && (it_inner % check_frequency == 0)) || line_search == 1) {
         primal_value =
           model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
