@@ -19,11 +19,27 @@ tol_gap <- 1e-4
 maxit <- 1e5
 standardize <- TRUE
 
-fit <- lassoPath(
+fit_blitz <- lassoPath(
   X,
   y,
   family = family,
-  screening_type = "working",
+  screening_type = "celer",
+  standardize = standardize,
+  verbosity = verbosity,
+  tol_gap = tol_gap,
+  gap_safe_active_start = TRUE,
+  celer_use_accel = TRUE,
+  celer_prune = TRUE,
+  maxit = maxit,
+  store_dual_variables = TRUE,
+  check_frequency = 1
+)
+
+fit_hessian <- lassoPath(
+  X,
+  y,
+  family = family,
+  screening_type = "hessian",
   standardize = standardize,
   verbosity = verbosity,
   tol_gap = tol_gap,
@@ -38,5 +54,4 @@ fit <- lassoPath(
 # real_gaps <- check_gaps(fit, standardize, X, y, tol_gap)
 
 # print(real_gaps)
-print(fit$screened)
-print(cbind(fit$active, fit$screened))
+print(cbind(fit_hessian$active, fit_blitz$active))
