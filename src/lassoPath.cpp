@@ -2,7 +2,6 @@
 #include "checkStoppingConditions.h"
 #include "findDuplicates.h"
 #include "gaussian.h"
-#include "getNextLambda.h"
 #include "kktCheck.h"
 #include "model.h"
 #include "rescaleCoefficients.h"
@@ -22,6 +21,8 @@ Rcpp::List
 lassoPath(T& X,
           arma::vec& y,
           const std::string family,
+          arma::vec lambdas,
+          const std::string lambda_type,
           const bool standardize,
           const std::string screening_type,
           const bool shuffle,
@@ -34,7 +35,7 @@ lassoPath(T& X,
           const bool gap_safe_active_start,
           std::string log_hessian_update_type,
           const arma::uword log_hessian_auto_update_freq,
-          const arma::uword path_length,
+          arma::uword path_length,
           const arma::uword maxit,
           const double tol_gap,
           const double gamma,
@@ -67,9 +68,6 @@ lassoPath(T& X,
   if (log_hessian_auto) {
     log_hessian_update_type = "full";
   }
-
-  const bool hessian_type_screening =
-    screening_type == "hessian" || screening_type == "hessian_adaptive";
 
   vec beta(p, fill::zeros);
   mat betas(p, 0, fill::zeros);
@@ -107,24 +105,16 @@ lassoPath(T& X,
   const double lambda_max = max(abs(c));
   const double lambda_min = lambda_max * lambda_min_ratio;
 
-  const vec lambda_grid =
-    exp(linspace(log(lambda_max), log(lambda_min), path_length));
+  if (lambda_type == "auto") {
+    lambdas = exp(linspace(log(lambda_max), log(lambda_min), path_length));
+  } else {
+    path_length = lambdas.n_elem;
+  }
 
-  std::vector<double> lambdas;
+  std::vector<double> lambda_out;
+
   double lambda_prev = 2 * lambda_max;
   double lambda = lambda_max;
-
-  const double lambda_min_step = 0.1 * min(abs(diff(lambda_grid)));
-  double tmp = n < p ? n / path_length : p / path_length;
-
-  uword n_target_nonzero = std::min(p, static_cast<uword>(std::ceil(tmp)));
-  n_target_nonzero = std::max(static_cast<uword>(1), n_target_nonzero);
-
-  GetNextLambda getNextLambda{ beta,           c,
-                               c_grad,         lambda_grid,
-                               lambda_min,     lambda_min_step,
-                               screening_type, n_target_nonzero,
-                               verbosity };
 
   std::vector<double> primals;
   std::vector<double> duals;
@@ -266,7 +256,7 @@ lassoPath(T& X,
     n_passes.emplace_back(n_passes_i);
     n_refits.emplace_back(n_refits_i);
     n_violations.emplace_back(n_violations_i);
-    lambdas.emplace_back(lambda);
+    lambda_out.emplace_back(lambda);
     cd_time.emplace_back(cd_time_i);
     kkt_time.emplace_back(kkt_time_i);
     n_screened.emplace_back(avg_screened);
@@ -286,10 +276,10 @@ lassoPath(T& X,
     devs.emplace_back(dev);
     dev_ratios.emplace_back(1.0 - dev / null_dev);
 
-    // find duplicates among the just-activated predictors, drop them, and
-    // adjust the coefficients accordingly
     double t0 = timer.toc();
 
+    // find duplicates among the just-activated predictors, drop them, and
+    // adjust the coefficients accordingly
     auto [new_originals, new_duplicates] = findDuplicates(
       active_set, active_set_prev, X, model, X_offset, standardize);
 
@@ -327,18 +317,20 @@ lassoPath(T& X,
       Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
     }
 
-    bool stop_path = checkStoppingConditions(i,
-                                             n,
-                                             p,
-                                             path_length,
-                                             active_set.n_elem,
-                                             lambda,
-                                             lambda_min,
-                                             dev,
-                                             dev_prev,
-                                             null_dev,
-                                             screening_type,
-                                             verbosity);
+    bool stop_path = lambda_type == "user"
+                       ? i == path_length
+                       : checkStoppingConditions(i,
+                                                 n,
+                                                 p,
+                                                 path_length,
+                                                 active_set.n_elem,
+                                                 lambda,
+                                                 lambda_min,
+                                                 dev,
+                                                 dev_prev,
+                                                 null_dev,
+                                                 screening_type,
+                                                 verbosity);
 
     if (stop_path) {
       hess_time.emplace_back(0);
@@ -346,7 +338,9 @@ lassoPath(T& X,
       break;
     }
 
-    if (hessian_type_screening) {
+    double lambda_next = lambdas(i);
+
+    if (screening_type == "hessian") {
       double t0 = timer.toc();
 
       if (log_hessian_update_type == "approx" || family == "gaussian") {
@@ -389,11 +383,7 @@ lassoPath(T& X,
 
       hess_time.emplace_back(timer.toc() - t0);
 
-      // for hessian_adaptive we need to use all predictors, but this is not the
-      // case for the standard hessian method
-      uvec restricted = screening_type == "hessian"
-                          ? abs(c) >= 2 * lambda_grid(i) - lambda
-                          : abs(c) >= 2 * lambda_min - lambda;
+      uvec restricted = abs(c) >= 2 * lambda_next - lambda;
 
       t0 = timer.toc();
 
@@ -445,8 +435,6 @@ lassoPath(T& X,
       }
     }
 
-    double lambda_next = getNextLambda(Hinv_s, lambda, active, new_active, i);
-
     strong = abs(c) >= 2 * lambda_next - lambda;
     strong_set = find(strong);
     n_strong.emplace_back(sum(strong));
@@ -469,7 +457,7 @@ lassoPath(T& X,
     // make sure duplicates stay out
     screened(find(duplicated)).fill(false);
 
-    if (hessian_warm_starts && hessian_type_screening) {
+    if (hessian_warm_starts && screening_type == "hessian") {
       beta(active_set) += (lambda - lambda_next) * Hinv_s;
     }
 
@@ -491,7 +479,7 @@ lassoPath(T& X,
 
   return List::create(Named("beta") = wrap(betas),
                       Named("theta") = wrap(thetas),
-                      Named("lambda") = wrap(lambdas),
+                      Named("lambda") = wrap(lambda_out),
                       Named("primals") = wrap(primals),
                       Named("duals") = wrap(duals),
                       Named("dev_ratio") = wrap(dev_ratios),
@@ -516,6 +504,8 @@ Rcpp::List
 lassoPathDense(arma::mat X,
                arma::vec y,
                const std::string family,
+               arma::vec lambdas,
+               const std::string lambda_type,
                const bool standardize,
                const std::string screening_type,
                const bool shuffle,
@@ -540,6 +530,8 @@ lassoPathDense(arma::mat X,
   return lassoPath(X,
                    y,
                    family,
+                   lambdas,
+                   lambda_type,
                    standardize,
                    screening_type,
                    shuffle,
@@ -567,6 +559,8 @@ Rcpp::List
 lassoPathSparse(arma::sp_mat X,
                 arma::vec y,
                 const std::string family,
+                arma::vec lambdas,
+                const std::string lambda_type,
                 const bool standardize,
                 const std::string screening_type,
                 const bool shuffle,
@@ -591,6 +585,8 @@ lassoPathSparse(arma::sp_mat X,
   return lassoPath(X,
                    y,
                    family,
+                   lambdas,
+                   lambda_type,
                    standardize,
                    screening_type,
                    shuffle,

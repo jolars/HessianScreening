@@ -33,6 +33,7 @@
 lassoPath <- function(X,
                       y,
                       family = c("gaussian", "binomial"),
+                      lambda = NULL,
                       standardize = TRUE,
                       screening_type = c(
                         "working",
@@ -76,6 +77,13 @@ lassoPath <- function(X,
     }
   }
 
+  if (is.null(lambda)) {
+    lambda <- double(path_length)
+    lambda_type <- "auto"
+  } else {
+    lambda_type <- "user"
+  }
+
   stopifnot(line_search %in% c(0, 1, 2))
 
   sparse <- inherits(X, "sparseMatrix")
@@ -87,6 +95,8 @@ lassoPath <- function(X,
       X,
       y,
       family,
+      lambda,
+      lambda_type,
       standardize,
       screening_type,
       shuffle,
@@ -113,6 +123,8 @@ lassoPath <- function(X,
       X,
       y,
       family,
+      lambda,
+      lambda_type,
       standardize,
       screening_type,
       shuffle,
