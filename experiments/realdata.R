@@ -1,6 +1,4 @@
 library(HessianScreening)
-library(tidyr)
-library(tibble)
 library(Matrix)
 
 printf <- function(...) invisible(cat(sprintf(...)))
@@ -56,7 +54,7 @@ for (dataset in datasets) {
   )) {
     10
   } else {
-    3
+    1
   }
 
   dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
