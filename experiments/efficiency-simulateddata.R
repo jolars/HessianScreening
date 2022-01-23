@@ -24,7 +24,7 @@ path_length <- 100
 n_sim <- length(families) * length(rhos)
 out <- data.frame()
 
-max_it <- 2
+max_it <- 50
 
 it_sim <- 0
 
