@@ -1,6 +1,6 @@
 #!/bin/sh
 
-#SBATCH -t 30:00:00
+#SBATCH -t 16:00:00
 
 #SBATCH --mail-user=johan.larsson@stat.lu.se
 #SBATCH --mail-type=ALL
