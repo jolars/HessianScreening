@@ -1,4 +1,3 @@
-
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -6,7 +5,8 @@ library(tikzDevice)
 
 source("R/utils.R")
 
-d <- readRDS("results/simulateddata.rds")
+d <- readRDS("results/efficiency-simulateddata.rds") %>%
+  as_tibble()
 
 theme_set(theme_minimal(base_size = 9))
 
@@ -19,6 +19,18 @@ options(
   tikzDocumentDeclaration =
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
 )
+
+d2 <-
+  d %>%
+  group_by(family, rho, screening_type, it) %>%
+  mutate(step = seq_along(screened)) %>%
+  ungroup() %>%
+  group_by(family, rho, screening_type, step) %>%
+  summarize(screened = mean(screened), active = mean(active))
+
+ggplot(d2, aes(step, screened, color = screening_type)) +
+  geom_line() +
+  facet_grid(vars("family", "rho"))
 
 d2 <-
   d %>%
@@ -54,8 +66,8 @@ d2_gaussian_active <-
   group_by(family, rho, np, step) %>%
   summarize(avg_active = mean(active, na.rm = TRUE))
 
-f1 <- "figures/simulateddata-efficiency-gaussian.tex"
-tikz(f1, width = 5.6, height = 2.5, standAlone = TRUE)
+# f1 <- "figures/simulateddata-efficiency-gaussian.tex"
+# tikz(f1, width = 5.6, height = 2.5, standAlone = TRUE)
 ggplot(d2_gaussian, aes(step)) +
   facet_grid(np ~ rho,
     labeller = labeller(
@@ -71,8 +83,8 @@ ggplot(d2_gaussian, aes(step)) +
   theme(legend.title = element_blank()) +
   scale_color_manual(values = cols) +
   labs(y = "Fraction of Predictors", x = "Step")
-dev.off()
-renderPdf(f1)
+# dev.off()
+# renderPdf(f1)
 
 d2_binomial <- filter(d2, family == "binomial")
 d2_binomial_active <-
@@ -81,8 +93,8 @@ d2_binomial_active <-
   group_by(family, rho, np, step) %>%
   summarize(avg_active = mean(active, na.rm = TRUE))
 
-f2 <- "figures/simulateddata-efficiency-binomial.tex"
-tikz(f2, width = 5.6, height = 2.5, standAlone = TRUE)
+# f2 <- "figures/simulateddata-efficiency-binomial.tex"
+# tikz(f2, width = 5.6, height = 2.5, standAlone = TRUE)
 ggplot(d2_binomial, aes(step)) +
   facet_grid(np ~ rho,
     labeller = labeller(
@@ -98,5 +110,5 @@ ggplot(d2_binomial, aes(step)) +
   theme(legend.title = element_blank()) +
   scale_color_manual(values = cols[-1]) +
   labs(y = "Fraction of Predictors", x = "Step")
-dev.off()
-renderPdf(f2)
+# dev.off()
+# renderPdf(f2)

@@ -21,8 +21,8 @@ d <-
     ),
     family = recode(
       family,
-      "gaussian" = "Gaussian",
-      "binomial" = "Binomial"
+      "gaussian" = "Least-Squares",
+      "binomial" = "Logistic"
     ),
     dataset = str_remove(dataset, "(-train|-test)")
   ) %>%
@@ -30,6 +30,8 @@ d <-
   summarize(time = mean(time)) %>%
   arrange(family, dataset, screening_type) %>%
   pivot_wider(names_from = "screening_type", values_from = "time")
+
+write_csv(d, "tables/realdata-timings.csv")
 
 filter(d, family == "Gaussian") %>%
   select(-family) %>%

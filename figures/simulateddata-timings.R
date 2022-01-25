@@ -14,7 +14,10 @@ fig_height <- 2.5
 conf_level <- 0.05
 
 d_raw <- readRDS("results/simulateddata.rds") %>%
-  filter(!(screening_type %in% c("strong", "edpp", "gap_safe"))) %>%
+  filter(
+    !(screening_type %in% c("strong", "edpp", "gap_safe")),
+    converged == TRUE
+  ) %>%
   mutate(
     screening_type = recode_methods(screening_type),
     rho = as.factor(rho),
@@ -56,7 +59,7 @@ options(
 )
 
 file <- "figures/simulateddata-timings.tex"
-# tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
+tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
   rel_time,
@@ -75,7 +78,7 @@ ggplot(d1, aes(
     x = "Correlation ($\\rho$)",
     y = "Time (relative)"
   ) +
-  theme(legend.position = c(0.1, 0.7), legend.title = element_blank())
-# dev.off()
+  theme(legend.position = c(0.065, 0.75), legend.title = element_blank())
+dev.off()
 
-# renderPdf("figures/simulateddata-timings.tex")
+renderPdf("figures/simulateddata-timings.tex")
