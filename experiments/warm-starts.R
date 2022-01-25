@@ -9,11 +9,13 @@ y <- d$y
 
 fit_warm1 <- lassoPath(X, y,
   hessian_warm_starts = TRUE,
-  screening_type = "hessian"
+  screening_type = "hessian",
+  check_frequency = 1
 )
 fit_std1 <- lassoPath(X, y,
   hessian_warm_starts = FALSE,
-  screening_type = "hessian"
+  screening_type = "hessian",
+  check_frequency = 1
 )
 
 d <- readRDS("data/colon-cancer.rds")
@@ -23,12 +25,14 @@ y <- d$y
 fit_warm2 <- lassoPath(X, y,
   family = "binomial",
   hessian_warm_starts = TRUE,
-  screening_type = "hessian"
+  screening_type = "hessian",
+  check_frequency = 1
 )
 fit_std2 <- lassoPath(X, y,
   family = "binomial",
   hessian_warm_starts = FALSE,
-  screening_type = "hessian"
+  screening_type = "hessian",
+  check_frequency = 1
 )
 
 n1 <- length(fit_warm1$lambda)

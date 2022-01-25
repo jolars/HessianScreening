@@ -1,10 +1,11 @@
 library(HessianScreening)
+library(Matrix)
 
 printf <- function(...) invisible(cat(sprintf(...)))
 
 tol_gap <- 1e-4
 families <- c("gaussian", "binomial")
-rhos <- c(0, 0.2)
+rhos <- c(0, 0.4, 0.8)
 n <- 200
 p <- 20000
 snr <- 2
@@ -12,11 +13,11 @@ s <- 20
 
 screening_types <- c(
   "hessian",
-  # "edpp",
-  # "gap_safe",
-  # "strong",
-  # "celer",
-  "blitz"
+  "edpp",
+  "celer",
+  "blitz",
+  "gap_safe",
+  "strong"
 )
 
 path_length <- 100
@@ -24,7 +25,7 @@ path_length <- 100
 n_sim <- length(families) * length(rhos)
 out <- data.frame()
 
-max_it <- 50
+max_it <- 20
 
 it_sim <- 0
 
@@ -52,12 +53,16 @@ for (family in families) {
         path_length = path_length,
         verbosity = 0,
         line_search = TRUE,
-        tol_gap = tol_gap
+        tol_gap = 1e-5
       )
 
       lambda <- fit$lambda
 
       for (screening_type in screening_types) {
+        if (screening_type == "edpp" && family == "binomial") {
+          next;
+        }
+
         printf(
           "\r%s, it: %02d %-10s",
           format(Sys.time(), "%H:%M:%S"),
@@ -71,11 +76,12 @@ for (family in families) {
           y,
           family = family,
           lambda = lambda,
+          verbosity = 0,
           screening_type = screening_type,
           path_length = path_length,
           log_hessian_update_type = "full",
           celer_prune = TRUE,
-          verbosity = 0,
+          screen_frequency = 1,
           tol_gap = tol_gap
         )
 
@@ -95,9 +101,12 @@ for (family in families) {
 
         res <- data.frame(
           family = family,
+          n = n,
+          p = p,
           rho = rho,
-          it = i,
           screening_type = screening_type,
+          it = i,
+          step = seq_along(fit$screened),
           screened = fit$screened,
           active = fit$active,
           violations = fit$violations,

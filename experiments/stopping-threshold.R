@@ -29,7 +29,7 @@ path_length <- 100
 n_sim <- length(families)
 out <- data.frame()
 
-max_it <- 10
+max_it <- 20
 
 it_sim <- 0
 

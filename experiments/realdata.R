@@ -4,16 +4,14 @@ library(Matrix)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
-  # gaussian
-  "e2006-tfidf-train",
-  "e2006-log1p-train",
-  "YearPredictionMSD-train",
-  # binomial
-  "arcene",
   "colon-cancer",
   "duke-breast-cancer",
   "ijcnn1-train",
+  "arcene",
   "madelon-train",
+  "YearPredictionMSD-train",
+  "e2006-tfidf-train",
+  "e2006-log1p-train",
   "rcv1-train",
   "news20"
 )
@@ -46,15 +44,15 @@ for (dataset in datasets) {
   n <- nrow(X)
   p <- ncol(X)
   
-  max_it <- if (dataset %in% c("colon-cancer", "duke-breast-cancer")) {
-    20
-  } else if (dataset %in% c(
-    "ijcnn1-train",
-    "arcene"
+  max_it <- if (dataset %in% c(
+    "colon-cancer",
+    "duke-breast-cancer",
+    "arcene",
+    "ijcnn1-train"
   )) {
-    10
+    20
   } else {
-    1
+    3
   }
 
   dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
@@ -68,23 +66,23 @@ for (dataset in datasets) {
   printf(
     "\r%02d/%i %-10s\n", it_sim, n_sim, dataset)
 
-  for (i in 1:max_it) {
-    set.seed(i)
+  set.seed(it_sim)
 
-    fit <- lassoPath(
-      X,
-      y,
-      family = family,
-      screening_type = "hessian",
-      path_length = path_length,
-      verbosity = 0,
-      line_search = TRUE,
-      tol_gap = tol_gap
-    )
+  fit <- lassoPath(
+    X,
+    y,
+    family = family,
+    screening_type = "hessian",
+    path_length = path_length,
+    log_hessian_update_type = log_hessian_update_type,
+    verbosity = 0,
+    tol_gap = tol_gap
+  )
 
-    lambda <- fit$lambda
+  lambda <- fit$lambda
 
-    for (screening_type in screening_types) {
+  for (screening_type in screening_types) {
+    for (i in 1:max_it) {
       set.seed(i)
 
       if (family == "binomial" && screening_type == "edpp") {
@@ -107,13 +105,11 @@ for (dataset in datasets) {
         lambda = lambda,
         screening_type = screening_type,
         path_length = path_length,
-        log_hessian_update_type = "full",
+        log_hessian_update_type = log_hessian_update_type,
         celer_prune = TRUE,
         verbosity = 0,
         tol_gap = tol_gap
       )
-
-      n_lambda <- length(fit$lambda)
 
       if (any(!fit$converged)) {
         warning(
@@ -138,6 +134,11 @@ for (dataset in datasets) {
         time = fit$full_time,
         converged = all(fit$converged)
       )
+
+      fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
+      path <- file.path("results", "realdata", fn)
+
+      saveRDS(out, path)
 
       out <- rbind(out, res)
     }
