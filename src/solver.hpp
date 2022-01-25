@@ -282,16 +282,22 @@ fit(arma::uvec& screened,
           theta = residual / dual_scale;
           dual_value = model->dual(theta, y, lambda);
 
+          bool celer_old_dual_better = false;
+
+          vec c_check = c;
+
           if (celer_use_old_dual) {
             // check if dual point from previous check performs better
-            if (it > 0 && dual_value_old > dual_value) {
+            celer_old_dual_better = it > 0 && dual_value_old > dual_value;
+
+            if (celer_old_dual_better) {
               if (verbosity >= 2)
                 Rprintf("      using previous dual point\n");
 
               dual_value = dual_value_old;
               dual_scale = dual_scale_old;
-              c = c_old;
-            }
+              c_check = c_old;
+            }              
 
             // save dual objects for next iteration
             dual_value_old = dual_value;
@@ -349,7 +355,7 @@ fit(arma::uvec& screened,
                         residual,
                         Xbeta,
                         beta,
-                        c,
+                        c_check,
                         dual_scale,
                         r_screen,
                         model,
@@ -732,7 +738,9 @@ fit(arma::uvec& screened,
     beta.zeros();
   }
 
-  double avg_screened = n_screened / it;
+  // Return average number of screened predictors. If it == 0, then the
+  // algorithm converged instantly and hence did not need to do any screening
+  double avg_screened = it == 0 ? 0 : n_screened / it;
 
   return { primal_value, dual_value,   duality_gap, theta,   it,
            avg_screened, n_violations, n_refits,    cd_time, kkt_time };
