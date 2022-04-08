@@ -6,5 +6,6 @@
 ## usethis namespace: start
 #' @useDynLib HessianScreening, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
+#' @import Matrix
 ## usethis namespace: end
 NULL
