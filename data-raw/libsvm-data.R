@@ -42,7 +42,9 @@ datafiles <- c(
   "news20" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/news20.binary.bz2",
   "rcv1-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/rcv1_train.binary.bz2",
   "YearPredictionMSD-test" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.t.bz2",
-  "YearPredictionMSD-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.bz2"
+  "YearPredictionMSD-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/regression/YearPredictionMSD.bz2",
+  "leukemia-train" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/leu.bz2",
+  "leukemia-test" = "https://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/leu.t.bz2"
 )
 
 datanames <- names(datafiles)
@@ -68,3 +70,12 @@ for (i in seq_along(datanames)) {
     saveRDS(d, file)
   }
 }
+
+# add full Leukemia data set
+leukemia_train <- readRDS("data/leukemia-train.rds")
+leukemia_test <- readRDS("data/leukemia-test.rds")
+leukemia_X = rbind(leukemia_train$X, leukemia_test$X)
+leukemia_y = c(leukemia_train$y, leukemia_test$y)
+leukemia <- list(X = leukemia_X, y = leukemia_y)
+saveRDS(leukemia, "data/leukemia.rds")
+
