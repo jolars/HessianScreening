@@ -17,4 +17,5 @@
 module purge
 
 # run the test
-singularity run --bind results:/Project/results container.sif path-length.R
+singularity run --bind results:/Project/results container.sif \
+  experiments/path-length.R

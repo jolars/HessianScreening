@@ -18,4 +18,4 @@ module purge
 singularity run \
   --bind results:/Project/results \
   container.sif \
-  efficiency-simulateddata.R
+  experiments/efficiency-simulateddata.R

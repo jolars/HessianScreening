@@ -20,4 +20,4 @@ module purge
 singularity run \
   --bind results:/Project/results \
   container.sif \
-  stopping-threshold.R
+  experiments/stopping-threshold.R

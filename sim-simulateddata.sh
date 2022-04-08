@@ -17,4 +17,5 @@
 module purge
 
 # run the test
-singularity run --bind results:/Project/results container.sif simulateddata.R
+singularity run --bind results:/Project/results container.sif \
+  experiments/simulateddata.R

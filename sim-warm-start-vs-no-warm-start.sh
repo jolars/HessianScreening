@@ -20,4 +20,4 @@ module purge
 singularity run \
   --bind results:/Project/results \
   container.sif \
-  warm-start-vs-no-warm-start.R
+  experiments/warm-start-vs-no-warm-start.R
