@@ -8,8 +8,22 @@ test_that("sparse and dense methods are equivalent", {
     y <- d$y
 
     for (standardize in c(TRUE, FALSE)) {
-      fit_dense <- lassoPath(as.matrix(X), y, family, standardize = standardize)
-      fit_sparse <- lassoPath(X, y, family, standardize = standardize)
+      set.seed(1)
+      fit_dense <- lassoPath(
+        as.matrix(X),
+        y,
+        family,
+        standardize = standardize,
+        line_search = FALSE
+      )
+      set.seed(1)
+      fit_sparse <- lassoPath(
+        X,
+        y,
+        family,
+        standardize = standardize,
+        line_search = FALSE
+      )
 
       expect_equal(fit_dense$lambda, fit_sparse$lambda)
       expect_equal(fit_dense$dev_ratio, fit_sparse$dev_ratio)
