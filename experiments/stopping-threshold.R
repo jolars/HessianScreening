@@ -101,6 +101,8 @@ for (family in families) {
 
         res <- data.frame(
           family = family,
+          n = n,
+          p = p,
           tol_gap = tol_gap,
           screening_type = screening_type,
           it = i,

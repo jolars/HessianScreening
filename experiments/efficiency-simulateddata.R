@@ -63,6 +63,8 @@ for (family in families) {
           next;
         }
 
+        set.seed(i)
+
         printf(
           "\r%s, it: %02d %-10s",
           format(Sys.time(), "%H:%M:%S"),
@@ -80,6 +82,7 @@ for (family in families) {
           screening_type = screening_type,
           path_length = path_length,
           log_hessian_update_type = "full",
+          augment_with_gap_safe = TRUE,
           celer_prune = TRUE,
           screen_frequency = 1,
           tol_gap = tol_gap

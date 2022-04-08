@@ -1,3 +1,7 @@
+#!/usr/bin/Rscript
+
+args <- commandArgs(trailingOnly = TRUE)
+
 library(HessianScreening)
 library(Matrix)
 
@@ -15,6 +19,12 @@ datasets <- c(
   "rcv1-train",
   "news20"
 )
+
+if (length(args) > 0) {
+  stopifnot(all(args %in% datasets))
+
+  datasets <- args 
+}
 
 tol_gap <- 1e-4
 screening_types <- c(
@@ -66,7 +76,7 @@ for (dataset in datasets) {
   printf(
     "\r%02d/%i %-10s\n", it_sim, n_sim, dataset)
 
-  set.seed(it_sim)
+  set.seed(723)
 
   fit <- lassoPath(
     X,
@@ -83,7 +93,7 @@ for (dataset in datasets) {
 
   for (screening_type in screening_types) {
     for (i in 1:max_it) {
-      set.seed(i)
+      set.seed(723)
 
       if (family == "binomial" && screening_type == "edpp") {
         next
