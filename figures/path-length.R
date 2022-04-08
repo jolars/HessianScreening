@@ -8,8 +8,8 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 6.8
-fig_height <- 2.5
+fig_width <- 6.85
+fig_height <- 2.4
 
 conf_level <- 0.05
 
@@ -49,7 +49,7 @@ d1 <-
   )
 
 cols <- c(
-  "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+  "black", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
   "#0072B2", "#D55E00", "#CC79A7"
 )
 
@@ -58,16 +58,16 @@ options(
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
 )
 
-# file <- "figures/simulateddata-timings.tex"
-# tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
+file <- "figures/path-length.tex"
+tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
 ggplot(
   d1,
   aes(path_length, meantime, color = screening_type, fill = screening_type)
 ) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2, color = "transparent") +
   geom_line() +
-  facet_grid(vars(family, np)) +
-  theme(legend.position = c(0.1, 0.93), legend.title = element_blank()) +
+  facet_wrap(vars(family, np), nrow = 1) +
+  theme(legend.position = c(0.06, 0.75), legend.title = element_blank()) +
   scale_fill_manual(values = cols) +
   scale_color_manual(values = cols) +
   labs(
@@ -76,6 +76,6 @@ ggplot(
     x = "Path Length",
     y = "Time (s)"
   ) 
-# dev.off()
+dev.off()
 
-# renderPdf("figures/simulateddata-timings.tex")
+renderPdf("figures/path-length.tex")

@@ -9,11 +9,13 @@ check_gaps(fit, standardize, x, y, tol_gap = 1e-04)
 \arguments{
 \item{fit}{the resulting fit}
 
+\item{standardize}{whether the fit used standardization}
+
 \item{x}{design matrix}
 
 \item{y}{response vector}
 
-\item{family}{the loss function}
+\item{tol_gap}{the tolerance threshold used when fitting}
 }
 \value{
 primals, duals, and relative duality gaps

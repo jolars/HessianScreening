@@ -4,7 +4,13 @@ library(tidyr)
 library(readr)
 library(stringr)
 
-d_raw <- readRDS("results/realdata.rds")
+l <- list.files("results/realdata", full.names = TRUE)
+
+r <- lapply(l, readRDS)
+
+d_raw <- do.call(bind_rows, r)
+
+conf_level <- 0.05
 
 d <-
   as_tibble(d_raw) %>%
@@ -19,24 +25,33 @@ d <-
       "celer" = "Celer",
       "blitz" = "Blitz"
     ),
-    family = recode(
+    model = recode(
       family,
       "gaussian" = "Least-Squares",
       "binomial" = "Logistic"
     ),
     dataset = str_remove(dataset, "(-train|-test)")
-  ) %>%
-  group_by(dataset, family, n, p, density, screening_type) %>%
+  )
+
+d_summary <- 
+  d %>%
+  group_by(dataset, model, n, p, density, screening_type) %>%
   summarize(time = mean(time)) %>%
-  arrange(family, dataset, screening_type) %>%
+  arrange(model, dataset, screening_type) %>%
   pivot_wider(names_from = "screening_type", values_from = "time")
 
-write_csv(d, "tables/realdata-timings.csv")
+d_details <-
+  d %>%
+  group_by(dataset, model, n, p, density, screening_type) %>%
+  summarize(
+    mean_time = mean(time),
+    se = sd(time)/sqrt(n()),
+    ci = qnorm(1 - conf_level/2) * se,
+    lo = mean_time - ci,
+    hi = mean_time + ci
+  ) %>%
+  select(dataset, n, p, density, model, screening_type, mean_time, lo, hi)
 
-filter(d, family == "Gaussian") %>%
-  select(-family) %>%
-  write_csv("tables/realdata-timings-gaussian.csv")
+write_csv(d_summary, "tables/realdata-timings.csv")
+write_csv(d_details, "tables/realdata-timings-details.csv")
 
-filter(d, family == "Binomial") %>%
-  select(-family) %>%
-  write_csv("tables/realdata-timings-binomial.csv")

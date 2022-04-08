@@ -8,7 +8,7 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 6.8
+fig_width <- 6.85
 fig_height <- 2.5
 
 conf_level <- 0.05
@@ -23,6 +23,11 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
     rho = as.factor(rho),
     np = paste0("$n=", n, "$, $p=", p, "$"),
     np = reorder(np, p),
+    family = recode(
+      family,
+      "gaussian" = "Least-Squares",
+      "binomial" = "Logistic"
+    )
   ) %>%
   select(np, n, p, rho, family, screening_type, time) %>%
   unnest(time)
@@ -78,7 +83,11 @@ ggplot(d1, aes(
     x = "Correlation ($\\rho$)",
     y = "Time (relative)"
   ) +
-  theme(legend.position = c(0.065, 0.75), legend.title = element_blank())
+  theme(
+    legend.position = c(0.065, 0.75),
+    legend.title = element_blank(),
+    panel.grid.major.x = element_blank()
+  )
 dev.off()
 
 renderPdf("figures/simulateddata-timings.tex")

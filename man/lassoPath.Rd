@@ -20,6 +20,7 @@ lassoPath(
   celer_use_accel = TRUE,
   celer_prune = TRUE,
   gap_safe_active_start = TRUE,
+  augment_with_gap_safe = TRUE,
   log_hessian_update_type = c("full", "auto", "approx"),
   log_hessian_auto_update_freq = 10,
   path_length = 100L,
@@ -39,6 +40,9 @@ lassoPath(
 
 \item{family}{The name of the family, "gaussian" or "logistic"}
 
+\item{lambda}{weights for the regularization path, if \code{NULL}, then they
+are automatically computed}
+
 \item{standardize}{Whether to standardize the predictors}
 
 \item{screening_type}{Screening rule}
@@ -51,8 +55,20 @@ inner CD loop}
 \item{screen_frequency}{Frequency at which predictors are screened for
 the gap safe solver}
 
-\item{hessian_warm_starts}{Whether to use the active start strategy for
+\item{hessian_warm_starts}{Whether to use warm starts based on Hessian}
+
+\item{celer_use_old_dual}{whether to try to use previous dual when checking
+duality gap globally and screening for Celer}
+
+\item{celer_use_accel}{whether to use accelerated dual point for Celer}
+
+\item{celer_prune}{whether to use pruning for Celer}
+
+\item{gap_safe_active_start}{Whether to use the active start strategy for
 the Gap-Safe rule}
+
+\item{augment_with_gap_safe}{Whether or not augment heuristic rules
+with Gap Safe checks during KKT checks}
 
 \item{log_hessian_update_type}{What type of strategy to use for
 updating the hessian for logistic regression}
@@ -67,6 +83,9 @@ updating the hessian for logistic regression}
 \item{tol_gap}{Tolerance threshold for relative duality gap.}
 
 \item{gamma}{Percent of strong approximation to add to Hessian approximation}
+
+\item{store_dual_variables}{whether to store dual variables throughout
+fitting}
 
 \item{verify_hessian}{Whether to not to verify that Hessian updates are
 correct. Used only for diagnostic purposes.}

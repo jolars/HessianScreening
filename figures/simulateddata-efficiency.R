@@ -5,13 +5,18 @@ library(tikzDevice)
 
 source("R/utils.R")
 
-d <- readRDS("results/efficiency-simulateddata.rds") %>%
+d_raw <- readRDS("results/efficiency-simulateddata.rds") %>%
   as_tibble()
 
 theme_set(theme_minimal(base_size = 9))
 
+fig_width <- 6.85
+fig_width_small <- 3.35 
+fig_height <- 4.5
+fig_height_small <- 2
+
 cols <- c(
-  "#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
+  "black", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
   "#0072B2", "#D55E00", "#CC79A7"
 )
 
@@ -20,95 +25,70 @@ options(
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
 )
 
-d2 <-
-  d %>%
-  group_by(family, rho, screening_type, it) %>%
-  mutate(step = seq_along(screened)) %>%
-  ungroup() %>%
-  group_by(family, rho, screening_type, step) %>%
-  summarize(screened = mean(screened), active = mean(active))
-
-ggplot(d2, aes(step, screened, color = screening_type)) +
-  geom_line() +
-  facet_grid(vars("family", "rho"))
-
-d2 <-
-  d %>%
-  mutate(
-    np = paste0("$n=", n, "$, $p=", p, "$"),
-    screening_type = recode(
-      screening_type,
-      "hessian" = "Hessian",
-      "working" = "Working",
-      "gap_safe" = "Gap Safe",
-      "edpp" = "EDPP",
-      "strong" = "Strong"
-    )
-  ) %>%
-  filter(screening_type != "Working") %>%
-  drop_na() %>%
-  unnest(c(screened, active, step)) %>%
-  group_by(family, rho, scenario, screening_type) %>%
-  mutate(screened = screened / p, active = active / p)
-
 rho_labeller <- function(labels, multi_line = TRUE, sep = ":", ...) {
   value <- label_value(labels, multi_line = multi_line)
-
   out <- paste0("$\\rho = ", value, "$")
   #  list(unname(unlist(out)))
   out
 }
 
-d2_gaussian <- filter(d2, family == "gaussian")
-d2_gaussian_active <-
-  d2_gaussian %>%
-  ungroup() %>%
-  group_by(family, rho, np, step) %>%
-  summarize(avg_active = mean(active, na.rm = TRUE))
-
-# f1 <- "figures/simulateddata-efficiency-gaussian.tex"
-# tikz(f1, width = 5.6, height = 2.5, standAlone = TRUE)
-ggplot(d2_gaussian, aes(step)) +
-  facet_grid(np ~ rho,
-    labeller = labeller(
-      np = label_value,
-      rho = rho_labeller
+d <-
+  d_raw %>%
+  group_by(family, rho, screening_type, it) %>%
+  filter(screened != 0) %>%
+  mutate(
+    step = seq_along(screened),
+    screening_type = recode_methods(screening_type),
+    family = recode(
+      family,
+      "gaussian" = "Least-Squares",
+      "binomial" = "Logistic"
     )
-  ) +
-  geom_line(aes(x = step, y = avg_active),
-    linetype = 2,
-    data = d2_gaussian_active
-  ) +
-  geom_line(aes(y = screened, col = screening_type, group = screening_type)) +
-  theme(legend.title = element_blank()) +
-  scale_color_manual(values = cols) +
-  labs(y = "Fraction of Predictors", x = "Step")
-# dev.off()
-# renderPdf(f1)
-
-d2_binomial <- filter(d2, family == "binomial")
-d2_binomial_active <-
-  d2_binomial %>%
+  ) %>%
   ungroup() %>%
-  group_by(family, rho, np, step) %>%
-  summarize(avg_active = mean(active, na.rm = TRUE))
+  group_by(family, rho, screening_type, step) %>%
+  summarize(screened = mean(screened), active = mean(active, na.rm = TRUE))
 
-# f2 <- "figures/simulateddata-efficiency-binomial.tex"
-# tikz(f2, width = 5.6, height = 2.5, standAlone = TRUE)
-ggplot(d2_binomial, aes(step)) +
-  facet_grid(np ~ rho,
-    labeller = labeller(
-      np = label_value,
-      rho = rho_labeller
-    )
-  ) +
-  geom_line(aes(x = step, y = avg_active),
-    linetype = 2,
-    data = d2_binomial_active
-  ) +
-  geom_line(aes(y = screened, col = screening_type, group = screening_type)) +
+d_small <-
+  d %>%
+  filter(rho == 0.8, family == "Least-Squares")
+
+d_active <-
+  d %>%
+  ungroup() %>%
+  group_by(rho, step) %>%
+  summarize(avg_active = min(active, na.rm = TRUE))
+
+d_active_small <-
+  d_small %>%
+  ungroup() %>%
+  group_by(rho, step) %>%
+  summarize(avg_active = min(active, na.rm = TRUE))
+
+f <- "figures/simulateddata-efficiency-small.tex"
+tikz(f, width = fig_width_small, height = fig_height_small, standAlone = TRUE)
+ggplot(d_small) +
+  geom_line(aes(x = step, y = avg_active), lty = 2, data = d_active_small) +
+  geom_line(aes(step, screened, color = screening_type)) +
+  scale_color_manual(values = cols[-2]) +
   theme(legend.title = element_blank()) +
-  scale_color_manual(values = cols[-1]) +
-  labs(y = "Fraction of Predictors", x = "Step")
-# dev.off()
-# renderPdf(f2)
+  scale_y_log10() +
+  labs(y = "Predictors", x = "Step")
+dev.off()
+renderPdf(f)
+
+f <- "figures/simulateddata-efficiency.tex"
+tikz(f, width = fig_width, height = fig_height, standAlone = TRUE)
+ggplot(d) +
+  geom_line(aes(x = step, y = avg_active), lty = 2, data = d_active) +
+  geom_line(aes(step, screened, color = screening_type)) +
+  facet_grid(
+    c("family", "rho"),
+    labeller = labeller(family = label_value, rho = rho_labeller)
+  ) +
+  scale_color_manual(values = cols[-2]) +
+  theme(legend.title = element_blank()) +
+  scale_y_log10() +
+  labs(y = "Predictors", x = "Step")
+dev.off()
+renderPdf(f)

@@ -1,0 +1,16 @@
+model,rho,method,screened,violations
+Least-Squares,0,Hessian,111.72555205047318,0.08149316508937961
+Least-Squares,0,Strong,202.57465825446897,0
+Least-Squares,0,EDPP,11928.06309148265,0
+Least-Squares,0.4,Hessian,103.135,0.0985
+Least-Squares,0.4,Strong,238.1115,0
+Least-Squares,0.4,EDPP,10561.191,0
+Least-Squares,0.8,Hessian,65.774,0.3725
+Least-Squares,0.8,Strong,896.594,0.001
+Least-Squares,0.8,EDPP,10652.4455,0
+Logistic,0,Hessian,102.283,0.0195
+Logistic,0,Strong,201.3105,0
+Logistic,0.4,Hessian,76.911,0.033
+Logistic,0.4,Strong,173.3035,0
+Logistic,0.8,Hessian,49.3845,0.051
+Logistic,0.8,Strong,296.6695,0
