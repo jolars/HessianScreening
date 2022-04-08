@@ -8,13 +8,15 @@
 #' @param standardize Whether to standardize the predictors
 #' @param screening_type Screening rule
 #' @param shuffle Shuffle working set before each CD pass?
-#' @param check_frequency Frequency at which duality gap is checked for 
+#' @param check_frequency Frequency at which duality gap is checked for
 #'   inner CD loop
 #' @param screen_frequency Frequency at which predictors are screened for
 #'   the gap safe solver
 #' @param hessian_warm_starts Whether to use warm starts based on Hessian
-#' @param hessian_warm_starts Whether to use the active start strategy for
+#' @param gap_safe_active_start Whether to use the active start strategy for
 #'   the Gap-Safe rule
+#' @param augment_with_gap_safe Whether or not augment heuristic rules
+#'   with Gap Safe checks during KKT checks
 #' @param log_hessian_update_type What type of strategy to use for
 #'   updating the hessian for logistic regression
 #' @param log_hessian_auto_update_freq Frequency of hessian updates when
@@ -28,6 +30,14 @@
 #' @param line_search Use line search in CD solver.
 #' @param verbosity Controls the level of verbosity. 0 = no output, 1 = outer
 #'   level output, 2 = inner solver output
+#' @param lambda weights for the regularization path, if `NULL`, then they
+#'   are automatically computed
+#' @param celer_use_old_dual whether to try to use previous dual when checking
+#'   duality gap globally and screening for Celer
+#' @param celer_use_accel whether to use accelerated dual point for Celer
+#' @param celer_prune whether to use pruning for Celer
+#' @param store_dual_variables whether to store dual variables throughout
+#'   fitting
 #'
 #' @export
 lassoPath <- function(X,
@@ -42,7 +52,8 @@ lassoPath <- function(X,
                         "gap_safe",
                         "strong",
                         "celer",
-                        "blitz"
+                        "blitz",
+                        "sasvi"
                       ),
                       shuffle = match.arg(screening_type) == "blitz",
                       check_frequency = if (NROW(X) > NCOL(X)) 1 else 10,
@@ -52,6 +63,7 @@ lassoPath <- function(X,
                       celer_use_accel = TRUE,
                       celer_prune = TRUE,
                       gap_safe_active_start = TRUE,
+                      augment_with_gap_safe = TRUE,
                       log_hessian_update_type = c("full", "auto", "approx"),
                       log_hessian_auto_update_freq = 10,
                       path_length = 100L,
@@ -97,6 +109,7 @@ lassoPath <- function(X,
       celer_use_accel,
       celer_prune,
       gap_safe_active_start,
+      augment_with_gap_safe,
       log_hessian_update_type,
       log_hessian_auto_update_freq,
       path_length,
@@ -125,6 +138,7 @@ lassoPath <- function(X,
       celer_use_accel,
       celer_prune,
       gap_safe_active_start,
+      augment_with_gap_safe,
       log_hessian_update_type,
       log_hessian_auto_update_freq,
       path_length,

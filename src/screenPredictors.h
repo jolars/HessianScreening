@@ -32,7 +32,7 @@ screenPredictors(const std::string screening_type,
     vec c_pred = c + c_grad * (lambda_next - lambda);
     screened = (abs(c_pred) + gamma * (lambda - lambda_next) > lambda_next) ||
                ever_active;
-  } else if (screening_type == "gap_safe") {
+  } else if (screening_type == "gap_safe" || screening_type == "sasvi") {
     // we use the active set strategy for the gap safe rules, so we use the
     // ever-active predictors to get a good warm start
     screened = ever_active;

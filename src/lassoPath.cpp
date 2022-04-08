@@ -33,6 +33,7 @@ lassoPath(T& X,
           const bool celer_use_accel,
           const bool celer_prune,
           const bool gap_safe_active_start,
+          const bool augment_with_gap_safe,
           std::string log_hessian_update_type,
           const arma::uword log_hessian_auto_update_freq,
           arma::uword path_length,
@@ -59,8 +60,8 @@ lassoPath(T& X,
       Rcpp::stop("y is not in {0, 1}");
     }
 
-    if (screening_type == "edpp")
-      Rcpp::stop("EDPP cannot be used in logistic regression");
+    if (screening_type == "edpp" || screening_type == "sasvi")
+      Rcpp::stop("EDPP and SASVI cannot be used in logistic regression");
   }
 
   bool log_hessian_auto = log_hessian_update_type == "auto";
@@ -88,6 +89,7 @@ lassoPath(T& X,
 
   const vec X_offset = X_mean / X_sd;
   const double y_center = mean(y);
+  const double y_norm = norm(y);
 
   const vec X_norms_squared = squaredColNorms(X, X_offset, standardize);
   const vec X_norms = sqrt(X_norms_squared);
@@ -162,6 +164,13 @@ lassoPath(T& X,
 
   vec Hinv_s = Hinv * s(active_perm);
 
+  vec XTy(p); // only used with SASVI screening rule
+
+  if (screening_type == "sasvi") {
+    for (uword j = 0; j < p; ++j)
+      XTy(j) = innerProduct(X, j, y, X_offset, standardize);
+  }
+
   const double null_dev = model->deviance(residual, Xbeta, y);
   double dev = null_dev;
   double dev_prev = dev;
@@ -218,6 +227,8 @@ lassoPath(T& X,
                             y,
                             X_norms,
                             X_offset,
+                            y_norm,
+                            XTy,
                             standardize,
                             active_set_prev,
                             strong_set,
@@ -233,6 +244,7 @@ lassoPath(T& X,
                             celer_use_accel,
                             celer_prune,
                             gap_safe_active_start,
+                            augment_with_gap_safe,
                             i,
                             maxit,
                             tol_gap,
@@ -516,6 +528,7 @@ lassoPathDense(arma::mat X,
                const bool celer_use_accel,
                const bool celer_prune,
                const bool gap_safe_active_start,
+               const bool augment_with_gap_safe,
                std::string log_hessian_update_type,
                const arma::uword log_hessian_auto_update_freq,
                const arma::uword path_length,
@@ -542,6 +555,7 @@ lassoPathDense(arma::mat X,
                    celer_use_accel,
                    celer_prune,
                    gap_safe_active_start,
+                   augment_with_gap_safe,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,
@@ -571,6 +585,7 @@ lassoPathSparse(arma::sp_mat X,
                 const bool celer_use_accel,
                 const bool celer_prune,
                 const bool gap_safe_active_start,
+                const bool augment_with_gap_safe,
                 std::string log_hessian_update_type,
                 const arma::uword log_hessian_auto_update_freq,
                 const arma::uword path_length,
@@ -597,6 +612,7 @@ lassoPathSparse(arma::sp_mat X,
                    celer_use_accel,
                    celer_prune,
                    gap_safe_active_start,
+                   augment_with_gap_safe,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,

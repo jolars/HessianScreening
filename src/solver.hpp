@@ -4,6 +4,7 @@
 #include "linearAlgebra.h"
 #include "model.h"
 #include "safeScreening.h"
+#include "sasviScreening.h"
 #include "updateCorrelation.h"
 #include "updateLinearPredictor.h"
 #include "utils.h"
@@ -30,6 +31,8 @@ fit(arma::uvec& screened,
     const arma::vec& y,
     const arma::vec& X_norms,
     const arma::vec& X_offset,
+    const double y_norm,
+    const arma::vec& XTy,
     const bool standardize,
     const arma::uvec& active_set,
     const arma::uvec& strong_set,
@@ -45,6 +48,7 @@ fit(arma::uvec& screened,
     const bool celer_use_accel,
     const bool celer_prune,
     const bool gap_safe_active_start,
+    const bool augment_with_gap_safe,
     const arma::uword step,
     const arma::uword maxit,
     const double tol_gap,
@@ -58,7 +62,7 @@ fit(arma::uvec& screened,
   const uword p = X.n_cols;
 
   if (screening_type == "celer" || screening_type == "gap_safe" ||
-      screening_type == "blitz")
+      screening_type == "blitz" || screening_type == "sasvi")
     screened.fill(true);
 
   uvec screened_set = find(screened);
@@ -150,19 +154,27 @@ fit(arma::uvec& screened,
 
           violations.fill(false);
 
-          if (screening_type != "strong") {
-            uvec check_set = setIntersect(unscreened_set, strong_set);
+          uvec check_set;
+
+          if (screening_type != "strong" && screening_type != "edpp") {
+            check_set = setIntersect(unscreened_set, strong_set);
             updateCorrelation(c, residual, X, check_set, X_offset, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
           }
 
           if (!any(violations)) {
-            uvec check_set = setDiff(unscreened_set, strong_set);
+            if (screening_type == "working" || screening_type == "hessian") {
+              check_set = check_set = setDiff(unscreened_set, strong_set);
+            } else {
+              check_set = unscreened_set;
+            }
             updateCorrelation(c, residual, X, check_set, X_offset, standardize);
             kktCheck(violations, screened, c, check_set, lambda);
 
             outer_check = true;
           }
+
+          screened_set = find(screened);
 
           kkt_time += timer.toc() - t0;
 
@@ -190,7 +202,7 @@ fit(arma::uvec& screened,
             n_refits += 1;
           }
 
-          if (outer_check) {
+          if (outer_check && augment_with_gap_safe) {
             // have updated entire correlation vector, so let's use
             // it to gap-safe screen
             double r_screen = model->safeScreeningRadius(duality_gap, lambda);
@@ -215,9 +227,9 @@ fit(arma::uvec& screened,
           }
 
           working_set = screened_set;
-        }
 
-        n_violations += sum(violations);
+          n_violations += sum(violations);
+        }
       }
 
       if (screening_type == "gap_safe") {
@@ -270,6 +282,69 @@ fit(arma::uvec& screened,
         }
       }
 
+      if (screening_type == "sasvi") {
+        if (it == 0 && gap_safe_active_start) {
+          working_set = active_set;
+        } else if ((it % screen_frequency == 0) && !active_start) {
+          double t0 = timer.toc();
+          updateCorrelation(
+            c, residual, X, screened_set, X_offset, standardize);
+
+          primal_value =
+            model->primal(residual, Xbeta, beta, y, lambda, screened_set);
+
+          dual_scale = std::max(lambda, max(abs(c(screened_set))));
+          theta = residual / dual_scale;
+          dual_value = model->dual(theta, y, lambda);
+          duality_gap = primal_value - dual_value;
+
+          if (verbosity >= 2) {
+            Rprintf("    GLOBAL primal: %f, dual: %f, gap: %f, tol: %f\n",
+                    primal_value,
+                    dual_value,
+                    duality_gap,
+                    tol_gap * tol_mod);
+          }
+
+          kkt_time += timer.toc() - t0;
+
+          if (duality_gap <= tol_gap * tol_mod)
+            break;
+
+          // SASVI uses a different parametrization: 
+          // y := y/lambda and beta := beta/lambda
+          double l1beta = norm(beta, 1) / lambda;
+          vec XTXbeta = (XTy - c) / lambda; 
+          double l2Xbeta = norm(Xbeta) / lambda;
+          double yTXbeta = dot(y, Xbeta) / (lambda * lambda);
+          double k = lambda / max(abs(c(screened_set)));
+
+          screening_dsasvi_lasso_lincombtheta(p,
+                                              screened,
+                                              XTXbeta,
+                                              XTy / lambda,
+                                              X_norms,
+                                              l1beta,
+                                              l2Xbeta,
+                                              y_norm / lambda,
+                                              yTXbeta,
+                                              k,
+                                              -k);
+
+          for (uword j = 0; j < p; ++j) {
+            if (beta(j) != 0 && !screened(j)) {
+              model->adjustResidual(
+                residual, Xbeta, X, y, j, -beta(j), X_offset, standardize);
+
+              beta(j) = 0;
+            }
+          }
+
+          screened_set = find(screened);
+          working_set = screened_set;
+        }
+      }
+
       if (screening_type == "celer") {
         if (inner_solver_converged || it == 0) {
           primal_value =
@@ -297,7 +372,7 @@ fit(arma::uvec& screened,
               dual_value = dual_value_old;
               dual_scale = dual_scale_old;
               c_check = c_old;
-            }              
+            }
 
             // save dual objects for next iteration
             dual_value_old = dual_value;
@@ -637,7 +712,9 @@ fit(arma::uvec& screened,
 
       residual_prev = residual;
 
-      bool check = screening_type == "gap_safe" ? active_start : true;
+      bool check = screening_type == "gap_safe" || screening_type == "sasvi"
+                     ? active_start
+                     : true;
 
       if ((check && (it_inner % check_frequency == 0)) || line_search) {
         primal_value =
