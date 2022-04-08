@@ -9,3 +9,9 @@
 ^coding-benchmarks$
 ^figures$
 ^tables$
+^renv-cache$
+^Singularity$
+^SingularityFedora$
+^container.sif$
+^Makefile$
+^src/.cache$
