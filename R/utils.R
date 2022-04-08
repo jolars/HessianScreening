@@ -55,9 +55,10 @@ binomial_dual <- function(y, theta, lambda) {
 #' Get Duality Gaps
 #'
 #' @param fit the resulting fit
-#' @param family the loss function
 #' @param x design matrix
 #' @param y response vector
+#' @param standardize whether the fit used standardization
+#' @param tol_gap the tolerance threshold used when fitting
 #'
 #' @return primals, duals, and relative duality gaps
 #' @export
@@ -97,19 +98,44 @@ check_gaps <- function(fit, standardize, x, y, tol_gap = 1e-4) {
     }
   }
 
+  tol_mod <- if (family == "gaussian") norm(y, "2")^2 else log(2)*length(y)
+
   list(
     primals = primals,
     duals = duals,
     gaps = primals - duals,
-    rel_gaps = (primals - duals) / pmax(1, primals),
-    below_tol = (primals - duals) / pmax(1, primals) <= tol_gap
+    rel_gaps = (primals - duals) / tol_mod,
+    below_tol = primals - duals <= tol_gap * tol_mod
   )
 }
 
 recode_methods <- function(x) {
   screening_type = factor(
     x,
-    levels = c("hessian", "working", "edpp", "celer", "blitz", "gap_safe"),
-    labels = c("Hessian", "Working", "EDPP", "Celer", "Blitz", "Gap Safe")
+    levels = c(
+      "hessian",
+      "working",
+      "celer",
+      "blitz",
+      "strong",
+      "edpp",
+      "gap_safe"
+    ),
+    labels = c(
+      "Hessian",
+      "Working",
+      "Celer",
+      "Blitz",
+      "Strong",
+      "EDPP",
+      "Gap Safe"
+    )
   )
+}
+
+rho_labeller <- function(labels, multi_line = TRUE, sep = ":", ...) {
+  value <- label_value(labels, multi_line = multi_line)
+  out <- paste0("$\\rho = ", value, "$")
+  #  list(unname(unlist(out)))
+  out
 }
