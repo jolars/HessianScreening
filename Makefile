@@ -22,10 +22,6 @@ build-cran: compile-attributes
 	cd ..;\
 	R CMD build $(PKGSRC)
 
-# install: compile-attributes
-# 	cd ..;\
-# 	R CMD INSTALL --no-multiarch --with-keep.source $(PKGNAME)
-
 install: compile-attributes
 	R CMD INSTALL --preclean --no-multiarch --with-keep.source .
 
