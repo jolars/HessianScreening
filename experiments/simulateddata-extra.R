@@ -7,19 +7,15 @@ printf <- function(...) invisible(cat(sprintf(...)))
 
 tol_gap <- 1e-4
 families <- "gaussian"
-scenarios <- c(1, 2)
+scenarios <- c(2)
 rhos <- c(0, 0.4)
 
 screening_types <- c(
   "hessian",
-  "gap_safe",
   "strong",
-  "sasvi"
-  # "working",
-  # "edpp",
-  # "gap_safe",
-  # "blitz",
-  # "celer"
+  "sasvi",
+  "edpp",
+  "gap_safe"
 )
 
 path_length <- 100
@@ -39,8 +35,8 @@ for (family in families) {
       snr <- 1
       s <- 5
     } else if (scenario == 2) {
-      n <- 400
-      p <- 40000
+      n <- 200
+      p <- 20000
       snr <- 2
       s <- 20
     }
@@ -129,4 +125,4 @@ for (family in families) {
 
 cat("\n")
 
-saveRDS(out, "results/simulateddata-icmlresponse.rds")
+saveRDS(out, "results/simulateddata-extra.rds")

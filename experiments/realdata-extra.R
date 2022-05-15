@@ -9,8 +9,8 @@ datasets <- c(
   # "ijcnn1-train",
   # "arcene",
   # "madelon-train",
-  # "YearPredictionMSD-train",
-  # "e2006-tfidf-train",
+  "YearPredictionMSD-train",
+  "e2006-tfidf-train",
   # "e2006-log1p-train",
   "leukemia",
   "rcv1-train"
@@ -26,8 +26,10 @@ datasets <- c(
 tol_gap <- 1e-4
 screening_types <- c(
   "hessian",
+  "working",
   "strong",
-  "sasvi"
+  "sasvi",
+  "gap_safe"
 )
 
 path_length <- 100
@@ -136,14 +138,9 @@ for (dataset in datasets) {
         converged = all(fit$converged)
       )
 
-      # fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
-      # path <- file.path("results", "icml-realdata", fn)
-
-      # saveRDS(out, path)
-
       out <- rbind(out, res)
     }
   }
 }
 
-saveRDS(out, "results/icml-response.rds")
+saveRDS(out, "results/realdata-extra.rds")
