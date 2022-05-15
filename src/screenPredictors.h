@@ -27,8 +27,7 @@ screenPredictors(const std::string screening_type,
     screened = ever_active;
   } else if (screening_type == "strong") {
     screened = strong;
-  } else if (screening_type == "hessian" ||
-             screening_type == "hessian_adaptive") {
+  } else if (screening_type == "hessian") {
     vec c_pred = c + c_grad * (lambda_next - lambda);
     screened = (abs(c_pred) + gamma * (lambda - lambda_next) > lambda_next) ||
                ever_active;
