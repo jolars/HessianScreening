@@ -178,7 +178,6 @@ fit(arma::uvec& screened,
 
           kkt_time += timer.toc() - t0;
 
-          // check duality gap even if there are violations
           primal_value =
             model->primal(residual, Xbeta, beta, y, lambda, working_set);
 
@@ -195,12 +194,12 @@ fit(arma::uvec& screened,
                     tol_gap * tol_mod);
           }
 
-          if (duality_gap <= tol_gap * tol_mod)
-            break;
-
           if (any(violations)) {
             n_refits += 1;
           }
+
+          if (!any(violations) && duality_gap <= tol_gap * tol_mod)
+            break;
 
           if (outer_check && augment_with_gap_safe) {
             // have updated entire correlation vector, so let's use
