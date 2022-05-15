@@ -2,6 +2,7 @@
 
 #include "model.h"
 #include <RcppArmadillo.h>
+#include <memory>
 
 std::unique_ptr<Model>
 setupModel(const std::string family,

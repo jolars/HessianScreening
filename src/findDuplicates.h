@@ -3,6 +3,7 @@
 #include "model.h"
 #include "utils.h"
 #include <RcppArmadillo.h>
+#include <memory>
 
 template<typename T>
 std::tuple<arma::uvec, arma::uvec>
