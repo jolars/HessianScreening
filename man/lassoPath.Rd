@@ -11,7 +11,7 @@ lassoPath(
   lambda = NULL,
   standardize = TRUE,
   screening_type = c("working", "hessian", "edpp", "gap_safe", "strong", "celer",
-    "blitz"),
+    "blitz", "sasvi"),
   shuffle = match.arg(screening_type) == "blitz",
   check_frequency = if (NROW(X) > NCOL(X)) 1 else 10,
   screen_frequency = 10,
