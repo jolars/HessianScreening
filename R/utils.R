@@ -119,7 +119,8 @@ recode_methods <- function(x) {
       "blitz",
       "strong",
       "edpp",
-      "gap_safe"
+      "gap_safe",
+      "sasvi"
     ),
     labels = c(
       "Hessian",
@@ -128,7 +129,8 @@ recode_methods <- function(x) {
       "Blitz",
       "Strong",
       "EDPP",
-      "Gap Safe"
+      "Gap Safe",
+      "Sasvi"
     )
   )
 }
