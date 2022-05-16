@@ -325,8 +325,13 @@ lassoPath(T& X,
 
     betas.insert_cols(betas.n_cols, beta);
 
+    uword n_ever_active = accu(ever_active);
+
     if (verbosity >= 1) {
-      Rprintf("  active: %i, new active: %i\n", active_set.n_elem, new_active);
+      Rprintf("  ever_active: %i, active: %i, new active: %i\n",
+              n_ever_active,
+              active_set.n_elem,
+              new_active);
     }
 
     bool stop_path = lambda_type == "user"
@@ -335,9 +340,8 @@ lassoPath(T& X,
                                                  n,
                                                  p,
                                                  path_length,
-                                                 active_set.n_elem,
+                                                 n_ever_active,
                                                  lambda,
-                                                 lambda_min,
                                                  dev,
                                                  dev_prev,
                                                  null_dev,

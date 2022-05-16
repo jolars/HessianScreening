@@ -5,9 +5,8 @@ checkStoppingConditions(const arma::uword step,
                         const arma::uword n,
                         const arma::uword p,
                         const arma::uword n_lambda,
-                        const arma::uword n_active,
+                        const arma::uword n_ever_active,
                         const double lambda,
-                        const double lambda_min,
                         const double dev,
                         const double dev_prev,
                         const double null_dev,
@@ -39,11 +38,7 @@ checkStoppingConditions(const arma::uword step,
     return true;
   }
 
-  if (lambda <= lambda_min) {
-    return true;
-  }
-
-  if (n <= p && n_active >= n) {
+  if (n_ever_active >= p) {
     return true;
   }
 
