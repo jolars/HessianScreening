@@ -36,7 +36,7 @@ singularity container. To run an experiment from the
 singularity container, call
 
 ```shell
-singularity run --bind results:/Project/results container.sif <script>
+singularity run --bind results:/project/results container.sif <script>
 ```
 
 where `<script>` should be a name of a script in the

@@ -18,6 +18,6 @@ module purge
 
 # run the test
 singularity run \
-  --bind results:/Project/results \
+  --bind results:/project/results \
   container.sif \
   experiments/warm-start-vs-no-warm-start.R

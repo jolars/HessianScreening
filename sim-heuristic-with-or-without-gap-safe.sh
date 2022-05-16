@@ -18,6 +18,6 @@ module purge
 
 # run the test
 singularity run \
-  --bind results:/Project/results \
+  --bind results:/project/results \
   container.sif \
   experiments/heuristic-with-or-without-gap-safe.R

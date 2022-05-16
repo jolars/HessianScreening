@@ -15,5 +15,5 @@
 # modules
 module purge
 
-singularity run --bind results:/Project/results container.sif\
+singularity run --bind results:/project/results container.sif\
   experiments/warm-starts.R
