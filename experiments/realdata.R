@@ -8,16 +8,18 @@ library(Matrix)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 datasets <- c(
+  "arcene",
+  "bc_tcga",
   "colon-cancer",
   "duke-breast-cancer",
-  "ijcnn1-train",
-  "arcene",
-  "madelon-train",
-  "YearPredictionMSD-train",
-  "e2006-tfidf-train",
   "e2006-log1p-train",
+  "e2006-tfidf-train",
+  "ijcnn1-train",
+  "madelon-train",
+  "news20",
   "rcv1-train",
-  "news20"
+  "scheetz",
+  "YearPredictionMSD-train",
 )
 
 if (length(args) > 0) {
@@ -145,14 +147,14 @@ for (dataset in datasets) {
         converged = all(fit$converged)
       )
 
-      fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
-      path <- file.path("results", "realdata", fn)
+      # fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
+      # path <- file.path("results", "realdata", fn)
 
-      saveRDS(out, path)
+      # saveRDS(out, path)
 
       out <- rbind(out, res)
     }
   }
 }
 
-saveRDS(out, "results/realdata.rds")
+saveRDS(out, file.path("results", "realdata.rds"))
