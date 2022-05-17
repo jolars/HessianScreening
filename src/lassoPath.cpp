@@ -333,21 +333,19 @@ lassoPath(T& X,
               new_active);
     }
 
-    bool stop_path = lambda_type == "user"
-                       ? i == path_length
-                       : checkStoppingConditions(i,
-                                                 n,
-                                                 p,
-                                                 path_length,
-                                                 n_ever_active,
-                                                 lambda,
-                                                 dev,
-                                                 dev_prev,
-                                                 null_dev,
-                                                 screening_type,
-                                                 verbosity);
+    double dev_ratio = 1.0 - dev / null_dev;
+    double dev_change = 1.0 - dev / dev_prev;
 
-    if (stop_path) {
+    if (verbosity >= 1) {
+      Rprintf(
+        "    dev ratio:  %.3f\n    dev change: %.6f\n", dev_ratio, dev_change);
+    }
+
+    // check path stopping criteria
+    if (path_length == i ||
+        (lambda_type == "auto" &&
+         ((i > 1 && dev_change < 1e-5) || dev_ratio >= 0.999 ||
+          n_ever_active > p || i == path_length))) {
       hess_time.emplace_back(0);
       it_time.emplace_back(timer.toc() - it_time_i);
       break;
