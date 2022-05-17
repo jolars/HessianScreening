@@ -19,7 +19,7 @@ datasets <- c(
   "news20",
   "rcv1-train",
   "scheetz",
-  "YearPredictionMSD-train",
+  "YearPredictionMSD-train"
 )
 
 if (length(args) > 0) {
@@ -32,8 +32,6 @@ tol_gap <- 1e-4
 screening_types <- c(
   "hessian",
   "working",
-  # "edpp",
-  # "gap_safe",
   "blitz",
   "celer"
 )
@@ -60,7 +58,9 @@ for (dataset in datasets) {
     "colon-cancer",
     "duke-breast-cancer",
     "arcene",
-    "ijcnn1-train"
+    "ijcnn1-train",
+    "bc_tcga",
+    "scheetz"
   )) {
     20
   } else {
@@ -102,13 +102,12 @@ for (dataset in datasets) {
       }
 
       printf(
-        "\r%s, it: %02d/%02d %-10s",
+        "\r%s, it: %02d/%02d %-10s\n",
         format(Sys.time(), "%H:%M:%S"),
         i,
         max_it,
         screening_type
       )
-      flush.console()
 
       fit <- lassoPath(
         X,
@@ -147,10 +146,10 @@ for (dataset in datasets) {
         converged = all(fit$converged)
       )
 
-      # fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
-      # path <- file.path("results", "realdata", fn)
+      fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
+      path <- file.path("results", "realdata", fn)
 
-      # saveRDS(out, path)
+      saveRDS(out, path)
 
       out <- rbind(out, res)
     }
