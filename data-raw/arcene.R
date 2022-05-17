@@ -4,7 +4,7 @@ data <- tempfile()
 labels <- tempfile()
 
 download.file(
-  "https://statweb.stanford.edu/~tibs/strong/realdata/arcene_train.data",
+  "https://archive.ics.uci.edu/ml/machine-learning-databases/arcene/ARCENE/arcene_train.data",
   data
 )
 
@@ -14,7 +14,7 @@ x <- matrix(d, nrow = 100, byrow = TRUE)[, 1:10000]
 x <- Matrix(x, sparse = TRUE)
 
 download.file(
-  "https://statweb.stanford.edu/~tibs/strong/realdata/arcene_train.labels",
+  "https://archive.ics.uci.edu/ml/machine-learning-databases/arcene/ARCENE/arcene_train.labels",
   labels
 )
 
