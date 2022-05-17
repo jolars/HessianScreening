@@ -8,8 +8,8 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 6.85
-fig_height <- 2.5
+fig_width <- 5.6
+fig_height <- 2.3
 
 conf_level <- 0.05
 
@@ -84,10 +84,11 @@ ggplot(d1, aes(
     y = "Time (relative)"
   ) +
   theme(
-    legend.position = c(0.065, 0.75),
+    legend.position = c(0.058, 0.78),
     legend.title = element_blank(),
-    panel.grid.major.x = element_blank()
-  )
+    panel.grid.major.x = element_blank(),
+    legend.key.size = unit(0.9, "line")
+  ) 
 dev.off()
 
 renderPdf("figures/simulateddata-timings.tex")

@@ -8,8 +8,8 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 3.35
-fig_height <- 3
+fig_width <- 5.6
+fig_height <- 2
 
 conf_level <- 0.05
 

@@ -8,7 +8,7 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 6.85
+fig_width <- 5.6
 fig_height <- 2.4
 
 conf_level <- 0.05
@@ -65,7 +65,7 @@ ggplot(
   aes(path_length, meantime, color = screening_type, fill = screening_type)
 ) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2, color = "transparent") +
-  geom_line() +
+  geom_line(size = 1) +
   facet_wrap(vars(family, np), nrow = 1) +
   theme(legend.position = c(0.06, 0.75), legend.title = element_blank()) +
   scale_fill_manual(values = cols) +

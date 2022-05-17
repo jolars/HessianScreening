@@ -9,8 +9,8 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 3.35
-fig_height <- 4
+fig_width <- 5.6
+fig_height <- 2.2
 
 conf_level <- 0.05
 
@@ -63,9 +63,9 @@ ggplot(
   aes(tol_gap, meantime, color = screening_type, fill = screening_type)
 ) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.2, color = "transparent") +
-  geom_line() +
-  facet_wrap("family", dir = "v") +
-  theme(legend.position = c(0.85, 0.87), legend.title = element_blank()) +
+  geom_line(size = 1) +
+  facet_wrap("family") +
+  theme(legend.position = c(0.88, 0.82), legend.title = element_blank()) +
   scale_fill_manual(values = cols) +
   scale_color_manual(values = cols) +
   scale_y_log10() +
