@@ -253,7 +253,6 @@ lassoPath(T& X,
                             verbosity);
 
     if (n_passes_i >= maxit) {
-      // Rcpp::warning("solver failed to converge");
       converged.emplace_back(false);
     } else {
       converged.emplace_back(true);
