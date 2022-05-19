@@ -25,6 +25,10 @@ d <-
       "celer" = "Celer",
       "blitz" = "Blitz"
     ),
+    dataset = recode(
+      dataset,
+      "bc_tcga" = "bcTCGA"
+    ),
     model = recode(
       family,
       "gaussian" = "Least-Squares",
