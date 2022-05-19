@@ -49,7 +49,7 @@ from: rocker/r-ver:4.1.3
     chmod -R a+rX /project
 
 %runscript
-    if [ -z "$@" ]; then
+    if [ $# -eq 0 ]; then
         # if there's no argument, simply test R
         R --vanilla -s -e 'sessionInfo()'
     else
