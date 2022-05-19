@@ -1,5 +1,4 @@
 #include "binomial.h"
-#include "checkStoppingConditions.h"
 #include "findDuplicates.h"
 #include "gaussian.h"
 #include "kktCheck.h"
@@ -345,7 +344,7 @@ lassoPath(T& X,
     if (path_length == i ||
         (lambda_type == "auto" &&
          ((i > 1 && dev_change < 1e-5) || dev_ratio >= 0.999 ||
-          n_ever_active > p || i == path_length))) {
+          n_ever_active > n || i == path_length))) {
       hess_time.emplace_back(0);
       it_time.emplace_back(timer.toc() - it_time_i);
       break;
