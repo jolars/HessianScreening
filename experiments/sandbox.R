@@ -3,25 +3,35 @@ library(readr)
 
 set.seed(3)
 
-family <- "gaussian"
 density <- 1 
 rho <- 0.4
 verbosity <- 1
 tol_gap <- 1e-4
-maxit <- 1e5
+maxit <- 1e6
 standardize <- TRUE
-path_length <- 10
+path_length <- 100
 
-set.seed(14)
-d <- generateDesign(200, 20000, family = family, rho = rho, density = density)
-# d <- readRDS("data/e2006-tfidf-train.rds")
+set.seed(723)
+# d <- generateDesign(200, 20000, family = family, rho = rho, density = density)
+d <- readRDS("data/news20.rds")
 X <- d$X
 y <- d$y
 
 n <- nrow(X)
 p <- ncol(X)
 
-set.seed(2)
+dens <- ifelse(inherits(X, "sparseMatrix"), Matrix::nnzero(X) / length(X), 1)
+sparsity <- 1 - dens
+
+family <- if (length(unique(d$y)) == 2) "binomial" else "gaussian"
+
+log_hessian_update_type <-
+  ifelse(sparsity * n / max(n, p) < 0.001, "full", "approx")
+
+n <- nrow(X)
+p <- ncol(X)
+
+set.seed(723)
 
 fit_hessian <- lassoPath(
   X,
@@ -33,6 +43,7 @@ fit_hessian <- lassoPath(
   verbosity = verbosity,
   tol_gap = tol_gap,
   gap_safe_active_start = TRUE,
+  log_hessian_update_type = log_hessian_update_type,
   celer_use_accel = TRUE,
   celer_prune = TRUE,
   maxit = maxit,
@@ -40,44 +51,4 @@ fit_hessian <- lassoPath(
   check_frequency = 1
 )
 
-lambda <- fit_hessian$lambda
-
-fit_blitz <- lassoPath(
-  X,
-  y,
-  family = family,
-  lambda = lambda,
-  screening_type = "celer",
-  standardize = standardize,
-  verbosity = verbosity,
-  tol_gap = tol_gap,
-  gap_safe_active_start = TRUE,
-  celer_use_accel = TRUE,
-  celer_use_old = TRUE,
-  celer_prune = TRUE,
-  maxit = maxit,
-  store_dual_variables = TRUE,
-  check_frequency = 1
-)
-
-
-# fit_blitz <- lassoPath(
-#   X,
-#   y,
-#   family = family,
-#   screening_type = "blitz",
-#   standardize = standardize,
-#   verbosity = verbosity,
-#   tol_gap = tol_gap,
-#   gap_safe_active_start = TRUE,
-#   celer_use_accel = TRUE,
-#   celer_prune = TRUE,
-#   maxit = maxit,
-#   store_dual_variables = TRUE,
-#   check_frequency = 1
-# )
-
-# real_gaps <- check_gaps(fit, standardize, X, y, tol_gap)
-
-# print(real_gaps)
-# print(cbind(fit_hessian$active, fit_blitz$active))
+print(paste0("time:", fit_hessian$full_time))

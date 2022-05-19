@@ -13,8 +13,6 @@ rhos <- c(0, 0.4, 0.8)
 screening_types <- c(
   "hessian",
   "working",
-  # "edpp",
-  # "gap_safe",
   "blitz",
   "celer"
 )

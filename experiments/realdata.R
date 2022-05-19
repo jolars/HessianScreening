@@ -22,13 +22,6 @@ datasets <- c(
   "YearPredictionMSD-train"
 )
 
-if (length(args) > 0) {
-  stopifnot(all(args %in% datasets))
-
-  datasets <- args 
-}
-
-tol_gap <- 1e-4
 screening_types <- c(
   "hessian",
   "working",
@@ -36,10 +29,21 @@ screening_types <- c(
   "celer"
 )
 
+if (length(args) > 0) {
+  stopifnot(all(args %in% datasets))
+  datasets <- args 
+}
+
+tol_gap <- 1e-4
+
 path_length <- 100
 
 n_sim <- length(datasets)
 out <- data.frame()
+
+if (!dir.exists("results/realdata")) {
+  dir.create("results/realdata")
+}
 
 it_sim <- 0
 
@@ -155,5 +159,3 @@ for (dataset in datasets) {
     }
   }
 }
-
-saveRDS(out, file.path("results", "realdata.rds"))
