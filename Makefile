@@ -2,11 +2,18 @@ DELETE  := rm -rf
 PKGNAME := $(shell sed -n "s/Package: *\([^ ]*\)/\1/p" DESCRIPTION)
 PKGVERS := $(shell sed -n "s/Version: *\([^ ]*\)/\1/p" DESCRIPTION)
 PKGSRC  := $(shell basename `pwd`)
+FIGDIR  := ./figures
+RESULTDIR   := ./results
+FIG_SCRIPTS := $(wildcard figures/*.R)
+FIG_OUTPUTS := $(FIG_SCRIPTS:.R=.pdf)
 
 all: install
 
 clean:
 	$(DELETE) src/*.o src/*.so
+
+clean-figures:
+	$(DELETE) figures/*.pdf figures/*.tex
 
 document: 
 	Rscript -e 'devtools::document(roclets = c("rd", "collate", "namespace"))'
@@ -38,4 +45,8 @@ container:
 	$(DELETE) container.sif;\
 	sudo singularity build container.sif Singularity
 
+figs: $(FIG_OUTPUTS)
 
+$(FIG_OUTPUTS): figures/%.pdf: figures/%.R
+	echo $<
+	Rscript $<
