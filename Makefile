@@ -6,14 +6,22 @@ FIGDIR  := ./figures
 RESULTDIR   := ./results
 FIG_SCRIPTS := $(wildcard figures/*.R)
 FIG_OUTPUTS := $(FIG_SCRIPTS:.R=.pdf)
+TABLE_SCRIPTS := $(wildcard tables/*.R)
+TABLE_OUTPUTS := $(wildcard tables/*.R)
 
 all: install
 
 clean:
 	$(DELETE) src/*.o src/*.so
 
+clean-output: clean-tables clean-figures
+	$(DELETE) figures/*.pdf figures/*.tex
+
 clean-figures:
 	$(DELETE) figures/*.pdf figures/*.tex
+
+clean-tables:
+	$(DELETE) tables/*.csv tables/*.csv
 
 document: 
 	Rscript -e 'devtools::document(roclets = c("rd", "collate", "namespace"))'
@@ -50,3 +58,7 @@ figs: $(FIG_OUTPUTS)
 $(FIG_OUTPUTS): figures/%.pdf: figures/%.R
 	echo $<
 	Rscript $<
+
+tabs: 
+	Rscript tables/realdata.R
+	Rscript tables/violations.R
