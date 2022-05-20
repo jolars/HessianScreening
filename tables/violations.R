@@ -4,6 +4,8 @@ library(tidyr)
 library(readr)
 library(stringr)
 
+source("R/utils.R")
+
 d_raw <- readRDS("results/efficiency-simulateddata.rds")
 
 conf_level <- 0.05
