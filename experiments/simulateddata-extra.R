@@ -8,11 +8,10 @@ printf <- function(...) invisible(cat(sprintf(...)))
 tol_gap <- 1e-4
 families <- "gaussian"
 scenarios <- c(2)
-rhos <- c(0, 0.4)
+rhos <- c(0, 0.4, 0.8)
 
 screening_types <- c(
   "hessian",
-  "strong",
   "sasvi",
   "edpp",
   "gap_safe"
@@ -35,8 +34,8 @@ for (family in families) {
       snr <- 1
       s <- 5
     } else if (scenario == 2) {
-      n <- 200
-      p <- 20000
+      n <- 400
+      p <- 40000
       snr <- 2
       s <- 20
     }

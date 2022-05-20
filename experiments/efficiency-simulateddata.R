@@ -17,6 +17,7 @@ screening_types <- c(
   "celer",
   "blitz",
   "gap_safe",
+  "sasvi",
   "strong"
 )
 
@@ -59,7 +60,7 @@ for (family in families) {
       lambda <- fit$lambda
 
       for (screening_type in screening_types) {
-        if (screening_type == "edpp" && family == "binomial") {
+        if (screening_type %in% c("edpp", "sasvi") && family == "binomial") {
           next;
         }
 
