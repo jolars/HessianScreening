@@ -68,7 +68,7 @@ updateHessian(arma::mat& H,
 
     vec l;
     mat Q;
-    eig_sym(l, Q, S);
+    eig_sym(l, Q, symmatu(S));
 
     if (l.min() < 1e-4 * n) {
       D.diag() += 1e-4 * n;

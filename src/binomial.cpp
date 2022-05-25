@@ -169,11 +169,10 @@ Binomial::hessian(const arma::sp_mat& X,
 
     return H;
   } else {
-    mat D = diagmat(w);
-    mat H = conv_to<mat>::from(X.cols(ind).t() * D * X.cols(ind));
+    mat H = conv_to<mat>::from(X.cols(ind).t() * diagmat(w) * X.cols(ind));
 
     if (standardize) {
-      mat XmDX = X_offset(ind) * sum(D * X.cols(ind), 0);
+      mat XmDX = X_offset(ind) * sum(diagmat(w) * X.cols(ind), 0);
       H += accu(w) * X_offset(ind) * X_offset(ind).t() - XmDX - XmDX.t();
     }
 
@@ -223,8 +222,6 @@ Binomial::hessianUpperRight(const arma::sp_mat& X,
     return 0.25 * H;
 
   } else {
-    mat D = diagmat(w);
-
     if (ind_b.n_elem == 1) {
       uword i = 0;
       sp_mat w_Xb = w % X.col(as_scalar(ind_b));
@@ -233,12 +230,12 @@ Binomial::hessianUpperRight(const arma::sp_mat& X,
         i++;
       }
     } else {
-      H = X.cols(ind_a).t() * D * X.cols(ind_b);
+      H = X.cols(ind_a).t() * diagmat(w) * X.cols(ind_b);
     }
 
     if (standardize) {
-      mat XamDXb = X_offset(ind_a) * sum(D * X.cols(ind_b));
-      mat XbmDXa = X_offset(ind_b) * sum(D * X.cols(ind_a));
+      mat XamDXb = X_offset(ind_a) * sum(diagmat(w) * X.cols(ind_b));
+      mat XbmDXa = X_offset(ind_b) * sum(diagmat(w) * X.cols(ind_a));
       H += sum(w) * X_offset(ind_a) * X_offset(ind_b).t() - XbmDXa.t() - XamDXb;
     }
   }
@@ -290,9 +287,8 @@ Binomial::updateGradientOfCorrelation(arma::vec& c_grad,
   c_grad.zeros();
 
   if (standardize) {
-    const mat Dsq = diagmat(dsq);
-    const mat Dsq_X = Dsq * X.cols(inactive_restricted);
-    const mat Dsq_Xa = Dsq * X.cols(active_set);
+    const mat Dsq_X = diagmat(dsq) * X.cols(inactive_restricted);
+    const mat Dsq_Xa = diagmat(dsq) * X.cols(active_set);
 
     const mat dsq_mu = dsq * X_offset(inactive_restricted).t();
     const mat dsq_mua_Hinv_s = dsq * (X_offset(active_set).t() * Hinv_s);
