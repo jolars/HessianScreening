@@ -30,8 +30,13 @@ screening_types <- c(
 )
 
 if (length(args) > 0) {
-  stopifnot(all(args %in% datasets))
-  datasets <- args 
+  stopifnot(args[1] %in% datasets)
+  datasets <- args[1]
+
+  if (length(args) > 1) {
+    stopifnot(args[2] %in% screening_types)
+    screening_types <- args[2]
+  }
 }
 
 tol_gap <- 1e-4
