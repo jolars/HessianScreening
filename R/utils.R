@@ -141,3 +141,43 @@ rho_labeller <- function(labels, multi_line = TRUE, sep = ":", ...) {
   #  list(unname(unlist(out)))
   out
 }
+
+color_palette <- function(name = c("wong", "tableau"), n = NULL) {
+  name <- match.arg(name)
+
+  wong <- c(
+    "#999999",
+    "#E69F00",
+    "#56B4E9",
+    "#009E73",
+    "#F0E442",
+    "#0072B2",
+    "#D55E00",
+    "#CC79A7"
+  )
+  
+  tableau <- c(
+    "#4e79a7",
+    "#f28e2b",
+    "#e15759",
+    "#76b7b2",
+    "#59a14f",
+    "#edc948",
+    "#b07aa1",
+    "#ff9da7",
+    "#9c755f",
+    "#bab0ac"
+  ) 
+
+  pal <- switch(name, wong = wong, tableau = tableau)
+
+  if (is.null(n)) {
+    n <- length(pal)
+  }
+
+  if (n > length(pal)) {
+    stop("longer length than pal")
+  }
+
+  pal[seq_len(n)]
+}
