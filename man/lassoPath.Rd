@@ -10,7 +10,7 @@ lassoPath(
   family = c("gaussian", "binomial"),
   lambda = NULL,
   standardize = TRUE,
-  screening_type = c("working", "hessian", "edpp", "gap_safe", "strong", "celer",
+  screening_type = c("hessian", "working", "edpp", "gap_safe", "strong", "celer",
     "blitz", "sasvi"),
   shuffle = match.arg(screening_type) == "blitz",
   check_frequency = if (NROW(X) > NCOL(X)) 1 else 10,
