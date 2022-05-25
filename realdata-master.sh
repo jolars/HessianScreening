@@ -25,14 +25,24 @@ declare -a data_sets=(\
     "scheetz" \
 )
 
+declare -a solvers=(\
+    "hessian" \
+    "working" \
+    "celer" \
+    "blitz" \
+)
+
 i=1
 
 for data_set in ${data_sets[@]}
 do
+    for solver in ${solvers[@]}
+    do
     srun -Q --exclusive --overlap -n 1 -N 1 \
-        realdata-worker.sh $i $data_set &> worker_${SLURM_JOB_ID}_${i}.out &
+        realdata-worker.sh $i $data_set $solver &> worker_${SLURM_JOB_ID}_${i}.out &
     i=$((i+1))
     sleep 1
+    done
 done
 
 wait
