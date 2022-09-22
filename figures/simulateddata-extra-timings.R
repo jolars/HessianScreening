@@ -1,4 +1,5 @@
 library(tibble)
+library(forcats)
 library(tidyr)
 library(dplyr)
 library(tikzDevice)
@@ -8,7 +9,7 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 5.6
+fig_width <- 4
 fig_height <- 2.3
 
 conf_level <- 0.05
@@ -16,7 +17,7 @@ conf_level <- 0.05
 d_raw <- readRDS("results/simulateddata-extra.rds") %>%
   filter(
     converged == TRUE,
-    screening_rule != "strong"
+    screening_type != "strong"
   ) %>%
   mutate(
     screening_type = recode_methods(screening_type),
@@ -36,6 +37,7 @@ d1 <-
   d_raw %>%
   mutate(
     screening_type = as.factor(screening_type),
+    screening_type = fct_reorder(screening_type, time, median),
     family = as.factor(family)
   ) %>%
   group_by(np, rho, family, screening_type) %>% 
@@ -63,8 +65,8 @@ options(
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
 )
 
-# file <- "figures/simulateddata-extra-timings.tex"
-# tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
+file <- "figures/simulateddata-extra-timings.tex"
+tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
   rel_time,
@@ -76,7 +78,6 @@ ggplot(d1, aes(
     position = position_dodge(0.9),
     width = 0.25
   ) +
-  facet_wrap(c("family", "np"), nrow = 1) +
   scale_fill_manual(values = cols[1:5]) +
   labs(
     fill = "Screening",
@@ -84,11 +85,11 @@ ggplot(d1, aes(
     y = "Time (relative)"
   ) +
   theme(
-    legend.position = c(0.058, 0.78),
+    legend.position = c(0.1, 0.78),
     legend.title = element_blank(),
     panel.grid.major.x = element_blank(),
     legend.key.size = unit(0.9, "line")
   ) 
-# dev.off()
+dev.off()
 
-# renderPdf("figures/simulateddata-extra-timings.tex")
+renderPdf("figures/simulateddata-extra-timings.tex")

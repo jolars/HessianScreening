@@ -23,7 +23,9 @@ screenPredictors(const std::string screening_type,
 {
   uvec screened(X.n_cols);
 
-  if (screening_type == "working") {
+  if (screening_type == "none") {
+    screened.fill(true);
+  } else if (screening_type == "working") {
     screened = ever_active;
   } else if (screening_type == "strong") {
     screened = strong;

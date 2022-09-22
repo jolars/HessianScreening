@@ -33,6 +33,7 @@ lassoPath(T& X,
           const bool celer_prune,
           const bool gap_safe_active_start,
           const bool augment_with_gap_safe,
+          const bool update_hessian,
           std::string log_hessian_update_type,
           const arma::uword log_hessian_auto_update_freq,
           arma::uword path_length,
@@ -352,10 +353,12 @@ lassoPath(T& X,
 
     double lambda_next = lambdas(i);
 
-    if (screening_type == "hessian") {
+    if (screening_type == "hessian" ||
+        (screening_type == "none" && hessian_warm_starts)) {
       double t0 = timer.toc();
 
-      if (log_hessian_update_type == "approx" || family == "gaussian") {
+      if ((log_hessian_update_type == "approx" || family == "gaussian") &&
+          update_hessian) {
         updateHessian(H,
                       Hinv,
                       active_set,
@@ -411,42 +414,6 @@ lassoPath(T& X,
       gradcorr_time.emplace_back(timer.toc() - t0);
     }
 
-    if (i > 10 && screening_type == "hessian" && log_hessian_auto) {
-      double cd_cum =
-        std::accumulate(cd_time.begin() + i - 5, cd_time.end(), 0.0);
-      double kkt_cum =
-        std::accumulate(kkt_time.begin() + i - 5, kkt_time.end(), 0.0);
-
-      if (verbosity > 0) {
-        Rprintf(
-          "  CD cum time = %2.4f, KKT cum time = %2.4f\n", cd_cum, kkt_cum);
-      }
-
-      if (kkt_cum > 2 * cd_cum) {
-        // if Hessian updates take longer than cd updates, switch to approx
-        // method
-        if (verbosity > 0)
-          Rprintf("  NOTE: switching to approx hessian updates\n");
-
-        log_hessian_update_type = "approx";
-        model->setLogHessianUpdateType("approx");
-        log_hessian_auto = false;
-
-        H = model->hessian(X, active_set, X_offset, standardize);
-
-        vec eigval;
-        mat eigvec;
-        eig_sym(eigval, eigvec, symmatu(H));
-
-        if (eigval.min() < 1e-4 * n) {
-          H.diag() += 1e-4 * n;
-          eigval += 1e-4 * n;
-        }
-
-        Hinv = eigvec * diagmat(1 / eigval) * eigvec.t();
-      }
-    }
-
     strong = abs(c) >= 2 * lambda_next - lambda;
     strong_set = find(strong);
     n_strong.emplace_back(sum(strong));
@@ -469,7 +436,8 @@ lassoPath(T& X,
     // make sure duplicates stay out
     screened(find(duplicated)).fill(false);
 
-    if (hessian_warm_starts && screening_type == "hessian") {
+    if (hessian_warm_starts &&
+        (screening_type == "hessian" || screening_type == "none")) {
       beta(active_set) += (lambda - lambda_next) * Hinv_s;
     }
 
@@ -529,6 +497,7 @@ lassoPathDense(arma::mat X,
                const bool celer_prune,
                const bool gap_safe_active_start,
                const bool augment_with_gap_safe,
+               const bool update_hessian,
                std::string log_hessian_update_type,
                const arma::uword log_hessian_auto_update_freq,
                const arma::uword path_length,
@@ -556,6 +525,7 @@ lassoPathDense(arma::mat X,
                    celer_prune,
                    gap_safe_active_start,
                    augment_with_gap_safe,
+                   update_hessian,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,
@@ -586,6 +556,7 @@ lassoPathSparse(arma::sp_mat X,
                 const bool celer_prune,
                 const bool gap_safe_active_start,
                 const bool augment_with_gap_safe,
+                const bool update_hessian,
                 std::string log_hessian_update_type,
                 const arma::uword log_hessian_auto_update_freq,
                 const arma::uword path_length,
@@ -613,6 +584,7 @@ lassoPathSparse(arma::sp_mat X,
                    celer_prune,
                    gap_safe_active_start,
                    augment_with_gap_safe,
+                   update_hessian,
                    log_hessian_update_type,
                    log_hessian_auto_update_freq,
                    path_length,

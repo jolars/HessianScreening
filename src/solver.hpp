@@ -62,7 +62,8 @@ fit(arma::uvec& screened,
   const uword p = X.n_cols;
 
   if (screening_type == "celer" || screening_type == "gap_safe" ||
-      screening_type == "blitz" || screening_type == "sasvi")
+      screening_type == "blitz" || screening_type == "sasvi" ||
+      screening_type == "none")
     screened.fill(true);
 
   uvec screened_set = find(screened);
@@ -141,6 +142,11 @@ fit(arma::uvec& screened,
     while (it < maxit) {
       if (verbosity >= 2) {
         Rprintf("    iter: %i\n", it + 1);
+      }
+
+      if (screening_type == "none" && inner_solver_converged) {
+        // updateCorrelation(c, residual, X, X_offset, standardize);
+        break;
       }
 
       if (screening_type == "hessian" || screening_type == "edpp" ||
@@ -310,10 +316,10 @@ fit(arma::uvec& screened,
           if (duality_gap <= tol_gap * tol_mod)
             break;
 
-          // SASVI uses a different parametrization: 
+          // SASVI uses a different parametrization:
           // y := y/lambda and beta := beta/lambda
           double l1beta = norm(beta, 1) / lambda;
-          vec XTXbeta = (XTy - c) / lambda; 
+          vec XTXbeta = (XTy - c) / lambda;
           double l2Xbeta = norm(Xbeta) / lambda;
           double yTXbeta = dot(y, Xbeta) / (lambda * lambda);
           double k = lambda / max(abs(c(screened_set)));

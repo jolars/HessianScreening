@@ -158,9 +158,7 @@ for (dataset in datasets) {
       fn <- paste0(paste(dataset, screening_type, i, sep = "_"), ".rds")
       path <- file.path("results", "realdata", fn)
 
-      saveRDS(out, path)
-
-      out <- rbind(out, res)
+      saveRDS(res, path)
     }
   }
 }
