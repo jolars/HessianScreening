@@ -6,7 +6,7 @@ library(tidyr)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 tol_gap <- 1e-4
-families <- c("gaussian", "binomial")
+families <- c("gaussian", "binomial", "poisson")
 scenarios <- c(1, 2)
 rhos <- c(0, 0.4, 0.8)
 

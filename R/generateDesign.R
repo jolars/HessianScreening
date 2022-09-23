@@ -16,7 +16,7 @@
 #' @export
 generateDesign <- function(n,
                            p,
-                           family = c("gaussian", "binomial"),
+                           family = c("gaussian", "binomial", "poisson"),
                            density = 1,
                            rho = 0,
                            s = 5,
@@ -73,6 +73,10 @@ generateDesign <- function(n,
 
   if (family == "binomial") {
     y <- (sign(y) + 1) / 2
+  } else if (family == "poisson") {
+    lambda <- exp(X %*% beta)
+    print(lambda)
+    y <- rpois(n, lambda)
   }
 
   list(X = X, y = y)

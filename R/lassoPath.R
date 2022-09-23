@@ -42,7 +42,7 @@
 #' @export
 lassoPath <- function(X,
                       y,
-                      family = c("gaussian", "binomial"),
+                      family = c("gaussian", "binomial", "poisson"),
                       lambda = NULL,
                       standardize = TRUE,
                       screening_type = c(

@@ -26,7 +26,8 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
     family = recode(
       family,
       "gaussian" = "Least-Squares",
-      "binomial" = "Logistic"
+      "binomial" = "Logistic",
+      "poisson" = "Poisson"
     )
   ) %>%
   select(np, n, p, rho, family, screening_type, time) %>%
@@ -84,7 +85,7 @@ ggplot(d1, aes(
     y = "Time (relative)"
   ) +
   theme(
-    legend.position = c(0.058, 0.78),
+    legend.position = c(0.4, 0.78),
     legend.title = element_blank(),
     panel.grid.major.x = element_blank(),
     legend.key.size = unit(0.9, "line")

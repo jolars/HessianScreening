@@ -1,4 +1,5 @@
 #include "binomial.h"
+#include "poisson.h"
 #include "findDuplicates.h"
 #include "gaussian.h"
 #include "kktCheck.h"
@@ -62,6 +63,10 @@ lassoPath(T& X,
 
     if (screening_type == "edpp" || screening_type == "sasvi")
       Rcpp::stop("EDPP and SASVI cannot be used in logistic regression");
+  } else if (family == "poisson") {
+    if (any(y < 0)) {
+      Rcpp::stop("cannot have negative y values in poisson regression");
+    }
   }
 
   bool log_hessian_auto = log_hessian_update_type == "auto";
