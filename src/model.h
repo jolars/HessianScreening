@@ -29,6 +29,7 @@ public:
 
   virtual double dual(const arma::vec& theta,
                       const arma::vec& y,
+                      const double dual_scale,
                       const double lambda) = 0;
 
   virtual double deviance(const arma::vec& residual,

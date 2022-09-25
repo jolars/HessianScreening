@@ -7,19 +7,9 @@ class Poisson : public Model
 {
 public:
   arma::vec expXbeta;
-  arma::vec pr;
   arma::vec w;
 
-  std::string log_hessian_update_type;
-
-  const double p_min = 1e-5;
-  const double p_max = 1 - p_min;
-
-  Poisson(const std::string family,
-           const arma::uword n,
-           const std::string log_hessian_update_type);
-
-  void setLogHessianUpdateType(const std::string new_log_hessian_update_type);
+  Poisson(const std::string family, const arma::uword n);
 
   double primal(const arma::vec& residual,
                 const arma::vec& Xbeta,
@@ -34,7 +24,10 @@ public:
                 const double lambda,
                 const arma::uvec& screened_set);
 
-  double dual(const arma::vec& theta, const arma::vec& y, const double lambda);
+  double dual(const arma::vec& theta,
+              const arma::vec& y,
+              const double dual_scale,
+              const double lambda);
 
   double deviance(const arma::vec& residual,
                   const arma::vec& Xbeta,

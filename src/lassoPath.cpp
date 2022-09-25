@@ -388,7 +388,13 @@ lassoPath(T& X,
         vec eigval;
         mat eigvec;
 
-        eig_sym(eigval, eigvec, symmatu(H));
+        bool eig_success = eig_sym(eigval, eigvec, symmatu(H));
+
+        if (!eig_success) {
+          eigval.print();
+          H.print();
+          Rcpp::stop("eigen decomposition failed");
+        }
 
         if (eigval.min() < 1e-4 * n) {
           H.diag() += 1e-4 * n;

@@ -10,7 +10,8 @@ Binomial::Binomial(const std::string family,
   , pr(n, arma::fill::zeros)
   , w(n, arma::fill::zeros)
   , log_hessian_update_type{ log_hessian_update_type }
-{}
+{
+}
 
 void
 Binomial::setLogHessianUpdateType(const std::string new_log_hessian_update_type)
@@ -45,7 +46,10 @@ Binomial::primal(const arma::vec& residual,
 }
 
 double
-Binomial::dual(const arma::vec& theta, const arma::vec& y, const double lambda)
+Binomial::dual(const arma::vec& theta,
+               const arma::vec& y,
+               const double dual_scale,
+               const double lambda)
 {
   using namespace arma;
 
@@ -310,7 +314,8 @@ Binomial::updateGradientOfCorrelation(arma::vec& c_grad,
 
 void
 Binomial::standardizeY(arma::vec& y)
-{}
+{
+}
 
 double
 Binomial::safeScreeningRadius(const double duality_gap, const double lambda)

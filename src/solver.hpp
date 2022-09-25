@@ -81,12 +81,12 @@ fit(arma::uvec& screened,
 
   double dual_scale = std::max(lambda, max(abs(c)));
   vec theta = residual / dual_scale;
-  double dual_value = model->dual(theta, y, lambda);
+  double dual_value = model->dual(theta, y, dual_scale, lambda);
+  double dual_value_prev = dual_value;
 
   vec w(n, fill::ones);
 
   double duality_gap = primal_value - dual_value;
-  double duality_gap_prev = datum::inf;
 
   bool inner_solver_converged = false;
   bool progress = true;
@@ -189,7 +189,7 @@ fit(arma::uvec& screened,
 
           dual_scale = std::max(lambda, max(abs(c(safe_set))));
           theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
+          dual_value = model->dual(theta, y, dual_scale, lambda);
           duality_gap = primal_value - dual_value;
 
           if (verbosity >= 2) {
@@ -250,7 +250,7 @@ fit(arma::uvec& screened,
 
           dual_scale = std::max(lambda, max(abs(c(screened_set))));
           theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
+          dual_value = model->dual(theta, y, dual_scale, lambda);
           duality_gap = primal_value - dual_value;
 
           if (verbosity >= 2) {
@@ -300,7 +300,7 @@ fit(arma::uvec& screened,
 
           dual_scale = std::max(lambda, max(abs(c(screened_set))));
           theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
+          dual_value = model->dual(theta, y, dual_scale, lambda);
           duality_gap = primal_value - dual_value;
 
           if (verbosity >= 2) {
@@ -360,7 +360,7 @@ fit(arma::uvec& screened,
 
           dual_scale = std::max(lambda, max(abs(c(screened_set))));
           theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
+          dual_value = model->dual(theta, y, dual_scale, lambda);
 
           bool celer_old_dual_better = false;
 
@@ -463,7 +463,7 @@ fit(arma::uvec& screened,
 
           dual_scale = std::max(lambda, max(abs(c(screened_set))));
           theta = residual / dual_scale;
-          dual_value = model->dual(theta, y, lambda);
+          dual_value = model->dual(theta, y, dual_scale, lambda);
 
           duality_gap = primal_value - dual_value;
 
@@ -731,8 +731,9 @@ fit(arma::uvec& screened,
         }
 
         dual_scale = std::max(lambda, max(abs(c(working_set))));
+
         theta = residual / dual_scale;
-        dual_value = model->dual(theta, y, lambda);
+        dual_value = model->dual(theta, y, dual_scale, lambda);
 
         duality_gap = primal_value - dual_value;
 
@@ -758,7 +759,8 @@ fit(arma::uvec& screened,
             double dual_scale_accel =
               std::max(lambda, max(abs(c_accel(working_set))));
             vec theta_accel = residual_accel / dual_scale_accel;
-            double dual_value_accel = model->dual(theta_accel, y, lambda);
+            double dual_value_accel =
+              model->dual(theta_accel, y, dual_scale_accel, lambda);
 
             if (dual_value_accel > dual_value) {
               if (verbosity >= 2)
@@ -781,13 +783,14 @@ fit(arma::uvec& screened,
 
         if (line_search) {
           // line search should ensure progress in the primal, so if primal
-          // value increases, then the limit of machine precision must have been
-          // reached
+          // value increases, then the limit of machine precision must have
+          // been reached
           if (primal_value >= primal_value_prev)
             inner_solver_converged = true;
         }
 
-        progress = duality_gap < duality_gap_prev;
+        progress =
+          primal_value < primal_value_prev || dual_value > dual_value_prev;
 
         if (!progress && verbosity >= 2)
           Rprintf("      no progress; shuffling indices\n");
@@ -797,12 +800,12 @@ fit(arma::uvec& screened,
             Rprintf("      inner solver converged\n");
 
           primal_value_prev = datum::inf;
-          duality_gap_prev = datum::inf;
+          dual_value_prev = -datum::inf;
 
           active_start = false; // for gap safe
         } else {
           primal_value_prev = primal_value;
-          duality_gap_prev = duality_gap;
+          dual_value_prev = dual_value;
         }
       }
 

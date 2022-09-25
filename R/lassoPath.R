@@ -56,7 +56,7 @@ lassoPath <- function(X,
                         "sasvi",
                         "none"
                       ),
-                      shuffle = match.arg(screening_type) == "blitz",
+                      shuffle = FALSE,
                       check_frequency = if (NROW(X) > NCOL(X)) 1 else 10,
                       screen_frequency = 10,
                       hessian_warm_starts = TRUE,
@@ -64,7 +64,7 @@ lassoPath <- function(X,
                       celer_use_accel = TRUE,
                       celer_prune = TRUE,
                       gap_safe_active_start = TRUE,
-                      augment_with_gap_safe = TRUE,
+                      augment_with_gap_safe = family != "poisson",
                       update_hessian = TRUE,
                       log_hessian_update_type = c("full", "auto", "approx"),
                       log_hessian_auto_update_freq = 10,
@@ -88,6 +88,20 @@ lassoPath <- function(X,
     lambda_type <- "auto"
   } else {
     lambda_type <- "user"
+  }
+
+  if (family == "poisson" && 
+    screening_type %in% c(
+      "edpp",
+      "gap_safe",
+      "celer",
+      "blitz",
+      "sasvi"
+    )) {
+    stop(
+      "family = 'poisson' does not work with screening_type =",
+      screening_type
+    )
   }
 
   sparse <- inherits(X, "sparseMatrix")

@@ -23,7 +23,10 @@ public:
                 const double lambda,
                 const arma::uvec& screened_set);
 
-  double dual(const arma::vec& theta, const arma::vec& y, const double lambda);
+  double dual(const arma::vec& theta,
+              const arma::vec& y,
+              const double dual_scale,
+              const double lambda);
 
   double deviance(const arma::vec& residual,
                   const arma::vec& Xbeta,

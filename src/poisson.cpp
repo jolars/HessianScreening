@@ -2,21 +2,11 @@
 #include "prox.h"
 #include "utils.h"
 
-Poisson::Poisson(const std::string family,
-                 const arma::uword n,
-                 const std::string log_hessian_update_type)
+Poisson::Poisson(const std::string family, const arma::uword n)
   : Model{ family }
   , expXbeta(n, arma::fill::zeros)
-  , pr(n, arma::fill::zeros)
-  , w(n, arma::fill::zeros)
-  , log_hessian_update_type{ log_hessian_update_type }
+  , w(n, arma::fill::ones)
 {
-}
-
-void
-Poisson::setLogHessianUpdateType(const std::string new_log_hessian_update_type)
-{
-  log_hessian_update_type = new_log_hessian_update_type;
 }
 
 double
@@ -28,7 +18,8 @@ Poisson::primal(const arma::vec& residual,
 {
   using namespace arma;
 
-  return accu(trunc_exp(Xbeta) - y % Xbeta) + lambda * norm(beta, 1);
+  return accu(expXbeta - y % Xbeta + lgamma(y + 1)) +
+         lambda * norm(beta, 1);
 }
 
 double
@@ -41,16 +32,23 @@ Poisson::primal(const arma::vec& residual,
 {
   using namespace arma;
 
-  return accu(trunc_exp(Xbeta) - y % Xbeta) +
+  return accu(expXbeta - y % Xbeta + lgamma(y + 1)) +
          lambda * norm(beta(screened_set), 1);
 }
 
 double
-Poisson::dual(const arma::vec& theta, const arma::vec& y, const double lambda)
+Poisson::dual(const arma::vec& theta,
+              const arma::vec& y,
+              const double dual_scale,
+              const double lambda)
 {
   using namespace arma;
 
-  return -accu(trunc_exp(theta) % (theta - 1));
+  double s = lambda / dual_scale;
+
+  return accu((y * s - theta * lambda) %
+                (1 - trunc_log(y * s - theta * lambda)) +
+              lgamma(y * s + 1));
 }
 
 double
@@ -58,7 +56,7 @@ Poisson::deviance(const arma::vec& residual,
                   const arma::vec& Xbeta,
                   const arma::vec& y)
 {
-  return -2 * arma::accu(arma::trunc_exp(Xbeta) - y % Xbeta);
+  return -2 * arma::accu(expXbeta - y % Xbeta + lgamma(y + 1));
 }
 
 double
@@ -91,7 +89,9 @@ Poisson::updateResidual(arma::vec& residual,
                         const arma::vec& Xbeta,
                         const arma::vec& y)
 {
-  residual = arma::trunc_exp(Xbeta) - y;
+  expXbeta = arma::trunc_exp(Xbeta);
+  w = expXbeta;
+  residual = y - expXbeta;
 }
 
 void
@@ -129,7 +129,7 @@ Poisson::adjustResidual(arma::vec& residual,
 arma::vec
 Poisson::weights(const arma::vec& residual, const arma::vec& y)
 {
-  return arma::trunc_exp(residual);
+  return y - residual;
 }
 
 arma::mat
@@ -273,11 +273,11 @@ Poisson::standardizeY(arma::vec& y)
 double
 Poisson::safeScreeningRadius(const double duality_gap, const double lambda)
 {
-  return std::sqrt(0.5 * std::max(duality_gap, 0.0)) / lambda;
+  Rcpp::stop("Gap-Safe screening does not work for Poisson loss");
 }
 
 double
 Poisson::toleranceModifier(const arma::vec& y)
 {
-  return std::pow(arma::norm(y), 2);
+  return static_cast<double>(y.n_elem) + arma::accu(arma::lgamma(y + 1));
 }

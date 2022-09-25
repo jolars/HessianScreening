@@ -6,15 +6,16 @@ library(tidyr)
 printf <- function(...) invisible(cat(sprintf(...)))
 
 tol_gap <- 1e-4
-families <- c("gaussian", "binomial")
+families <- c("poisson")
 scenarios <- c(1, 2)
-rhos <- c(0, 0.4, 0.8)
+rhos <- c(0, 0.15, 0.3)
+verbosity <- 0
+
+line_search <- FALSE
 
 screening_types <- c(
   "hessian",
-  "working",
-  "blitz",
-  "celer"
+  "working"
 )
 
 path_length <- 100
@@ -22,7 +23,7 @@ path_length <- 100
 n_sim <- length(families) * length(scenarios) * length(rhos)
 out <- data.frame()
 
-max_it <- 20
+max_it <- 25
 
 it_sim <- 0
 
@@ -61,9 +62,10 @@ for (family in families) {
           family = family,
           screening_type = "hessian",
           path_length = path_length,
-          verbosity = 0,
-          line_search = TRUE,
-          tol_gap = tol_gap
+          verbosity = verbosity,
+          line_search = line_search,
+          tol_gap = tol_gap,
+          augment_with_gap_safe = FALSE
         )
 
         lambda <- fit$lambda
@@ -86,8 +88,10 @@ for (family in families) {
             path_length = path_length,
             log_hessian_update_type = "full",
             celer_prune = TRUE,
-            verbosity = 0,
-            tol_gap = tol_gap
+            verbosity = verbosity,
+            line_search = line_search,
+            tol_gap = tol_gap,
+            augment_with_gap_safe = FALSE
           )
 
           n_lambda <- length(fit$lambda)
@@ -124,4 +128,4 @@ for (family in families) {
 
 cat("\n")
 
-saveRDS(out, "results/simulateddata.rds")
+saveRDS(out, "results/simulateddata-poisson.rds")

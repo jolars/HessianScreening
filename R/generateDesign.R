@@ -75,7 +75,6 @@ generateDesign <- function(n,
     y <- (sign(y) + 1) / 2
   } else if (family == "poisson") {
     lambda <- exp(X %*% beta)
-    print(lambda)
     y <- rpois(n, lambda)
   }
 

@@ -5,7 +5,8 @@
 Gaussian::Gaussian(const std::string family, const arma::vec& X_norms_squared)
   : Model{ family }
   , X_norms_squared(X_norms_squared)
-{}
+{
+}
 
 double
 Gaussian::primal(const arma::vec& residual,
@@ -30,10 +31,11 @@ Gaussian::primal(const arma::vec& residual,
 }
 
 double
-Gaussian::dual(const arma::vec& theta, const arma::vec& y, const double lambda)
+Gaussian::dual(const arma::vec& theta,
+               const arma::vec& y,
+               const double dual_scale,
+               const double lambda)
 {
-  // return 0.5 * std::pow(arma::norm(y), 2) -
-  //        0.5 * lambda * lambda * std::pow(arma::norm(theta - y / lambda), 2);
   return lambda * arma::dot(theta, y) -
          0.5 * std::pow(lambda * arma::norm(theta), 2);
 }

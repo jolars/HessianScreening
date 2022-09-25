@@ -8,14 +8,13 @@ source("R/utils.R")
 
 theme_set(theme_minimal(base_size = 9))
 
-fig_width <- 5.6
+fig_width <- 3.3
 fig_height <- 2.3
 
 conf_level <- 0.05
 
-d_raw <- readRDS("results/simulateddata.rds") %>%
+d_raw <- readRDS("results/simulateddata-poisson.rds") %>%
   filter(
-    !(screening_type %in% c("strong", "edpp", "gap_safe")),
     converged == TRUE
   ) %>%
   mutate(
@@ -26,7 +25,8 @@ d_raw <- readRDS("results/simulateddata.rds") %>%
     family = recode(
       family,
       "gaussian" = "Least-Squares",
-      "binomial" = "Logistic"
+      "binomial" = "Logistic",
+      "poisson" = "Poisson"
     )
   ) %>%
   select(np, n, p, rho, family, screening_type, time) %>%
@@ -38,7 +38,7 @@ d1 <-
     screening_type = as.factor(screening_type),
     family = as.factor(family)
   ) %>%
-  group_by(np, rho, family, screening_type) %>% 
+  group_by(np, rho, screening_type) %>% 
   summarize(
     meantime = mean(time),
     se = sd(time) / sqrt(n()),
@@ -63,7 +63,7 @@ options(
     "\\documentclass[10pt]{article}\n\\usepackage{newtxtext,newtxmath}\n"
 )
 
-file <- "figures/simulateddata-timings.tex"
+file <- "figures/simulateddata-poisson-timings.tex"
 tikz(file, width = fig_width, height = fig_height, standAlone = TRUE)
 ggplot(d1, aes(
   rho,
@@ -76,7 +76,7 @@ ggplot(d1, aes(
     position = position_dodge(0.9),
     width = 0.25
   ) +
-  facet_wrap(c("family", "np"), nrow = 1) +
+  facet_wrap(c("np"), nrow = 1) +
   scale_fill_manual(values = cols[1:5]) +
   labs(
     fill = "Screening",
@@ -84,11 +84,10 @@ ggplot(d1, aes(
     y = "Time (relative)"
   ) +
   theme(
-    legend.position = c(0.058, 0.78),
     legend.title = element_blank(),
     panel.grid.major.x = element_blank(),
     legend.key.size = unit(0.9, "line")
   ) 
 dev.off()
 
-renderPdf("figures/simulateddata-timings.tex")
+renderPdf("figures/simulateddata-poisson-timings.tex")
