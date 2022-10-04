@@ -1,13 +1,6 @@
-
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 # Code for the Hessian Screening Rule
 
-<!-- badges: start -->
-
-[![R-CMD-check](https://github.com/jolars/HessianScreening/workflows/R-CMD-check/badge.svg)](https://github.com/jolars/HessianScreening/actions)
 [![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg)](https://arxiv.org/abs/2104.13026)
-<!-- badges: end -->
 
 ## Results
 
