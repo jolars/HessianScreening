@@ -18,7 +18,7 @@ download and use.
 To reproduce the results, **always** use the singularity container. To
 run an experiment from the singularity container, call
 
-``` shell
+```shell
 singularity run --bind results:/project/results container.sif <script>
 ```
 
@@ -31,32 +31,32 @@ If you want to re-build the singularity container from scratch (or
 simply want to clone the repo to your local drive), you can do so via
 the following steps.
 
-1.  Make sure you have installed and enabled
+1. Make sure you have installed and enabled
     [Git-LFS](https://git-lfs.github.com/). On ubuntu, for instance, you
     can install Git-LFS by calling
-    
-    ``` shell
+
+    ```shell
     sudo apt update
     sudo apt install git-lfs
     ```
-    
+
     Then activate git-lfs by calling
-    
-    ``` shell
+
+    ```shell
     git lfs install
     ```
 
-2.  Clone the repository to your local hard drive. On linux, using SSH
+2. Clone the repository to your local hard drive. On linux, using SSH
     authentication, run
-    
-    ``` shell
+
+    ```shell
     git clone git@github.com:jolars/HessianScreening.git
     ```
 
-3.  Navigate to the root of the repo and build the singularity container
+3. Navigate to the root of the repo and build the singularity container
     by calling
-    
-    ``` shell
+
+    ```shell
     cd HessianScreening
     sudo singularity build container.sif Singularity
     ```
@@ -71,7 +71,7 @@ repository, then either opening the `HessianScreening.Rproj` file in R
 Studio or starting R in the root directory of this folder (which will
 activate the renv repository) and then run
 
-``` r
+```r
 renv::restore()
 ```
 
@@ -88,7 +88,7 @@ systems, compilers, and BLAS/LAPACK implementations.
 If you want to build and experiment with the package, you can do so by
 calling
 
-``` shell
+```shell
  R CMD INSTALL  .
 ```
 
