@@ -38,19 +38,19 @@ the following steps.
    git clone git@github.com:jolars/HessianScreening.git
    ```
 
-2. Download the data sets by running the following commands.
+2. Navigate to the root of the repo and download
+   the data sets by running the following commands.
 
    ```shell
+   cd HessianScreening
    Rscript data-raw/arcene.R
    Rscript data-raw/breheny-data.R
    Rscript data-raw/libsvm-data.R
    ```
 
-3. Navigate to the root of the repo and build the singularity container
-   by calling
+3. Build the singularity container by calling
 
    ```shell
-   cd HessianScreening
    sudo singularity build container.sif Singularity
    ```
 
@@ -74,7 +74,8 @@ folder. This is **not recommended**, however, since it, unlike the
 Singularity container approach, does not exactly reproduce the software
 environment used when these simulations where originally run and may
 result in discrepancies due to differences in for instance operating
-systems, compilers, and BLAS/LAPACK implementations.
+systems, compilers, BLAS/LAPACK implementations, and most
+critically, the version of R.
 
 ## R Package
 
