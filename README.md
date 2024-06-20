@@ -31,35 +31,28 @@ If you want to re-build the singularity container from scratch (or
 simply want to clone the repo to your local drive), you can do so via
 the following steps.
 
-1. Make sure you have installed and enabled
-    [Git-LFS](https://git-lfs.github.com/). On ubuntu, for instance, you
-    can install Git-LFS by calling
+1. Clone the repository to your local hard drive. On linux, using SSH
+   authentication, run
 
-    ```shell
-    sudo apt update
-    sudo apt install git-lfs
-    ```
+   ```shell
+   git clone git@github.com:jolars/HessianScreening.git
+   ```
 
-    Then activate git-lfs by calling
+2. Download the data sets by running the following commands.
 
-    ```shell
-    git lfs install
-    ```
-
-2. Clone the repository to your local hard drive. On linux, using SSH
-    authentication, run
-
-    ```shell
-    git clone git@github.com:jolars/HessianScreening.git
-    ```
+   ```shell
+   Rscript data-raw/arcene.R
+   Rscript data-raw/breheny-data.R
+   Rscript data-raw/libsvm-data.R
+   ```
 
 3. Navigate to the root of the repo and build the singularity container
-    by calling
+   by calling
 
-    ```shell
-    cd HessianScreening
-    sudo singularity build container.sif Singularity
-    ```
+   ```shell
+   cd HessianScreening
+   sudo singularity build container.sif Singularity
+   ```
 
 Then proceed as in [Reproducing the Results](#reproducing-the-results)
 to run the experiments.
@@ -101,11 +94,3 @@ calling `renv::restore()` (see the section above).
 The datasets used in these simulations are stored in the [data
 folder](data/). Scripts to retrieve these datasets from their original
 sources can be found in [`data-raw/`](data-raw/).
-
-## Forking and Git-LFS
-
-Note that pushing large files using Git-LFS against forks of this repo
-[counts against the bandwidth limits of this
-repo](https://docs.github.com/en/github/managing-large-files/collaboration-with-git-large-file-storage),
-and so may fail if these limits are exceeded. If you for some reason
-need to do this and it fails, please file as issue here.

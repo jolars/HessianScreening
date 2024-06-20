@@ -78,4 +78,3 @@ leukemia_X <- rbind(leukemia_train$X, leukemia_test$X)
 leukemia_y <- c(leukemia_train$y, leukemia_test$y)
 leukemia <- list(X = leukemia_X, y = leukemia_y)
 saveRDS(leukemia, "data/leukemia.rds")
-
