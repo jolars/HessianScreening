@@ -1,6 +1,6 @@
 # Code for the Hessian Screening Rule
 
-[![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg)](https://arxiv.org/abs/2104.13026)
+[![arXiv](https://img.shields.io/badge/arXiv-2104.13026-b31b1b.svg)](https://arxiv.org/abs/2104.13026)
 
 ## Results
 
